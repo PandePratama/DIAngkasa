@@ -36,7 +36,7 @@ class UserController extends Controller
             'email'      => $request->email,
             'nip'        => $request->nip,
             'unit_kerja' => $request->unit_kerja,
-            'role'       => 'employee', // ⬅️ otomatis
+            'role'       => 'employee', // otomatis
             'password'   => Hash::make($request->password),
         ]);
 
