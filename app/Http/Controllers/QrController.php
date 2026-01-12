@@ -7,28 +7,67 @@ use Illuminate\Http\Request;
 
 class QrController extends Controller
 {
-    public function scan(Request $request)
+    public function validateQr(Request $request)
+    {
+        $nip = strtoupper(trim($request->qr));
+
+        if (!$nip) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'QR kosong'
+            ]);
+        }
+
+        $user = User::where('nip', $nip)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'valid',
+            'nip'    => $user->nip,
+            'name'   => $user->name,
+            'unit'   => $user->unit_kerja,
+            'credit' => $user->credit_limit
+        ]);
+    }
+
+    // 🔥 TRANSAKSI BELANJA
+    public function processTransaction(Request $request)
     {
         $request->validate([
-            'nip' => 'required|string'
+            'nip'     => 'required',
+            'amount'  => 'required|numeric|min:1'
         ]);
 
         $user = User::where('nip', $request->nip)->first();
 
         if (!$user) {
             return response()->json([
-                'status' => false,
+                'status' => 'error',
                 'message' => 'User tidak ditemukan'
-            ], 404);
+            ]);
         }
 
+        if ($user->credit_limit < $request->amount) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Saldo tidak mencukupi'
+            ]);
+        }
+
+        // 🔻 POTONG CREDIT
+        $user->credit_limit -= $request->amount;
+        $user->save();
+
         return response()->json([
-            'status' => true,
-            'data' => [
-                'nip'  => $user->nip,
-                'nama' => $user->name,
-                'unit_kerja' => $user->unit_kerja,
-            ]
+            'status' => 'success',
+            'message' => 'Transaksi berhasil',
+            'sisa_credit' => $user->credit_limit
         ]);
     }
 }
