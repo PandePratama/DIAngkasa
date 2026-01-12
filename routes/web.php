@@ -49,7 +49,10 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
     })->name('admin.qr.scan.view');
 
     Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])
-        ->name('admin.qr.validate');
+        ->name('qr.validate');
+        
+    Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])
+        ->name('qr.transaction');
 });
 
 Route::middleware('auth')->group(function () {

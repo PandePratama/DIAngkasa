@@ -25,7 +25,7 @@
             <h3 class="text-lg font-semibold mb-4">Kontak & Sosial Media</h3>
             <ul class="space-y-2 text-gray-200 text-sm">
                 <li>Email: support@diangkasa.com</li>
-                <li>Telepon: +62 812 3456 7890</li>
+                <li>Telepon: +62 851 1932 9510</li>
                 <li class="flex space-x-3 mt-2">
                     <a href="#" class="hover:text-white"><i class="fa-brands fa-facebook-f"></i></a>
                     <a href="#" class="hover:text-white"><i class="fa-brands fa-twitter"></i></a>

@@ -3,84 +3,139 @@
 @section('title', 'Scan QR Karyawan')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid pt-4">
 
-    <h1 class="h3 mb-4 text-gray-800">Scan QR Karyawan</h1>
+    {{-- TITLE --}}
+    <h2 class="text-center mb-4 text-xl font-semibold">
+        Scan QR Employee
+    </h2>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-
-            <div class="card shadow">
-                <div class="card-body text-center">
-
-                    <div id="reader" style="width:100%;"></div>
-
-                    <div class="mt-3 text-muted">
-                        Arahkan QR ke kamera
-                    </div>
-
-                </div>
-            </div>
-
+    {{-- CAMERA --}}
+    <div class="d-flex justify-content-center">
+        <div class="camera-wrapper">
+            <div id="reader"></div>
         </div>
     </div>
 
 </div>
-@endsection
 
-@push('scripts')
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{{-- STYLE --}}
+<style>
+    .camera-wrapper {
+        width: 340px;
+        height: 260px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 3px solid #e5e7eb;
+        background: #000;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, .15);
+    }
+
+    #reader,
+    #reader video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+    }
+</style>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    const html5QrCode = new Html5Qrcode("reader");
 
-        const html5QrCode = new Html5Qrcode("reader");
+    function startScanner() {
+        html5QrCode.start({
+                facingMode: "environment"
+            }, {
+                fps: 10,
+                qrbox: {
+                    width: 180,
+                    height: 180
+                }
+            },
+            onScanSuccess
+        );
+    }
 
-        function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
+        html5QrCode.stop();
 
-            // Stop scan setelah berhasil
-            html5QrCode.stop();
-
-            // POPUP VALID
-            alert(
-                "✅ QR VALID\n\n" +
-                "Isi QR:\n" + decodedText
-            );
-        }
-
-        function onScanFailure(error) {
-            // Abaikan error scan agar tidak spam console
-        }
-
-        Html5Qrcode.getCameras().then(cameras => {
-
-            if (!cameras || cameras.length === 0) {
-                alert("Kamera tidak ditemukan");
-                return;
-            }
-
-            // Prioritas kamera belakang
-            let cameraId =
-                cameras.find(cam => cam.label.toLowerCase().includes('back'))?.id ||
-                cameras[0].id;
-
-            html5QrCode.start(
-                cameraId, {
-                    fps: 10,
-                    qrbox: {
-                        width: 250,
-                        height: 250
-                    }
+        fetch("{{ route('qr.validate') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
                 },
-                onScanSuccess,
-                onScanFailure
-            );
+                body: JSON.stringify({
+                    qr: decodedText.trim()
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'valid') {
+                    Swal.fire('GAGAL', data.message, 'error');
+                    return startScanner();
+                }
 
-        }).catch(err => {
-            console.error(err);
-            alert("Gagal mengakses kamera");
-        });
+                // 🔥 FORM INPUT BELANJA
+                Swal.fire({
+                    title: 'Transaksi Belanja',
+                    html: `
+                    <b>${data.name}</b><br>
+                    ${data.nip} - ${data.unit}<br><br>
+                    <b>Saldo:</b> Rp ${data.credit.toLocaleString()}<br><br>
+                    <input id="amount" class="swal2-input"
+                        placeholder="Nominal belanja"
+                        type="number" min="1">
+                `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Proses',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const amount = document.getElementById('amount').value;
+                        if (!amount || amount <= 0) {
+                            Swal.showValidationMessage('Nominal tidak valid');
+                        }
+                        return amount;
+                    }
+                }).then(result => {
+                    if (!result.isConfirmed) {
+                        startScanner();
+                        return;
+                    }
 
-    });
+                    // 🔥 KIRIM TRANSAKSI
+                    fetch("{{ route('qr.transaction') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                            },
+                            body: JSON.stringify({
+                                nip: data.nip,
+                                amount: result.value
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(resp => {
+                            if (resp.status === 'success') {
+                                Swal.fire(
+                                    'BERHASIL',
+                                    `Sisa saldo: Rp ${resp.sisa_credit.toLocaleString()}`,
+                                    'success'
+                                );
+                            } else {
+                                Swal.fire('GAGAL', resp.message, 'error');
+                            }
+                            setTimeout(startScanner, 2500);
+                        });
+                });
+            });
+    }
+
+    startScanner();
 </script>
-@endpush
+
+@endsection
