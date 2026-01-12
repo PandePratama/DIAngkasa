@@ -115,6 +115,17 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
+                        <label>Credit 3 Months</label>
+                        <input type="number"
+                            name="price_3_months"
+                            value="{{ old('price_3_months') }}"
+                            class="form-control"
+                            step="0.01">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group">
                         <label>Credit 6 Months</label>
                         <input type="number"
                             name="price_6_months"

@@ -28,7 +28,7 @@ class CartController extends Controller
     {
         $request->validate([
             'purchase_type' => 'required|in:cash,credit',
-            'tenor' => 'nullable|in:6,9,12'
+            'tenor' => 'nullable|in:3,6,9,12'
         ]);
 
         $cart = Cart::firstOrCreate([
@@ -41,6 +41,7 @@ class CartController extends Controller
         // FIX match error
         $price = $type === 'credit'
             ? match ((int) $tenor) {
+                3  => $product->price_3_months, 
                 6  => $product->price_6_months,
                 9  => $product->price_9_months,
                 12 => $product->price_12_months,

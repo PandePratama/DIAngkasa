@@ -27,6 +27,7 @@ class UserController extends Controller
             'email'      => 'nullable|email|unique:users,email',
             'nip'        => 'nullable|string|unique:users,nip',
             'unit_kerja' => 'nullable|string|max:100',
+            'credit_limit' => 'nullable|numeric|min:0',
             'password'   => 'required|min:6|confirmed',
         ]);
 
@@ -36,6 +37,7 @@ class UserController extends Controller
             'email'      => $request->email,
             'nip'        => $request->nip,
             'unit_kerja' => $request->unit_kerja,
+            'credit_limit' => $request->credit_limit ?? 0,
             'role'       => 'employee', // otomatis
             'password'   => Hash::make($request->password),
         ]);
@@ -58,6 +60,7 @@ class UserController extends Controller
             'email'      => 'nullable|email|unique:users,email,' . $user->id,
             'nip'        => 'nullable|string|unique:users,nip,' . $user->id,
             'unit_kerja' => 'nullable|string|max:100',
+            'credit_limit' => 'nullable|numeric|min:0',
             'password'   => 'nullable|min:6|confirmed',
         ]);
 
@@ -66,7 +69,8 @@ class UserController extends Controller
             'username',
             'email',
             'nip',
-            'unit_kerja'
+            'unit_kerja',
+            'credit_limit',
         ]);
 
         if ($request->filled('password')) {

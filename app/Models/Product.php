@@ -14,6 +14,7 @@ class Product extends Model
         'brand_id',
         'stock',
         'price',
+        'price_3_months',
         'price_6_months',
         'price_9_months',
         'price_12_months',

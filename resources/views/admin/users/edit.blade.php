@@ -67,6 +67,16 @@
                     class="form-control">
             </div>
 
+            <div class="form-group">
+                <label>Credit Limit</label>
+                <input type="number"
+                    name="credit_limit"
+                    value="{{ old('credit_limit', $user->credit_limit) }}"
+                    class="form-control"
+                    min="0"
+                    step="0.01">
+            </div>
+
             <hr>
 
             <div class="row">

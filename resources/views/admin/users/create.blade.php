@@ -15,7 +15,7 @@
         <div class="alert alert-danger">
             <ul class="mb-0">
                 @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+                <li>{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
@@ -65,6 +65,16 @@
                     name="unit_kerja"
                     value="{{ old('unit_kerja') }}"
                     class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Credit Limit</label>
+                <input type="number"
+                    name="credit_limit"
+                    value="{{ old('credit_limit') }}"
+                    class="form-control"
+                    min="0"
+                    step="0.01">
             </div>
 
             <div class="row">

@@ -21,6 +21,7 @@
                 tenor: null,
                 cashPrice: {{ $product->price }},
                 prices: {
+                    3: {{ $product->price_3_months ?? 'null' }},
                     6: {{ $product->price_6_months ?? 'null' }},
                     9: {{ $product->price_9_months ?? 'null' }},
                     12: {{ $product->price_12_months ?? 'null' }},
@@ -89,6 +90,20 @@
                     <p class="font-semibold mb-2">Pilih Tenor</p>
 
                     <div class="space-y-2 text-sm">
+
+                        @if($product->price_3_months)
+                        <label class="flex items-center gap-2 border rounded-lg p-3 cursor-pointer">
+                            <input type="radio"
+                                name="tenor"
+                                value="3"
+                                x-model="tenor"
+                                required>
+                            <span>
+                                3 Bulan —
+                                Rp {{ number_format($product->price_3_months,0,',','.') }}/bulan
+                            </span>
+                        </label>
+                        @endif
 
                         @if($product->price_6_months)
                         <label class="flex items-center gap-2 border rounded-lg p-3 cursor-pointer">

@@ -1,46 +1,99 @@
-@extends('layouts.app')
+@extends('admin.layouts.app')
+
+@section('title', 'Scan QR Karyawan')
 
 @section('content')
+<div class="container-fluid">
 
-<div class="max-w-sm mx-auto my-10 bg-white rounded-xl shadow text-center p-6">
+    <h1 class="h3 mb-4 text-gray-800">Scan QR Karyawan</h1>
 
-    <div id="qrcode"
-        class="mx-auto mb-4 rounded-lg border p-2 w-[220px] h-[220px] flex items-center justify-center">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+
+            <div class="card shadow">
+                <div class="card-body text-center">
+
+                    <div id="reader" style="width:100%;"></div>
+
+                    <div id="result" class="mt-4"></div>
+
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <h2 class="font-semibold text-lg">{{ $user->name }}</h2>
-    <p class="text-sm text-gray-600">{{ $user->nip }}</p>
-    <p class="text-sm text-gray-600">{{ $user->unit_kerja }}</p>
-
-    <p class="font-semibold mt-2">
-        Rp {{ number_format($user->saldo ?? 0, 0, ',', '.') }}
-    </p>
-
-    <button class="w-full bg-teal-700 text-white py-2 rounded mt-3">
-        Ubah Password
-    </button>
-
 </div>
+@endsection
+
+@push('scripts')
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-        let nip = "{{ $user->nip }}";
+        const html5QrCode = new Html5Qrcode("reader");
 
-        if (nip) {
-            new QRCode(document.getElementById("qrcode"), {
-                text: nip,
-                width: 200,
-                height: 200,
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        } else {
-            document.getElementById("qrcode").innerHTML =
-                '<p class="text-sm text-gray-500">NIP belum tersedia</p>';
+        function onScanSuccess(decodedText) {
+
+            html5QrCode.stop();
+
+            fetch("{{ route('admin.qr.validate') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        nip: decodedText
+                    })
+                })
+                .then(res => res.json())
+                .then(res => {
+
+                    if (res.status) {
+                        document.getElementById('result').innerHTML = `
+                    <div class="alert alert-success text-left">
+                        <strong>✅ QR VALID</strong><br><br>
+                        <b>NIP:</b> ${res.data.nip}<br>
+                        <b>Nama:</b> ${res.data.name}<br>
+                        <b>Unit Kerja:</b> ${res.data.unit_kerja}<br>
+                        <b>Limit Kredit:</b> Rp ${new Intl.NumberFormat('id-ID').format(res.data.limit)}
+                    </div>
+                `;
+                    } else {
+                        document.getElementById('result').innerHTML = `
+                    <div class="alert alert-danger">
+                        ❌ ${res.message}
+                    </div>
+                `;
+                    }
+                })
+                .catch(() => {
+                    alert('Terjadi kesalahan server');
+                });
         }
 
+        Html5Qrcode.getCameras().then(cameras => {
+
+            if (!cameras.length) {
+                alert("Kamera tidak ditemukan");
+                return;
+            }
+
+            let cameraId =
+                cameras.find(cam => cam.label.toLowerCase().includes('back'))?.id ||
+                cameras[0].id;
+
+            html5QrCode.start(
+                cameraId, {
+                    fps: 10,
+                    qrbox: 250
+                },
+                onScanSuccess
+            );
+
+        });
     });
 </script>
-
-
-@endsection
+@endpush
