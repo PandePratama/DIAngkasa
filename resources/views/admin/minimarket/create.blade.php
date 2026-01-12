@@ -1,13 +1,13 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Add Product')
+@section('title', 'Add Minimarket Product')
 
 @section('content')
 <div class="card shadow">
 
     {{-- Header --}}
     <div class="card-header">
-        <h6 class="m-0 font-weight-bold text-primary">Add Product</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Add Minimarket Product</h6>
     </div>
 
     <div class="card-body">
@@ -23,7 +23,7 @@
         </div>
         @endif
 
-        <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('minimarket-products.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             {{-- Product Code --}}
@@ -45,46 +45,28 @@
                     class="form-control"
                     required>
             </div>
-            <!-- Specifications -->
+
+            {{-- Specifications --}}
             <div class="form-group">
                 <label>Specifications</label>
-                <textarea name="specifications" class="form-control">{{ old('specifications') }}</textarea>
+                <textarea name="specification" class="form-control">{{ old('specification') }}</textarea>
             </div>
 
-            {{-- Category & Brand --}}
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select name="category_id" class="form-control" required>
-                            <option value="">-- Select Category --</option>
-                            @foreach ($categories as $category)
-                            <option value="{{ $category->id }}"
-                                {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Brand</label>
-                        <select name="brand_id" class="form-control" required>
-                            <option value="">-- Select Brand --</option>
-                            @foreach ($brands as $brand)
-                            <option value="{{ $brand->id }}"
-                                {{ old('brand_id') == $brand->id ? 'selected' : '' }}>
-                                {{ $brand->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
+            {{-- Category --}}
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category_id" class="form-control" required>
+                    <option value="">-- Select Category --</option>
+                    @foreach ($categories as $category)
+                    <option value="{{ $category->id }}"
+                        {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }}
+                    </option>
+                    @endforeach
+                </select>
             </div>
 
-            {{-- Stock & Cash Price --}}
+            {{-- Stock & Price --}}
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
@@ -113,7 +95,7 @@
 
             {{-- Credit Prices --}}
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label>Credit 3 Months</label>
                         <input type="number"
@@ -124,7 +106,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label>Credit 6 Months</label>
                         <input type="number"
@@ -135,7 +117,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label>Credit 9 Months</label>
                         <input type="number"
@@ -146,7 +128,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label>Credit 12 Months</label>
                         <input type="number"
@@ -186,16 +168,6 @@
         </form>
     </div>
 </div>
-@if ($errors->any())
-    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <ul class="list-disc list-inside">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
 @endsection
 
 @push('scripts')
@@ -213,12 +185,12 @@
 
                 col.innerHTML = `
                 <div class="card">
-                    <img src="${e.target.result}"
-                        class="card-img-top"
-                        style="height:150px;object-fit:cover;">
+                    <img src="${e.target.result}" 
+                         class="card-img-top" 
+                         style="height:150px;object-fit:cover;">
                     <div class="card-body text-center p-2">
-                        ${index === 0
-                            ? '<span class="badge badge-success">Primary</span>'
+                        ${index === 0 
+                            ? '<span class="badge badge-success">Primary</span>' 
                             : ''}
                     </div>
                 </div>

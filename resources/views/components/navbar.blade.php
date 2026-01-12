@@ -13,7 +13,7 @@
         {{-- Desktop Menu --}}
         <nav class="hidden md:flex items-center space-x-6">
             <a href="{{ route('home') }}" class="hover:text-gray-200">Home</a>
-            <a href="#" class="hover:text-gray-200">Minimarket</a>
+            <a href="{{ route('minimarket.index') }}" class="hover:text-gray-200">Minimarket</a>
             <a href="{{ route('gadget.index') }}" class="hover:text-gray-200">Gadget</a>
 
             {{-- Cart --}}

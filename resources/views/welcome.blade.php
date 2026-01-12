@@ -20,16 +20,16 @@
     {{-- PRODUK BEST SELLER GADGET --}}
     <section class="container mx-auto px-6 py-12">
         <h1 class="text-xl font-semibold mb-6 text-center">
-            PRODUK BEST SELLER
+            GADGET BEST SELLER
         </h1>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 mx-auto">
-            @forelse ($products ?? [] as $product)
+            @forelse ($productsGadget ?? [] as $product)
             <div class="bg-white shadow rounded-lg p-4 text-center">
                 <img
                     src="{{ $product->primaryImage
-                                ? asset('storage/' . $product->primaryImage->image_path)
-                                : asset('images/placeholder.png') }}"
+                    ? asset('storage/' . $product->primaryImage->image_path)
+                    : asset('images/placeholder.png') }}"
                     alt="{{ $product->name }}"
                     class="mx-auto mb-2 h-24 object-contain">
 
@@ -59,21 +59,29 @@
     {{-- PRODUK BEST SELLER MINIMARKET --}}
     <section class="container mx-auto px-6 py-12">
         <h2 class="text-xl font-semibold mb-6 text-center">
-            PRODUK BEST SELLER
+            MINI BEST SELLER
         </h2>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            @for ($i = 0; $i < 4; $i++)
-                <div class="bg-white shadow rounded-lg p-4 text-center">
+            @forelse ($productsMinimarket ?? [] as $product)
+            <div class="bg-white shadow rounded-lg p-4 text-center">
                 <img
-                    src="{{ asset('sbadmin/img/beras super.jpg') }}"
-                    alt="Produk Minimarket"
+                    src="{{ $product->primaryImage
+                    ? asset('storage/' . $product->primaryImage->image_path)
+                    : asset('images/placeholder.png') }}"
+                    alt="{{ $product->name }}"
                     class="mx-auto mb-2 h-24 object-contain">
 
-                <p class="font-semibold">Minyak Goreng</p>
-                <p class="text-gray-700">Rp 6.000.000</p>
-        </div>
-        @endfor
+                <p class="font-semibold">{{ $product->name }}</p>
+                <p class="text-gray-700">
+                    Rp {{ number_format($product->price, 0, ',', '.') }}
+                </p>
+            </div>
+            @empty
+            <p class="col-span-full text-center text-gray-500">
+                Produk minimarket belum tersedia
+            </p>
+            @endforelse
         </div>
     </section>
 

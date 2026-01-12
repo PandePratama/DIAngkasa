@@ -91,8 +91,8 @@
                     data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Minimarket</h6>
-                        <a class="collapse-item" href="utilities-color.html">Kategori</a>
-                        <a class="collapse-item" href="utilities-border.html">Produk</a>
+                        <a class="collapse-item" href="{{ route('categories.index') }}">Kategori</a>
+                        <a class="collapse-item" href="{{ route('minimarket-products.index') }}">Produk</a>
                     </div>
             </li>
 
