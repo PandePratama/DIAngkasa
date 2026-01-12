@@ -15,9 +15,14 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'primaryImage'])
+        $products = Product::with('primaryImage', 'category')
+            ->whereHas('category', function ($query) {
+                $query->whereIn('name', ['Smartphone', 'Laptop', 'Tablet']);
+            })
             ->latest()
             ->get();
+
+        // dd($products);
 
         return view('admin.products.index', compact('products'));
     }
@@ -61,7 +66,6 @@ class ProductController extends Controller
                 ]);
             }
         });
-
         return redirect()
             ->route('products.index')
             ->with('success', 'Product created successfully');

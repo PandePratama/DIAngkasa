@@ -8,6 +8,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\GadgetController;
+use App\Http\Controllers\MinimarketController;
+use App\Http\Controllers\ProductMinimarketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
 use App\Http\Controllers\TransactionController;
@@ -19,6 +21,8 @@ Route::get('/', [WelcomeController::class, 'home'])->name('home');
 Route::get('/gadget', [GadgetController::class, 'index'])->name('gadget.index');
 Route::get('/gadget/{product}', [GadgetController::class, 'show'])
     ->name('gadget.show');
+Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
+Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');
 
 // Auth Routes
 Route::get('/login', function () {
@@ -32,6 +36,7 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', CategoryController::class);
     Route::resource('products', ProductController::class);
+    Route::resource('minimarket-products', ProductMinimarketController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('users', UserController::class);
 

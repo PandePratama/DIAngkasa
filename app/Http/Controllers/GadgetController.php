@@ -11,10 +11,19 @@ class GadgetController extends Controller
 {
     public function index(Request $request)
     {
-        $categories = Category::orderBy('name')->get();
-        $brands     = Brand::orderBy('name')->get();
+        // Ambil kategori khusus gadget
+        $categories = Category::whereIn('name', ['Smartphone', 'Laptop', 'Tablet'])
+            ->orderBy('name')
+            ->get();
 
+        // Ambil brand semua (atau bisa disesuaikan nanti)
+        $brands = Brand::orderBy('name')->get();
+
+        // Ambil produk gadget
         $products = Product::with(['primaryImage', 'category', 'brand'])
+            ->whereHas('category', function ($q) {
+                $q->whereIn('name', ['Smartphone', 'Laptop', 'Tablet']);
+            })
             ->when($request->category, function ($q) use ($request) {
                 $q->where('category_id', $request->category);
             })

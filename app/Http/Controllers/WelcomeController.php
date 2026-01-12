@@ -9,12 +9,26 @@ class WelcomeController extends Controller
 {
     public function home()
     {
-        $products = Product::with(['primaryImage', 'category'])
+        // Gadget categories
+        $gadgetCategories = ['Smartphone', 'Laptop', 'Tablet'];
+
+        $productsGadget = Product::with('primaryImage', 'category')
+            ->whereHas('category', function ($q) use ($gadgetCategories) {
+                $q->whereIn('name', $gadgetCategories);
+            })
             ->latest()
-            ->take(10)
+            ->limit(4) // ambil 8 best seller
             ->get();
 
-        // Kirim ke view 'welcome' (bukan 'frontend.home')
-        return view('welcome', compact('products'));
+        // Minimarket categories (kecuali gadget)
+        $productsMinimarket = Product::with('primaryImage', 'category')
+            ->whereHas('category', function ($q) use ($gadgetCategories) {
+                $q->whereNotIn('name', $gadgetCategories);
+            })
+            ->latest()
+            ->limit(4) // ambil 8 best seller minimarket
+            ->get();
+
+        return view('welcome', compact('productsGadget', 'productsMinimarket'));
     }
 }
