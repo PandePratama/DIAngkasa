@@ -3,7 +3,6 @@
 @section('title', 'Scan QR Karyawan')
 
 @section('content')
-
 <div class="container-fluid">
 
     <h1 class="h3 mb-4 text-gray-800">Scan QR Karyawan</h1>
@@ -14,9 +13,11 @@
             <div class="card shadow">
                 <div class="card-body text-center">
 
-                    <video id="preview" class="w-100 rounded"></video>
+                    <div id="reader" style="width:100%;"></div>
 
-                    <div id="result" class="mt-3 text-left"></div>
+                    <div class="mt-3 text-muted">
+                        Arahkan QR ke kamera
+                    </div>
 
                 </div>
             </div>
@@ -25,50 +26,61 @@
     </div>
 
 </div>
+@endsection
 
-{{-- INSTASCAN --}}
-<script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+@push('scripts')
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-    let scanner = new Instascan.Scanner({
-        video: document.getElementById('preview'),
-        mirror: false
-    });
+    document.addEventListener('DOMContentLoaded', function() {
 
-    scanner.addListener('scan', function(nip) {
+        const html5QrCode = new Html5Qrcode("reader");
 
-        fetch("{{ route('admin.qr.scan') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    nip: nip
-                })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status) {
-                    document.getElementById('result').innerHTML = `
-                    <strong>NIP:</strong> ${res.data.nip}<br>
-                    <strong>Nama:</strong> ${res.data.nama}<br>
-                    <strong>Unit Kerja:</strong> ${res.data.unit_kerja}
-                `;
-                } else {
-                    document.getElementById('result').innerHTML =
-                        `<span class="text-danger">${res.message}</span>`;
-                }
-            });
-    });
+        function onScanSuccess(decodedText, decodedResult) {
 
-    Instascan.Camera.getCameras().then(function(cameras) {
-        if (cameras.length > 0) {
-            scanner.start(cameras[0]);
-        } else {
-            alert('Kamera tidak ditemukan');
+            // Stop scan setelah berhasil
+            html5QrCode.stop();
+
+            // POPUP VALID
+            alert(
+                "✅ QR VALID\n\n" +
+                "Isi QR:\n" + decodedText
+            );
         }
+
+        function onScanFailure(error) {
+            // Abaikan error scan agar tidak spam console
+        }
+
+        Html5Qrcode.getCameras().then(cameras => {
+
+            if (!cameras || cameras.length === 0) {
+                alert("Kamera tidak ditemukan");
+                return;
+            }
+
+            // Prioritas kamera belakang
+            let cameraId =
+                cameras.find(cam => cam.label.toLowerCase().includes('back'))?.id ||
+                cameras[0].id;
+
+            html5QrCode.start(
+                cameraId, {
+                    fps: 10,
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    }
+                },
+                onScanSuccess,
+                onScanFailure
+            );
+
+        }).catch(err => {
+            console.error(err);
+            alert("Gagal mengakses kamera");
+        });
+
     });
 </script>
-
-@endsection
+@endpush

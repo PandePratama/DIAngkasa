@@ -132,7 +132,17 @@
 
             {{-- Credit Prices --}}
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Credit 3 Months</label>
+                        <input type="number"
+                            name="price_3_months"
+                            step="0.01"
+                            value="{{ old('price_3_months', $product->price_3_months) }}"
+                            class="form-control">
+                    </div>
+                </div>
+                <div class="col-md-6">
                     <div class="form-group">
                         <label>Credit 6 Months</label>
                         <input type="number"
@@ -143,7 +153,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="form-group">
                         <label>Credit 9 Months</label>
                         <input type="number"
@@ -154,7 +164,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="form-group">
                         <label>Credit 12 Months</label>
                         <input type="number"

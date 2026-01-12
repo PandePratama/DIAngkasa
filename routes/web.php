@@ -48,8 +48,8 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
         return view('admin.qrscan.index');
     })->name('admin.qr.scan.view');
 
-    Route::post('/qr-scan', [QrController::class, 'scan'])
-        ->name('admin.qr.scan');
+    Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])
+        ->name('admin.qr.validate');
 });
 
 Route::middleware('auth')->group(function () {
