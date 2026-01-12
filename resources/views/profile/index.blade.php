@@ -11,8 +11,15 @@
             </div>
         </div>
 
+        {{-- DOWNLOAD BUTTON --}}
+        <button
+            onclick="downloadQR('#ffffff')"
+            class="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm py-2 rounded-lg">
+            Download QR Code
+        </button>
+
         {{-- USER INFO --}}
-        <h2 class="font-semibold text-lg">{{ $user->name }}</h2>
+        <h2 class="font-semibold text-lg mt-4">{{ $user->name }}</h2>
         <p class="text-sm text-gray-600">{{ $user->nip }}</p>
         <p class="text-sm text-gray-600">{{ $user->unit_kerja }}</p>
 
@@ -33,8 +40,37 @@ document.addEventListener('DOMContentLoaded', function () {
         height: 220,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
+        correctLevel: QRCode.CorrectLevel.H // 🔥 WAJIB BIAR MUDAH DISCAN
     });
 });
+
+/**
+ * Download QR dengan background custom
+ * @param {string} bgColor contoh: '#ffffff', '#fef3c7'
+ */
+function downloadQR(bgColor = '#ffffff') {
+    const qrCanvas = document.querySelector('#qrcode canvas');
+
+    // Buat canvas baru (agar background solid)
+    const canvas = document.createElement('canvas');
+    const size = 300; // bikin lebih besar biar tajam
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, size, size);
+
+    // Gambar QR ke canvas baru
+    ctx.drawImage(qrCanvas, 40, 40, size - 80, size - 80);
+
+    // Download
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = "QR-{{ $user->nip }}.png";
+    link.click();
+}
 </script>
 @endsection

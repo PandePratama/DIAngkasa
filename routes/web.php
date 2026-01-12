@@ -10,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\GadgetController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 
@@ -50,9 +51,12 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
 
     Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])
         ->name('qr.validate');
-        
+
     Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])
         ->name('qr.transaction');
+
+    Route::get('/transactions', [TransactionController::class, 'index'])
+        ->name('transactions.index');
 });
 
 Route::middleware('auth')->group(function () {
