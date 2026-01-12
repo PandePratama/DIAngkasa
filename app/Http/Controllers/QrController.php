@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class QrController extends Controller
 {
@@ -40,8 +42,8 @@ class QrController extends Controller
     public function processTransaction(Request $request)
     {
         $request->validate([
-            'nip'     => 'required',
-            'amount'  => 'required|numeric|min:1'
+            'nip' => 'required',
+            'amount' => 'required|numeric|min:1'
         ]);
 
         $user = User::where('nip', $request->nip)->first();
@@ -60,14 +62,28 @@ class QrController extends Controller
             ]);
         }
 
-        // 🔻 POTONG CREDIT
-        $user->credit_limit -= $request->amount;
-        $user->save();
+        $saldoAwal = $user->credit_limit;
+        $saldoAkhir = $saldoAwal - $request->amount;
+
+        // 🔻 Update saldo
+        $user->update([
+            'credit_limit' => $saldoAkhir
+        ]);
+
+        // 💾 Simpan transaksi
+        Transaction::create([
+            'user_id' => $user->id,
+            'nip' => $user->nip,
+            'admin_name' => Auth::user()->name,
+            'amount' => $request->amount,
+            'saldo_awal' => $saldoAwal,
+            'saldo_akhir' => $saldoAkhir
+        ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Transaksi berhasil',
-            'sisa_credit' => $user->credit_limit
+            'sisa_credit' => $saldoAkhir
         ]);
     }
 }

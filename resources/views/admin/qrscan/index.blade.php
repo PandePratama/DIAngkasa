@@ -53,6 +53,9 @@
                 qrbox: {
                     width: 180,
                     height: 180
+                },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
                 }
             },
             onScanSuccess
