@@ -5,6 +5,19 @@
 
     <h1 class="text-lg font-semibold mb-6">Pembayaran</h1>
 
+    {{-- Alert Success / Error --}}
+    @if(session('success'))
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+        {{ session('success') }}
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        {{ session('error') }}
+    </div>
+    @endif
+
     <form method="POST" action="{{ route('payment.process') }}">
         @csrf
 
@@ -21,19 +34,15 @@
                         <div class="flex items-center gap-3">
                             <img
                                 src="{{ $item->product->primaryImage
-                ? asset('storage/'.$item->product->primaryImage->image_path)
-                : asset('images/placeholder.png') }}"
+                                        ? asset('storage/'.$item->product->primaryImage->image_path)
+                                        : asset('images/placeholder.png') }}"
                                 class="w-10 h-10 object-contain">
 
                             <div>
-                                <p class="text-sm font-semibold">
-                                    {{ $item->product->name }}
-                                </p>
-
+                                <p class="text-sm font-semibold">{{ $item->product->name }}</p>
                                 <p class="text-xs text-gray-600">
                                     Rp {{ number_format($item->price,0,',','.') }}
                                 </p>
-
                                 <p class="text-xs">
                                     @if($item->purchase_type === 'credit')
                                     <span class="text-orange-600 font-semibold">
@@ -48,14 +57,10 @@
                             </div>
                         </div>
 
-                        <span class="text-sm">
-                            Qty: {{ $item->qty }}
-                        </span>
+                        <span class="text-sm">Qty: {{ $item->qty }}</span>
                     </div>
                     @empty
-                    <p class="text-sm text-center text-gray-500">
-                        Keranjang kosong
-                    </p>
+                    <p class="text-sm text-center text-gray-500">Keranjang kosong</p>
                     @endforelse
                 </div>
 
@@ -67,9 +72,7 @@
                         <input type="radio" name="payment_method" value="cash" required>
                         <div>
                             <p class="font-semibold text-sm">Cash</p>
-                            <p class="text-xs text-gray-500">
-                                Dengan pembayaran cash limit tidak terpotong
-                            </p>
+                            <p class="text-xs text-gray-500">Limit tidak terpotong</p>
                         </div>
                     </label>
 
@@ -77,9 +80,7 @@
                         <input type="radio" name="payment_method" value="credit">
                         <div>
                             <p class="font-semibold text-sm">Kredit</p>
-                            <p class="text-xs text-gray-500">
-                                Limit akan terpotong otomatis
-                            </p>
+                            <p class="text-xs text-gray-500">Limit akan terpotong otomatis</p>
                         </div>
                     </label>
                 </div>
@@ -104,12 +105,22 @@
                         Rp {{ number_format($total,0,',','.') }}
                     </p>
 
-                    <button
+                    <button type="submit"
                         class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-full w-full">
                         Bayar
                     </button>
                 </div>
             </div>
+
+            <!-- {{-- Tombol Download CSV --}}
+            @if (file_exists(storage_path('app/payments.csv')))
+            <div class="mb-4 text-right">
+                <a href="{{ route('payment.downloadCsv') }}"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Download CSV Mock
+                </a>
+            </div>
+            @endif -->
 
         </div>
     </form>

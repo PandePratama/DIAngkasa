@@ -4,16 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Transaction extends Model
+class Order extends Model
 {
     protected $fillable = [
         'user_id',
-        'nip',
-        'admin_name',
-        'amount',
-        'saldo_awal',
-        'saldo_akhir',
+        'payment_method',
+        'shipping_method',
+        'total'
     ];
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
     public function user()
     {

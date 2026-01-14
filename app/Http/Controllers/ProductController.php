@@ -17,7 +17,7 @@ class ProductController extends Controller
     {
         $products = Product::with('primaryImage', 'category')
             ->whereHas('category', function ($query) {
-                $query->whereIn('name', ['Smartphone', 'Laptop', 'Tablet']);
+                $query->whereIn('name', ['Gadget', 'Elektronik', 'Furniture']);
             })
             ->latest()
             ->get();

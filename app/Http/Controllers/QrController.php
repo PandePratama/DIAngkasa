@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\User;
+use App\Providers\CreditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class QrController extends Controller
 {
@@ -15,7 +18,7 @@ class QrController extends Controller
 
         if (!$nip) {
             return response()->json([
-                'status' => 'invalid',
+                'status'  => 'invalid',
                 'message' => 'QR kosong'
             ]);
         }
@@ -24,7 +27,7 @@ class QrController extends Controller
 
         if (!$user) {
             return response()->json([
-                'status' => 'invalid',
+                'status'  => 'invalid',
                 'message' => 'Data tidak ditemukan'
             ]);
         }
@@ -38,52 +41,55 @@ class QrController extends Controller
         ]);
     }
 
-    // 🔥 TRANSAKSI BELANJA
+    // 🔥 TRANSAKSI QR
     public function processTransaction(Request $request)
     {
         $request->validate([
-            'nip' => 'required',
+            'nip'    => 'required',
             'amount' => 'required|numeric|min:1'
         ]);
 
-        $user = User::where('nip', $request->nip)->first();
+        try {
+            DB::transaction(function () use ($request, &$result) {
 
-        if (!$user) {
+                $user = User::where('nip', $request->nip)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $sisa = CreditService::remaining($user);
+
+                if ($sisa < $request->amount) {
+                    throw ValidationException::withMessages([
+                        'amount' => 'Limit kredit tidak mencukupi'
+                    ]);
+                }
+
+                $saldoAwal  = $user->credit_limit;
+                $saldoAkhir = $saldoAwal - $request->amount;
+
+                $user->update(['credit_limit' => $saldoAkhir]);
+
+                Transaction::create([
+                    'user_id'     => $user->id,
+                    'nip'         => $user->nip,
+                    'admin_name'  => auth()->user()->name,
+                    'amount'      => $request->amount,
+                    'saldo_awal'  => $saldoAwal,
+                    'saldo_akhir' => $saldoAkhir
+                ]);
+
+                $result = [
+                    'status'      => 'success',
+                    'sisa_credit' => $saldoAkhir
+                ];
+            });
+
+            return response()->json($result);
+        } catch (ValidationException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User tidak ditemukan'
-            ]);
+                'message' => $e->errors()['amount'][0]
+            ], 422);
         }
-
-        if ($user->credit_limit < $request->amount) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Saldo tidak mencukupi'
-            ]);
-        }
-
-        $saldoAwal = $user->credit_limit;
-        $saldoAkhir = $saldoAwal - $request->amount;
-
-        // 🔻 Update saldo
-        $user->update([
-            'credit_limit' => $saldoAkhir
-        ]);
-
-        // 💾 Simpan transaksi
-        Transaction::create([
-            'user_id' => $user->id,
-            'nip' => $user->nip,
-            'admin_name' => Auth::user()->name,
-            'amount' => $request->amount,
-            'saldo_awal' => $saldoAwal,
-            'saldo_akhir' => $saldoAkhir
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Transaksi berhasil',
-            'sisa_credit' => $saldoAkhir
-        ]);
     }
 }

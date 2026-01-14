@@ -11,14 +11,14 @@ class MinimarketController extends Controller
     public function index(Request $request)
     {
         // Ambil kategori kecuali gadget
-        $categories = Category::whereNotIn('name', ['Smartphone', 'Laptop', 'Tablet'])
+        $categories = Category::whereNotIn('name', ['Gadget', 'Elektronik', 'Furniture'])
             ->orderBy('name')
             ->get();
 
         // Ambil produk minimarket
         $products = Product::with('primaryImage', 'category', 'brand')
             ->whereHas('category', function ($query) {
-                $query->whereNotIn('name', ['Smartphone', 'Laptop', 'Tablet']);
+                $query->whereNotIn('name', ['Gadget', 'Elektronik', 'Furniture']);
             })
             ->when($request->category, fn($q) => $q->where('category_id', $request->category))
             ->when($request->brand, fn($q) => $q->where('brand_id', $request->brand))
@@ -35,7 +35,7 @@ class MinimarketController extends Controller
             ->findOrFail($id);
 
         // Pastikan product punya category
-        if (!$product->category || in_array($product->category->name, ['Smartphone', 'Laptop', 'Tablet'])) {
+        if (!$product->category || in_array($product->category->name, ['Gadget', 'Elektronik', 'Furniture'])) {
             abort(403, 'Unauthorized action.');
         }
 

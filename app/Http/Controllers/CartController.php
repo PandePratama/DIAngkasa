@@ -93,24 +93,4 @@ class CartController extends Controller
         return back();
     }
 
-    // ================= PAYMENT =================
-
-    public function payment()
-    {
-        $cart = Cart::with('items.product.primaryImage')
-            ->where('user_id', Auth::id())
-            ->first();
-
-        if (!$cart || $cart->items->isEmpty()) {
-            return redirect()->route('cart.index')
-                ->with('error', 'Keranjang masih kosong');
-        }
-
-        $total = $cart->items->sum(fn($item) => $item->price * $item->qty);
-
-        return view('payment.index', [
-            'cartItems' => $cart->items,
-            'total' => $total,
-        ]);
-    }
 }

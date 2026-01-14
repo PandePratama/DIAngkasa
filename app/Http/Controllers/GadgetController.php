@@ -12,7 +12,7 @@ class GadgetController extends Controller
     public function index(Request $request)
     {
         // Ambil kategori khusus gadget
-        $categories = Category::whereIn('name', ['Smartphone', 'Laptop', 'Tablet'])
+        $categories = Category::whereIn('name', ['Gadget', 'Elektronik', 'Furniture'])
             ->orderBy('name')
             ->get();
 
@@ -22,7 +22,7 @@ class GadgetController extends Controller
         // Ambil produk gadget
         $products = Product::with(['primaryImage', 'category', 'brand'])
             ->whereHas('category', function ($q) {
-                $q->whereIn('name', ['Smartphone', 'Laptop', 'Tablet']);
+                $q->whereIn('name', ['Gadget', 'Elektronik', 'Furniture']);
             })
             ->when($request->category, function ($q) use ($request) {
                 $q->where('category_id', $request->category);
