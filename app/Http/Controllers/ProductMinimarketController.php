@@ -14,7 +14,7 @@ class ProductMinimarketController extends Controller
     {
         $products = Product::with('primaryImage', 'category')
             ->whereHas('category', function ($query) {
-                $query->whereNotIn('name', ['Smartphone', 'Laptop', '']);
+                $query->whereNotIn('name', ['Gadget', 'Elektronik', 'Furniture']);
             })
             ->latest()
             ->get();

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\AdminOrderController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\GadgetController;
 use App\Http\Controllers\MinimarketController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductMinimarketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
@@ -62,6 +65,16 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
 
     Route::get('/transactions', [TransactionController::class, 'index'])
         ->name('transactions.index');
+
+    Route::get('/admin/orders', [AdminOrderController::class, 'index'])
+        ->name('admin.orders.index');
+    Route::get('/admin/orders/{id}', [AdminOrderController::class, 'detailOrder'])
+        ->name('admin.orders.detail');
+
+    // Route::get(
+    //     '/admin/orders/{order}/download-csv',
+    //     [AdminOrderController::class, 'downloadOrderCsv']
+    // )->name('admin.orders.downloadCsv');
 });
 
 Route::middleware('auth')->group(function () {
@@ -93,11 +106,15 @@ Route::middleware('auth')->group(function () {
         ->name('cart.remove');
 
     // PAYMENT
-    Route::get('/payment', [CartController::class, 'payment'])
+    Route::get('/payment', [PaymentController::class, 'index'])
         ->name('payment.index');
 
-    Route::post('/payment', [CartController::class, 'paymentProcess'])
+    Route::post('/payment/process', [PaymentController::class, 'process'])
         ->name('payment.process');
+
+    // Download CSV mock
+    Route::get('/payment/download-csv', [PaymentController::class, 'downloadCsv'])
+        ->name('payment.downloadCsv');
 
     // CHECKOUT
     Route::get('/checkout', [CartController::class, 'checkout'])
