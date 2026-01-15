@@ -20,7 +20,7 @@
     {{-- PRODUK BEST SELLER GADGET --}}
     <section class="container mx-auto px-6 py-12">
         <h1 class="text-xl font-semibold mb-6 text-center">
-            GADGET BEST SELLER
+            PRODUK RADITYA
         </h1>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 mx-auto">
@@ -59,7 +59,7 @@
     {{-- PRODUK BEST SELLER MINIMARKET --}}
     <section class="container mx-auto px-6 py-12">
         <h2 class="text-xl font-semibold mb-6 text-center">
-            MINI BEST SELLER
+            PRODUK DIAMART
         </h2>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">

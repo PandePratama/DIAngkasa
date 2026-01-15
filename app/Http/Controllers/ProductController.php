@@ -132,13 +132,13 @@ class ProductController extends Controller
         DB::transaction(function () use ($product) {
             foreach ($product->images as $image) {
                 Storage::disk('public')->delete($image->image_path);
+                $image->delete(); // ini kuncinya
             }
 
             $product->delete();
         });
 
-        return redirect()
-            ->route('products.index')
+        return redirect()->route('products.index')
             ->with('success', 'Product deleted successfully');
     }
 

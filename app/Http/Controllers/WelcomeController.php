@@ -10,7 +10,7 @@ class WelcomeController extends Controller
     public function home()
     {
         // Gadget categories
-        $gadgetCategories = ['Smartphone', 'Laptop', 'Tablet'];
+        $gadgetCategories = ['Gadget', 'Elektronik', 'Furniture'];
 
         $productsGadget = Product::with('primaryImage', 'category')
             ->whereHas('category', function ($q) use ($gadgetCategories) {

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductMinimarketController extends Controller
 {
@@ -86,9 +87,19 @@ class ProductMinimarketController extends Controller
             ->with('success', 'Minimarket product updated successfully.');
     }
 
-    public function destroy(Product $product)
+    public function destroy($id)
     {
-        $product->delete();
+        $product = Product::with('images')->findOrFail($id);
+
+        DB::transaction(function () use ($product) {
+
+            foreach ($product->images as $image) {
+                Storage::disk('public')->delete($image->image_path);
+                $image->delete();
+            }
+
+            $product->delete();
+        });
 
         return redirect()->route('minimarket-products.index')
             ->with('success', 'Minimarket product deleted successfully.');
