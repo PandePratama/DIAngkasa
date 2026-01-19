@@ -70,22 +70,77 @@ class ProductMinimarketController extends Controller
 
     public function update(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('images')->findOrFail($id);
 
         $validated = $request->validate([
             'product_code' => 'required|unique:products,product_code,' . $product->id,
-            'name'        => 'required|max:150',
+            'name'         => 'required|max:150',
             'specification' => 'nullable|string',
-            'category_id' => 'required|exists:categories,id',
-            'stock'       => 'required|integer|min:0',
-            'price'       => 'required|numeric|min:0',
+            'category_id'  => 'required|exists:categories,id',
+            'stock'        => 'required|integer|min:0',
+            'price'        => 'required|numeric|min:0',
+            'images.*'     => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $product->update($validated);
+        DB::transaction(function () use ($request, $product, $validated) {
 
-        return redirect()->route('minimarket-products.index')
+            /* =====================
+           UPDATE DATA UTAMA
+        ===================== */
+            $product->update($validated);
+
+            /* =====================
+           HAPUS IMAGE LAMA
+        ===================== */
+            if ($request->deleted_images) {
+                $ids = explode(',', $request->deleted_images);
+
+                $images = ProductImage::whereIn('id', $ids)->get();
+
+                foreach ($images as $img) {
+                    Storage::disk('public')->delete($img->image_path);
+                    $img->delete();
+                }
+            }
+
+            /* =====================
+           UPLOAD IMAGE BARU
+        ===================== */
+            if ($request->hasFile('images')) {
+
+                // cek apakah masih ada primary
+                $hasPrimary = $product->images()
+                    ->where('is_primary', true)
+                    ->exists();
+
+                foreach ($request->file('images') as $index => $image) {
+
+                    $path = $image->store('products', 'public');
+
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $path,
+                        'is_primary' => !$hasPrimary && $index === 0,
+                    ]);
+                }
+            }
+
+            /* =====================
+           JAGA PRIMARY IMAGE
+        ===================== */
+            if (!$product->images()->where('is_primary', true)->exists()) {
+                $firstImage = $product->images()->first();
+                if ($firstImage) {
+                    $firstImage->update(['is_primary' => true]);
+                }
+            }
+        });
+
+        return redirect()
+            ->route('minimarket-products.index')
             ->with('success', 'Minimarket product updated successfully.');
     }
+
 
     public function destroy($id)
     {

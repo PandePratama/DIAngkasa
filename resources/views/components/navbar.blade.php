@@ -2,7 +2,7 @@
     <div class="h-full flex justify-between items-center px-8">
         {{-- Logo --}}
         <div class="font-bold text-lg">
-            <a href="{{ route('home') }}">DIAngkasa</a>
+            <a href="{{ route('home') }}">DIRADITYA</a>
         </div>
 
         {{-- Hamburger --}}
@@ -13,8 +13,8 @@
         {{-- Desktop Menu --}}
         <nav class="hidden md:flex items-center space-x-6">
             <a href="{{ route('home') }}" class="hover:text-gray-200">Home</a>
-            <a href="{{ route('minimarket.index') }}" class="hover:text-gray-200">Minimarket</a>
-            <a href="{{ route('gadget.index') }}" class="hover:text-gray-200">Gadget</a>
+            <a href="{{ route('minimarket.index') }}" class="hover:text-gray-200">Diamart</a>
+            <a href="{{ route('gadget.index') }}" class="hover:text-gray-200">Raditya</a>
 
             {{-- Cart --}}
             <a href="{{ route('cart.index') }}" class="relative text-lg hover:text-gray-200">

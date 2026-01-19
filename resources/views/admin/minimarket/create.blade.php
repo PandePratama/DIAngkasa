@@ -23,33 +23,36 @@
         </div>
         @endif
 
-        <form action="{{ route('minimarket-products.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('minimarket-products.store') }}"
+              method="POST"
+              enctype="multipart/form-data">
             @csrf
 
             {{-- Product Code --}}
             <div class="form-group">
                 <label>Product Code</label>
                 <input type="text"
-                    name="product_code"
-                    value="{{ old('product_code') }}"
-                    class="form-control"
-                    required>
+                       name="product_code"
+                       value="{{ old('product_code') }}"
+                       class="form-control"
+                       required>
             </div>
 
             {{-- Product Name --}}
             <div class="form-group">
                 <label>Product Name</label>
                 <input type="text"
-                    name="name"
-                    value="{{ old('name') }}"
-                    class="form-control"
-                    required>
+                       name="name"
+                       value="{{ old('name') }}"
+                       class="form-control"
+                       required>
             </div>
 
             {{-- Specifications --}}
             <div class="form-group">
                 <label>Specifications</label>
-                <textarea name="specification" class="form-control">{{ old('specification') }}</textarea>
+                <textarea name="specification"
+                          class="form-control">{{ old('specification') }}</textarea>
             </div>
 
             {{-- Category --}}
@@ -72,11 +75,11 @@
                     <div class="form-group">
                         <label>Stock</label>
                         <input type="number"
-                            name="stock"
-                            value="{{ old('stock', 0) }}"
-                            class="form-control"
-                            min="0"
-                            required>
+                               name="stock"
+                               value="{{ old('stock', 0) }}"
+                               class="form-control"
+                               min="0"
+                               required>
                     </div>
                 </div>
 
@@ -84,11 +87,11 @@
                     <div class="form-group">
                         <label>Cash Price</label>
                         <input type="number"
-                            name="price"
-                            value="{{ old('price') }}"
-                            class="form-control"
-                            step="0.01"
-                            required>
+                               name="price"
+                               value="{{ old('price') }}"
+                               class="form-control"
+                               step="0.01"
+                               required>
                     </div>
                 </div>
             </div>
@@ -99,10 +102,10 @@
                     <div class="form-group">
                         <label>Credit 3 Months</label>
                         <input type="number"
-                            name="price_3_months"
-                            value="{{ old('price_3_months') }}"
-                            class="form-control"
-                            step="0.01">
+                               name="price_3_months"
+                               value="{{ old('price_3_months') }}"
+                               class="form-control"
+                               step="0.01">
                     </div>
                 </div>
 
@@ -110,10 +113,10 @@
                     <div class="form-group">
                         <label>Credit 6 Months</label>
                         <input type="number"
-                            name="price_6_months"
-                            value="{{ old('price_6_months') }}"
-                            class="form-control"
-                            step="0.01">
+                               name="price_6_months"
+                               value="{{ old('price_6_months') }}"
+                               class="form-control"
+                               step="0.01">
                     </div>
                 </div>
 
@@ -121,10 +124,10 @@
                     <div class="form-group">
                         <label>Credit 9 Months</label>
                         <input type="number"
-                            name="price_9_months"
-                            value="{{ old('price_9_months') }}"
-                            class="form-control"
-                            step="0.01">
+                               name="price_9_months"
+                               value="{{ old('price_9_months') }}"
+                               class="form-control"
+                               step="0.01">
                     </div>
                 </div>
 
@@ -132,27 +135,35 @@
                     <div class="form-group">
                         <label>Credit 12 Months</label>
                         <input type="number"
-                            name="price_12_months"
-                            value="{{ old('price_12_months') }}"
-                            class="form-control"
-                            step="0.01">
+                               name="price_12_months"
+                               value="{{ old('price_12_months') }}"
+                               class="form-control"
+                               step="0.01">
                     </div>
                 </div>
             </div>
 
-            {{-- Images --}}
+            {{-- IMAGES (DISAMAKAN DENGAN products/create) --}}
             <div class="form-group mt-3">
                 <label>Product Images</label>
+
+                <div class="upload-box"
+                     onclick="document.getElementById('images').click()">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                    <p class="mb-0">Click to upload images</p>
+                    <small class="text-muted">
+                        Image pertama akan menjadi <strong>Primary Image</strong>
+                    </small>
+                </div>
+
                 <input type="file"
-                    name="images[]"
-                    class="form-control-file"
-                    multiple
-                    accept="image/*"
-                    onchange="previewImages(event)"
-                    required>
-                <small class="text-muted">
-                    Image pertama akan otomatis menjadi <strong>Primary Image</strong>
-                </small>
+                       id="images"
+                       name="images[]"
+                       class="d-none"
+                       multiple
+                       accept="image/*"
+                       onchange="handleImageUpload(event)"
+                       required>
             </div>
 
             {{-- Preview --}}
@@ -170,37 +181,89 @@
 </div>
 @endsection
 
+{{-- STYLE --}}
+@push('styles')
+<style>
+.upload-box {
+    border: 2px dashed #ced4da;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background: #f8f9fa;
+    transition: .3s;
+}
+.upload-box:hover {
+    background: #e9ecef;
+    border-color: #4e73df;
+}
+.upload-box i {
+    color: #4e73df;
+}
+</style>
+@endpush
+
+{{-- SCRIPT --}}
 @push('scripts')
 <script>
-    function previewImages(event) {
-        const preview = document.getElementById('image-preview');
-        preview.innerHTML = '';
+let selectedFiles = [];
 
-        Array.from(event.target.files).forEach((file, index) => {
-            const reader = new FileReader();
+function handleImageUpload(event){
+    selectedFiles = Array.from(event.target.files);
+    renderPreview();
+}
 
-            reader.onload = function(e) {
-                const col = document.createElement('div');
-                col.className = 'col-md-3 mb-3';
+function renderPreview(){
+    const preview = document.getElementById('image-preview');
+    preview.innerHTML = '';
 
-                col.innerHTML = `
-                <div class="card">
-                    <img src="${e.target.result}" 
-                         class="card-img-top" 
-                         style="height:150px;object-fit:cover;">
+    selectedFiles.forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+            const col = document.createElement('div');
+            col.className = 'col-md-3 mb-3';
+
+            col.innerHTML = `
+                <div class="card shadow-sm position-relative">
+
+                    <button type="button"
+                            class="btn btn-danger btn-sm position-absolute"
+                            style="top:5px;right:5px"
+                            onclick="removeImage(${index})">
+                        &times;
+                    </button>
+
+                    <img src="${e.target.result}"
+                         class="card-img-top"
+                         style="height:160px;object-fit:cover">
+
                     <div class="card-body text-center p-2">
-                        ${index === 0 
-                            ? '<span class="badge badge-success">Primary</span>' 
-                            : ''}
+                        ${index === 0
+                            ? '<span class="badge badge-success">Primary</span>'
+                            : '<span class="badge badge-secondary">Image</span>'}
                     </div>
+
                 </div>
             `;
+            preview.appendChild(col);
+        };
 
-                preview.appendChild(col);
-            };
+        reader.readAsDataURL(file);
+    });
 
-            reader.readAsDataURL(file);
-        });
-    }
+    syncFileInput();
+}
+
+function removeImage(index){
+    selectedFiles.splice(index, 1);
+    renderPreview();
+}
+
+function syncFileInput(){
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('images').files = dt.files;
+}
 </script>
 @endpush

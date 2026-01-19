@@ -161,21 +161,25 @@
             {{-- Images --}}
             <div class="form-group mt-3">
                 <label>Product Images</label>
+
+                <div class="upload-box" onclick="document.getElementById('images').click()">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                    <p class="mb-0">Click to upload images</p>
+                    <small class="text-muted">Image pertama akan menjadi Primary Image</small>
+                </div>
+
                 <input type="file"
+                    id="images"
                     name="images[]"
-                    class="form-control-file"
+                    class="d-none"
                     multiple
                     accept="image/*"
-                    onchange="previewImages(event)"
+                    onchange="handleImageUpload(event)"
                     required>
-                <small class="text-muted">
-                    Image pertama akan otomatis menjadi <strong>Primary Image</strong>
-                </small>
             </div>
 
             {{-- Preview --}}
             <div class="row mt-3" id="image-preview"></div>
-
             {{-- Submit --}}
             <div class="text-right mt-4">
                 <button type="submit" class="btn btn-primary">
@@ -186,25 +190,56 @@
         </form>
     </div>
 </div>
+
 @if ($errors->any())
-    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <ul class="list-disc list-inside">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
+<div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+    <ul class="list-disc list-inside">
+        @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
 @endif
 
 @endsection
 
+@push('styles')
+<style>
+    .upload-box {
+        border: 2px dashed #ced4da;
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+    .upload-box:hover {
+        background: #e9ecef;
+        border-color: #4e73df;
+    }
+
+    .upload-box i {
+        color: #4e73df;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
-    function previewImages(event) {
+    let selectedFiles = [];
+
+    function handleImageUpload(event) {
+        selectedFiles = Array.from(event.target.files);
+        renderPreview();
+    }
+
+    function renderPreview() {
         const preview = document.getElementById('image-preview');
         preview.innerHTML = '';
 
-        Array.from(event.target.files).forEach((file, index) => {
+        selectedFiles.forEach((file, index) => {
             const reader = new FileReader();
 
             reader.onload = function(e) {
@@ -212,14 +247,24 @@
                 col.className = 'col-md-3 mb-3';
 
                 col.innerHTML = `
-                <div class="card">
+                <div class="card shadow-sm position-relative">
+                    
+                    <!-- DELETE BUTTON -->
+                    <button type="button"
+                        onclick="removeImage(${index})"
+                        class="btn btn-sm btn-danger position-absolute"
+                        style="top:5px; right:5px;">
+                        &times;
+                    </button>
+
                     <img src="${e.target.result}"
                         class="card-img-top"
-                        style="height:150px;object-fit:cover;">
+                        style="height:160px; object-fit:cover;">
+
                     <div class="card-body text-center p-2">
                         ${index === 0
                             ? '<span class="badge badge-success">Primary</span>'
-                            : ''}
+                            : '<span class="badge badge-secondary">Image</span>'}
                     </div>
                 </div>
             `;
@@ -229,6 +274,23 @@
 
             reader.readAsDataURL(file);
         });
+
+        syncFileInput();
+    }
+
+    function removeImage(index) {
+        selectedFiles.splice(index, 1);
+        renderPreview();
+    }
+
+    function syncFileInput() {
+        const dataTransfer = new DataTransfer();
+
+        selectedFiles.forEach(file => {
+            dataTransfer.items.add(file);
+        });
+
+        document.getElementById('images').files = dataTransfer.files;
     }
 </script>
 @endpush
