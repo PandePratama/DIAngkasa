@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Providers\CreditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class PaymentController extends Controller
         $cartItems = $cart ? $cart->items : collect();
 
         // 🔥 TOTAL SELALU DARI PRODUCT PRICE
-        $total = $cartItems->sum(fn ($item) => $item->qty * $item->product->price);
+        $total = $cartItems->sum(fn($item) => $item->qty * $item->product->price);
 
         return view('payment.index', compact('cartItems', 'total'));
     }
@@ -44,12 +45,11 @@ class PaymentController extends Controller
             return back()->with('error', 'Keranjang kosong');
         }
 
-        // 🔥 HITUNG TOTAL ORDER
-        $total = $cart->items->sum(fn ($item) => $item->qty * $item->product->price);
+        // TOTAL
+        $total = $cart->items->sum(fn($item) => $item->qty * $item->product->price);
 
-        // 🔐 VALIDASI CREDIT (SEBELUM TRANSACTION)
+        // VALIDASI CREDIT
         if ($request->payment_method === 'credit') {
-
             $sisaLimit = CreditService::remaining($user);
 
             if ($sisaLimit < $total) {
@@ -57,31 +57,45 @@ class PaymentController extends Controller
             }
         }
 
-        // 🔥 TRANSACTION AMAN
         DB::transaction(function () use ($request, $user, $cart, $total) {
 
-            // 🔻 POTONG CREDIT (JIKA CREDIT)
+            // 🔻 POTONG CREDIT
             if ($request->payment_method === 'credit') {
                 $user->decrement('credit_limit', $total);
             }
 
-            // 💾 SIMPAN ORDER
+            // 💾 CREATE ORDER
             $order = Order::create([
                 'user_id'         => $user->id,
                 'payment_method'  => $request->payment_method,
                 'shipping_method' => $request->shipping_method
             ]);
 
-            // 💾 SIMPAN ORDER ITEMS
+            // 🔁 LOOP ITEM CART
             foreach ($cart->items as $item) {
+
+                // 🔒 LOCK PRODUCT ROW
+                $product = Product::where('id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // ❌ CEK STOCK
+                if ($product->stock < $item->qty) {
+                    throw new \Exception("Stock {$product->name} tidak mencukupi");
+                }
+
+                // 🔻 POTONG STOCK
+                $product->decrement('stock', $item->qty);
+
+                // 💾 ORDER ITEM
                 OrderItem::create([
                     'order_id'   => $order->id,
-                    'product_id' => $item->product_id,
+                    'product_id' => $product->id,
                     'qty'        => $item->qty,
                 ]);
             }
 
-            // 🧹 KOSONGKAN CART
+            // 🧹 CLEAR CART
             $cart->items()->delete();
         });
 

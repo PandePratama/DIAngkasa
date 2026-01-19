@@ -3,9 +3,9 @@
 
         {{-- Tentang --}}
         <div>
-            <h3 class="text-lg font-semibold mb-4">Tentang DIAngkasa</h3>
+            <h3 class="text-lg font-semibold mb-4">Tentang DiRaditya</h3>
             <p class="text-gray-200 text-sm">
-                DIAngkasa Marketplace menyediakan berbagai produk gadget dan kebutuhan rumah tangga dengan harga terbaik dan pelayanan cepat.
+                DiRaditya Marketplace menyediakan berbagai produk gadget dan kebutuhan rumah tangga dengan harga terbaik dan pelayanan cepat.
             </p>
         </div>
 
@@ -24,7 +24,7 @@
         <div>
             <h3 class="text-lg font-semibold mb-4">Kontak & Sosial Media</h3>
             <ul class="space-y-2 text-gray-200 text-sm">
-                <li>Email: support@diangkasa.com</li>
+                <li>Email: support@diraditya.com</li>
                 <li>Telepon: +62 851 1932 9510</li>
                 <li class="flex space-x-3 mt-2">
                     <a href="#" class="hover:text-white"><i class="fa-brands fa-facebook-f"></i></a>
@@ -37,6 +37,6 @@
     </div>
 
     <div class="mt-8 text-center text-gray-300 text-sm">
-        &copy; {{ date('Y') }} DIAngkasa. Semua hak cipta dilindungi.
+        &copy; {{ date('Y') }} DiRaditya. Semua hak cipta dilindungi.
     </div>
 </footer>

@@ -17,8 +17,14 @@
         <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
-        @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+        @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
         @endif
 
         {{-- FORM --}}
@@ -34,10 +40,8 @@
                 <input type="text"
                     name="product_code"
                     value="{{ old('product_code', $product->product_code) }}"
-                    class="form-control @error('product_code') is-invalid @enderror">
-                @error('product_code')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                    class="form-control"
+                    required>
             </div>
 
             {{-- Product Name --}}
@@ -46,16 +50,15 @@
                 <input type="text"
                     name="name"
                     value="{{ old('name', $product->name) }}"
-                    class="form-control @error('name') is-invalid @enderror">
-                @error('name')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                    class="form-control"
+                    required>
             </div>
 
-            <!-- Specifications -->
+            {{-- Specification --}}
             <div class="form-group">
                 <label>Specification</label>
-                <textarea name="specification" class="form-control">{{ old('specification', $product->specification) }}</textarea>
+                <textarea name="specification"
+                    class="form-control">{{ old('specification', $product->specification) }}</textarea>
             </div>
 
             {{-- Category & Brand --}}
@@ -63,9 +66,7 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>Category</label>
-                        <select name="category_id"
-                            class="form-control @error('category_id') is-invalid @enderror">
-                            <option value="">-- Select Category --</option>
+                        <select name="category_id" class="form-control" required>
                             @foreach ($categories as $category)
                             <option value="{{ $category->id }}"
                                 {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
@@ -73,18 +74,13 @@
                             </option>
                             @endforeach
                         </select>
-                        @error('category_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>Brand</label>
-                        <select name="brand_id"
-                            class="form-control @error('brand_id') is-invalid @enderror">
-                            <option value="">-- Select Brand --</option>
+                        <select name="brand_id" class="form-control" required>
                             @foreach ($brands as $brand)
                             <option value="{{ $brand->id }}"
                                 {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
@@ -92,155 +88,198 @@
                             </option>
                             @endforeach
                         </select>
-                        @error('brand_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
                 </div>
             </div>
 
-            {{-- Stock & Cash Price --}}
+            {{-- Stock & Price --}}
             <div class="row">
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Stock</label>
-                        <input type="number"
-                            name="stock"
-                            min="0"
-                            value="{{ old('stock', $product->stock) }}"
-                            class="form-control @error('stock') is-invalid @enderror">
-                        @error('stock')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                    <label>Stock</label>
+                    <input type="number"
+                        name="stock"
+                        min="0"
+                        value="{{ old('stock', $product->stock) }}"
+                        class="form-control"
+                        required>
                 </div>
 
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Cash Price</label>
-                        <input type="number"
-                            name="price"
-                            step="0.01"
-                            value="{{ old('price', $product->price) }}"
-                            class="form-control @error('price') is-invalid @enderror">
-                        @error('price')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                    <label>Cash Price</label>
+                    <input type="number"
+                        name="price"
+                        step="0.01"
+                        value="{{ old('price', $product->price) }}"
+                        class="form-control"
+                        required>
                 </div>
             </div>
 
-            {{-- Credit Prices --}}
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Credit 3 Months</label>
-                        <input type="number"
-                            name="price_3_months"
-                            step="0.01"
-                            value="{{ old('price_3_months', $product->price_3_months) }}"
-                            class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Credit 6 Months</label>
-                        <input type="number"
-                            name="price_6_months"
-                            step="0.01"
-                            value="{{ old('price_6_months', $product->price_6_months) }}"
-                            class="form-control">
-                    </div>
+            {{-- Upload Images (SAMA SEPERTI CREATE) --}}
+            <div class="form-group mt-4">
+                <label>Product Images</label>
+
+                <div class="upload-box" onclick="document.getElementById('images').click()">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                    <p class="mb-0">Click to upload images</p>
+                    <small class="text-muted">
+                        Image pertama akan menjadi <strong>Primary Image</strong>
+                    </small>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Credit 9 Months</label>
-                        <input type="number"
-                            name="price_9_months"
-                            step="0.01"
-                            value="{{ old('price_9_months', $product->price_9_months) }}"
-                            class="form-control">
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Credit 12 Months</label>
-                        <input type="number"
-                            name="price_12_months"
-                            step="0.01"
-                            value="{{ old('price_12_months', $product->price_12_months) }}"
-                            class="form-control">
-                    </div>
-                </div>
-            </div>
-
-            {{-- Upload Images --}}
-            <div class="form-group mt-3">
-                <label>Add New Images</label>
                 <input type="file"
+                    id="images"
                     name="images[]"
-                    class="form-control-file @error('images.*') is-invalid @enderror"
-                    multiple>
-                <small class="text-muted">
-                    Upload gambar tambahan (gambar lama tidak dihapus)
-                </small>
-                @error('images.*')
-                <div class="text-danger small">{{ $message }}</div>
-                @enderror
+                    class="d-none"
+                    multiple
+                    accept="image/*"
+                    onchange="handleImageUpload(event)">
+
+                <input type="hidden" name="deleted_images" id="deleted_images">
             </div>
 
-            {{-- Action Buttons --}}
-            <div class="mt-4 text-right">
+            {{-- Preview --}}
+            <div class="row mt-3" id="image-preview">
+                {{-- EXISTING IMAGES --}}
+                @foreach ($product->images as $image)
+                <div class="col-md-3 mb-3 image-existing" data-id="{{ $image->id }}">
+                    <div class="card shadow-sm position-relative">
+
+                        <button type="button"
+                            class="btn btn-danger btn-sm position-absolute"
+                            style="top:5px;right:5px"
+                            onclick="removeExisting({{ $image->id }});"
+                            data-image-id="{{ $image->id }}">
+                            &times;
+                        </button>
+
+                        <img src="{{ asset('storage/'.$image->image_path) }}"
+                            class="card-img-top"
+                            style="height:160px;object-fit:cover">
+
+                        <div class="card-body text-center p-2">
+                            @if ($loop->first)
+                            <span class="badge badge-success">Primary</span>
+                            @endif
+                        </div>
+
+                    </div>
+                </div>
+                @endforeach
+
+            </div>
+
+            {{-- Submit --}}
+            <div class="text-right mt-4">
                 <button class="btn btn-primary">
                     <i class="fas fa-save"></i> Update Product
                 </button>
-
-                <a href="{{ route('products.index') }}"
-                    class="btn btn-secondary">
+                <a href="{{ route('products.index') }}" class="btn btn-secondary">
                     Back
                 </a>
             </div>
         </form>
 
-        {{-- IMAGE LIST --}}
-        <hr>
-        <h6 class="font-weight-bold mb-3">Product Images</h6>
-
-        <div class="row">
-            @forelse ($product->images as $image)
-            <div class="col-md-3 mb-4">
-                <div class="card">
-                    <img src="{{ asset('storage/' . $image->image_path) }}"
-                        class="card-img-top"
-                        style="height:150px;object-fit:cover">
-
-                    <div class="card-body text-center p-2">
-                        @if ($image->is_primary)
-                        <span class="badge badge-success mb-2">Primary</span>
-                        @endif
-
-                        <form action="{{ route('products.images.destroy', $image->id) }}"
-                            method="POST"
-                            onsubmit="return confirm('Delete this image?')">
-                            @csrf
-                            @method('DELETE')
-
-                            <button class="btn btn-danger btn-sm btn-block">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            @empty
-            <div class="col-12">
-                <p class="text-muted text-center">No images uploaded</p>
-            </div>
-            @endforelse
-        </div>
-
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .upload-box {
+        border: 2px dashed #ced4da;
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        background: #f8f9fa;
+        transition: 0.3s;
+    }
+
+    .upload-box:hover {
+        background: #e9ecef;
+        border-color: #4e73df;
+    }
+
+    .upload-box i {
+        color: #4e73df;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+    let newFiles = [];
+    let deletedImages = [];
+
+    /* upload image baru */
+    function handleImageUpload(event) {
+        newFiles = Array.from(event.target.files);
+        renderNewImages();
+    }
+
+    /* render image baru */
+    function renderNewImages() {
+        const preview = document.getElementById('image-preview');
+
+        // hapus preview NEW saja
+        document.querySelectorAll('.image-new').forEach(el => el.remove());
+
+        newFiles.forEach((file, index) => {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 mb-3 image-new';
+
+                col.innerHTML = `
+                <div class="card shadow-sm position-relative">
+
+                    <button type="button"
+                        class="btn btn-danger btn-sm position-absolute"
+                        style="top:5px;right:5px"
+                        onclick="removeNew(${index})">
+                        &times;
+                    </button>
+
+                    <img src="${e.target.result}"
+                        class="card-img-top"
+                        style="height:160px;object-fit:cover">
+
+                    <div class="card-body text-center p-2">
+                        <span class="badge badge-secondary">New</span>
+                    </div>
+                </div>
+            `;
+                preview.appendChild(col);
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        syncInput();
+    }
+
+    /* hapus image baru */
+    function removeNew(index) {
+        newFiles.splice(index, 1);
+        renderNewImages();
+    }
+
+    /* hapus image lama */
+    function removeExisting(id) {
+        deletedImages.push(id);
+        document.getElementById('deleted_images').value = deletedImages.join(',');
+
+        const el = document.querySelector('.image-existing[data-id="' + id + '"]');
+        if (el) el.remove();
+    }
+
+    /* sync input file */
+    function syncInput() {
+        const dt = new DataTransfer();
+        newFiles.forEach(file => dt.items.add(file));
+        document.getElementById('images').files = dt.files;
+    }
+</script>
+@endpush

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - DIAngkasa</title>
+    <title>Login - DiRaditya</title>
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -74,7 +74,8 @@
     <div class="login-box px-3">
         <div class="card">
             <div class="brand-title">
-                <img src="{{ asset('sbadmin/img/Raditya logo R.png') }}" alt="DIAngkasa Logo" class="brand-logo mt-2">
+                <img src="{{ asset('sbadmin/img/Raditya logo R.png') }}" alt="Raditya Logo" class="brand-logo mt-2">
+                <img src="{{ asset('sbadmin/img/Logo Dia_Green.png') }}" alt="Diamar Logo" class="brand-logo mt-2">
             </div>
             <div class="card-body px-4 pt-1">
                 <h5 class="text-center mb-4 fw-bold">Login</h5>
