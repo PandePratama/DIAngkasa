@@ -104,6 +104,13 @@
                 Addons
             </div>
 
+            <!-- Nav Item - Unit Kerja -->
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('unit-kerja.index') }}">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>Unit Kerja</span></a>
+            </li>
+
             <!-- Nav Item - Users -->
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('users.index') }}">

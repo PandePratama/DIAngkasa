@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UnitKerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -10,67 +11,61 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::latest()->get();
+        $users = User::with('unitKerja')->latest()->get();
         return view('admin.users.index', compact('users'));
     }
 
     public function create()
     {
-        return view('admin.users.create');
+        $unitKerja = UnitKerja::orderBy('unit_name')->get();
+        return view('admin.users.create', compact('unitKerja'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name'       => 'required|string|max:100',
-            'username'   => 'required|string|unique:users,username',
-            'email'      => 'nullable|email|unique:users,email',
-            'nip'        => 'nullable|string|unique:users,nip',
-            'unit_kerja' => 'nullable|string|max:100',
-            'credit_limit' => 'nullable|numeric|min:0',
-            'password'   => 'required|min:6|confirmed',
+            'name'           => 'required|string|max:100',
+            'email'          => 'required|email|unique:users,email',
+            'nip'            => 'nullable|string|unique:users,nip',
+            'id_unit_kerja'  => 'required|exists:unit_kerja,id',
+            'password'       => 'required|min:6|confirmed',
         ]);
 
         User::create([
-            'name'       => $request->name,
-            'username'   => $request->username,
-            'email'      => $request->email,
-            'nip'        => $request->nip,
-            'unit_kerja' => $request->unit_kerja,
-            'credit_limit' => $request->credit_limit ?? 0,
-            'role'       => 'employee', // otomatis
-            'password'   => Hash::make($request->password),
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'nip'           => $request->nip,
+            'id_unit_kerja' => $request->id_unit_kerja,
+            'role'          => 'user',
+            'password'      => Hash::make($request->password),
         ]);
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User successfully created');
+            ->with('success', 'User berhasil dibuat');
     }
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $unitKerja = UnitKerja::orderBy('unit_name')->get();
+        return view('admin.users.edit', compact('user', 'unitKerja'));
     }
 
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name'       => 'required|string|max:100',
-            'username'   => 'required|string|unique:users,username,' . $user->id,
-            'email'      => 'nullable|email|unique:users,email,' . $user->id,
-            'nip'        => 'nullable|string|unique:users,nip,' . $user->id,
-            'unit_kerja' => 'nullable|string|max:100',
-            'credit_limit' => 'nullable|numeric|min:0',
-            'password'   => 'nullable|min:6|confirmed',
+            'name'           => 'required|string|max:100',
+            'email'          => 'required|email|unique:users,email,' . $user->id,
+            'nip'            => 'nullable|string|unique:users,nip,' . $user->id,
+            'id_unit_kerja'  => 'required|exists:unit_kerja,id',
+            'password'       => 'nullable|min:6|confirmed',
         ]);
 
         $data = $request->only([
             'name',
-            'username',
             'email',
             'nip',
-            'unit_kerja',
-            'credit_limit',
+            'id_unit_kerja',
         ]);
 
         if ($request->filled('password')) {
@@ -81,20 +76,19 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User successfully updated');
+            ->with('success', 'User berhasil diperbarui');
     }
 
     public function destroy(User $user)
     {
-        // Proteksi super admin
         if ($user->role === 'super_admin') {
-            return back()->with('failed', 'Super Admin cannot be deleted');
+            return back()->with('failed', 'Super Admin tidak bisa dihapus');
         }
 
         $user->delete();
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User successfully deleted');
+            ->with('success', 'User berhasil dihapus');
     }
 }

@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\Brands;
 use Illuminate\Http\Request;
 
 class BrandController extends Controller
 {
     public function index()
     {
-        $brands = Brand::latest()->get();
+        $brands = Brands::latest()->get();
         return view('admin.brands.index', compact('brands'));
     }
 
@@ -24,7 +25,7 @@ class BrandController extends Controller
             'name' => 'required|unique:brands,name',
         ]);
 
-        Brand::create([
+        Brands::create([
             'name' => $request->name,
         ]);
 
@@ -33,13 +34,13 @@ class BrandController extends Controller
             ->with('success', 'Brand created successfully');
     }
 
-    public function edit(Brand $brand)
+    public function edit(Brands $brand)
     {
-        $brands = Brand::orderBy('name')->get();
+        $brands = Brands::orderBy('name')->get();
         return view('admin.brands.edit', compact('brand', 'brands'));
     }
 
-    public function update(Request $request, Brand $brand)
+    public function update(Request $request, Brands $brand)
     {
         $request->validate([
             'name' => 'required|unique:brands,name,' . $brand->id,
@@ -54,7 +55,7 @@ class BrandController extends Controller
             ->with('success', 'Brand updated successfully');
     }
 
-    public function destroy(Brand $brand)
+    public function destroy(Brands $brand)
     {
         $brand->delete();
 

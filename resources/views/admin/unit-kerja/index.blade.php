@@ -1,49 +1,43 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Users')
+@section('title', 'Unit Kerja')
 
 @section('content')
 <div class="card shadow mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Users</h6>
-        <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Add User
+        <h6 class="m-0 font-weight-bold text-primary">Unit Kerja</h6>
+        <a href="{{ route('unit-kerja.create') }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Add Unit Kerja
         </a>
     </div>
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered table-hover" width="100%">
+
+            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
                 <thead class="thead-light">
                     <tr>
-                        <th width="50">No</th>
+                        <th width="50">#</th>
                         <th>Name</th>
-                        <th>Email</th>
-                        <th>NIP</th>
-                        <th>Unit Kerja</th>
-                        <th width="120">Action</th>
+                        <th width="150">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($users as $user)
+                    @forelse ($unitKerja as $unit_kerja)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $user->name }}</td>
-                        <td>{{ $user->email }}</td>
-                        <td>{{ $user->nip ?? '-' }}</td>
-                        <td>{{ $user->unitKerja->unit_name ?? '-' }}</td>
+                        <td>{{ $unit_kerja->unit_name }}</td>
                         <td>
-                            <a href="{{ route('users.edit', $user->id) }}"
+                            <a href="{{ route('unit-kerja.edit', $unit_kerja->id) }}"
                                 class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i>
                             </a>
 
-                            <form action="{{ route('users.destroy', $user->id) }}"
-                                method="POST"
-                                class="d-inline">
+                            <form action="{{ route('unit-kerja.destroy', $unit_kerja->id) }}"
+                                method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
-                                <button onclick="return confirm('Delete this user?')"
+                                <button onclick="return confirm('Delete this unit kerja?')"
                                     class="btn btn-danger btn-sm">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -52,12 +46,13 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">
-                            No users found
+                        <td colspan="3" class="text-center text-muted">
+                            No unit kerja found
                         </td>
                     </tr>
                     @endforelse
                 </tbody>
+
             </table>
         </div>
     </div>

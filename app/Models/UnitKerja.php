@@ -11,6 +11,8 @@ class UnitKerja extends Model
 
     protected $table = 'unit_kerja'; // Nama tabel custom
     protected $guarded = ['id'];
+    protected $fillable = ['unit_name'];
+
 
     public function users()
     {

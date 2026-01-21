@@ -16,6 +16,7 @@ use App\Http\Controllers\ProductMinimarketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\UnitKerjaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 
@@ -41,6 +42,7 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
     Route::resource('products', ProductController::class);
     Route::resource('minimarket-products', ProductMinimarketController::class);
     Route::resource('brands', BrandController::class);
+    Route::resource('unit-kerja', UnitKerjaController::class);
     Route::resource('users', UserController::class);
 
     Route::delete(

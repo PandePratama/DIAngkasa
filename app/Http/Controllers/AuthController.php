@@ -33,7 +33,7 @@ class AuthController extends Controller
                 return redirect()->route('dashboard');
             }
 
-            if ($user->role === 'employee') {
+            if ($user->role === 'user') {
                 return redirect()->route('home'); // ✅ BENAR
             }
 
