@@ -4,20 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Testing\Fluent\Concerns\Has;
 
-class Category extends Model
+class Brands extends Model
 {
     use HasFactory;
     protected $guarded = ['id'];
 
-    // Sama seperti brand, relasi ke kedua jenis produk
     public function productsDiamart()
     {
-        return $this->hasMany(ProductDiamart::class, 'id_category');
+        return $this->hasMany(ProductDiamart::class, 'id_brand');
     }
 
     public function productsDiraditya()
     {
-        return $this->hasMany(ProductRaditya::class, 'id_category');
+        return $this->hasMany(ProductRaditya::class, 'id_brand');
     }
 }

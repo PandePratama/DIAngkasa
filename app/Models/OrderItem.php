@@ -2,25 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
-    protected $fillable = [
-        'order_id',
-        'product_id',
-        'qty',
-        'price',
-        'purchase_type',
-        'tenor'
-    ];
+    use HasFactory;
+    protected $guarded = ['id'];
 
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
     public function order()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Order::class, 'id_order');
+    }
+
+    // Relasi ke Product (Untuk keperluan tracking link, meski snapshot data sudah disimpan)
+    public function productDiamart()
+    {
+        return $this->belongsTo(ProductDiamart::class, 'id_product_diamart');
+    }
+
+    public function productDiraditya()
+    {
+        return $this->belongsTo(ProductRaditya::class, 'id_product_diraditya');
     }
 }
