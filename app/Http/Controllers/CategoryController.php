@@ -4,33 +4,52 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str; // Jangan lupa import Str untuk slug
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::latest()->get();
-        return view('admin.categories.index', compact('categories'));
-    }
+        $group = $request->query('group');
 
-    public function create()
+        // 2. Jika tidak ada group di URL, abort 404 atau redirect
+        if (!$group) {
+            abort(404);
+        }
+
+        // 3. Filter kategori berdasarkan group
+        $categories = Category::where('group', $group)
+            ->latest()
+            ->get();
+        return view('admin.categories.index', compact('categories', 'group'));
+    }
+    public function create(Request $request)
     {
-        return view('admin.categories.create');
-    }
+        // 1. Ambil 'group' dari URL (?group=diamart)
+        // Jika tidak ada, default ke 'raditya'
+        $group = $request->query('group', 'raditya');
 
+        // 2. Kirim variabel $group ke View Create
+        return view('admin.categories.create', compact('group'));
+    }
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|unique:categories,name',
+            'name'  => 'required|unique:categories,category_name',
+            // Validasi agar group hanya boleh raditya atau diamart
+            'group' => 'required|in:raditya,diamart',
         ]);
 
         Category::create([
-            'name' => $request->name,
+            'category_name' => $request->name,
+            // 'slug'          => \Illuminate\Support\Str::slug($request->name),
+            'group'         => $request->group, // <--- INI KUNCINYA
         ]);
 
+        // Redirect kembali ke index group yang sesuai
         return redirect()
-            ->route('categories.index')
-            ->with('success', 'Category created successfully');
+            ->route('categories.index', ['group' => $request->group])
+            ->with('success', 'Kategori berhasil dibuat');
     }
 
     public function edit(Category $category)
@@ -41,24 +60,27 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $request->validate([
-            'name' => 'required|unique:categories,name,' . $category->id,
+            // Validasi unik, tapi abaikan ID kategori yang sedang diedit
+            'name' => 'required|unique:categories,category_name,' . $category->id,
         ]);
 
         $category->update([
-            'name' => $request->name,
+            'category_name' => $request->name,
+            // 'slug'          => Str::slug($request->name),
         ]);
 
         return redirect()
             ->route('categories.index')
-            ->with('success', 'Category updated successfully');
+            ->with('success', 'Kategori berhasil diperbarui');
     }
 
     public function destroy(Category $category)
     {
+        $group = $category->group; // Simpan group sebelum dihapus untuk redirect
         $category->delete();
 
         return redirect()
-            ->route('categories.index')
-            ->with('success', 'Category deleted successfully');
+            ->route('categories.index', ['group' => $group])
+            ->with('success', 'Kategori dihapus');
     }
 }
