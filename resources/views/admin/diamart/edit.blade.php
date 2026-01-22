@@ -15,6 +15,13 @@
                 @csrf
                 @method('PUT')
 
+                {{-- SKU --}}
+                <div class="form-group">
+                    <label>SKU Produk</label>
+                    <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" class="form-control"
+                        required>
+                </div>
+
                 {{-- Nama Produk --}}
                 <div class="form-group">
                     <label>Nama Produk</label>
@@ -38,21 +45,6 @@
                                     <option value="{{ $category->id }}"
                                         {{ old('id_category', $product->id_category) == $category->id ? 'selected' : '' }}>
                                         {{ $category->category_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        {{-- Brand --}}
-                        <div class="form-group">
-                            <label>Brand</label>
-                            <select name="id_brand" class="form-control" required>
-                                @foreach ($brands as $brand)
-                                    <option value="{{ $brand->id }}"
-                                        {{ old('id_brand', $product->id_brand) == $brand->id ? 'selected' : '' }}>
-                                        {{ $brand->brand_name }}
                                     </option>
                                 @endforeach
                             </select>

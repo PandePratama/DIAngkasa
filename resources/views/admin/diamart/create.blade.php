@@ -23,6 +23,13 @@
             <form action="{{ route('diamart.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
+                {{-- SKU --}}
+                <div class="form-group">
+                    <label>SKU Produk</label>
+                    <input type="text" name="sku" value="{{ old('sku') }}" class="form-control"
+                        placeholder="Contoh: DMRT-001" required autocomplete="off">
+                </div>
+
                 {{-- Nama Produk --}}
                 <div class="form-group">
                     <label>Nama Produk</label>
@@ -50,23 +57,6 @@
                                     </option>
                                 @endforeach
                             </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        {{-- Brand --}}
-                        <div class="form-group">
-                            <label>Brand</label>
-                            <select name="id_brand" class="form-control" required>
-                                <option value="">-- Pilih Brand --</option>
-                                @foreach ($brands as $brand)
-                                    <option value="{{ $brand->id }}"
-                                        {{ old('id_brand') == $brand->id ? 'selected' : '' }}>
-                                        {{ $brand->brand_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Jika tidak ada brand, pilih 'No Brand' atau buat brand baru.</small>
                         </div>
                     </div>
                 </div>

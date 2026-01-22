@@ -28,18 +28,18 @@
         @endif
 
         {{-- FORM --}}
-        <form action="{{ route('products.update', $product->id) }}"
+        <form action="{{ route('raditya.update', $product->id) }}"
             method="POST"
             enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
-            {{-- Product Code --}}
+            {{-- SKU --}}
             <div class="form-group">
-                <label>Product Code</label>
+                <label>SKU</label>
                 <input type="text"
-                    name="product_code"
-                    value="{{ old('product_code', $product->product_code) }}"
+                    name="sku"
+                    value="{{ old('sku', $product->sku) }}"
                     class="form-control"
                     required>
             </div>
@@ -57,20 +57,23 @@
             {{-- Specification --}}
             <div class="form-group">
                 <label>Specification</label>
-                <textarea name="specification"
-                    class="form-control">{{ old('specification', $product->specification) }}</textarea>
+                <textarea name="desc"
+                    class="form-control">{{ old('desc', $product->desc) }}</textarea>
             </div>
 
             {{-- Category & Brand --}}
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>Category</label>
-                        <select name="category_id" class="form-control" required>
+                        <label>Kategori</label>
+                        <select name="id_category"
+                            class="form-control @error('id_category') is-invalid @enderror"
+                            required>
+                            <option value="">-- Pilih Kategori --</option>
                             @foreach ($categories as $category)
                             <option value="{{ $category->id }}"
-                                {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
+                                {{ old('id_category', $product->id_category) == $category->id ? 'selected' : '' }}>
+                                {{ $category->category_name }}
                             </option>
                             @endforeach
                         </select>
@@ -80,11 +83,14 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label>Brand</label>
-                        <select name="brand_id" class="form-control" required>
+                        <select name="id_brand"
+                            class="form-control @error('id_brand') is-invalid @enderror"
+                            required>
+                            <option value="">-- Pilih Brand --</option>
                             @foreach ($brands as $brand)
                             <option value="{{ $brand->id }}"
-                                {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
-                                {{ $brand->name }}
+                                {{ old('id_brand', $product->id_brand) == $brand->id ? 'selected' : '' }}>
+                                {{ $brand->brand_name }}
                             </option>
                             @endforeach
                         </select>
@@ -174,7 +180,7 @@
                 <button class="btn btn-primary">
                     <i class="fas fa-save"></i> Update Product
                 </button>
-                <a href="{{ route('products.index') }}" class="btn btn-secondary">
+                <a href="{{ route('raditya.index') }}" class="btn btn-secondary">
                     Back
                 </a>
             </div>

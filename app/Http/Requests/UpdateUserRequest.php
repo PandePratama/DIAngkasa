@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateUserRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name'           => 'required|string|max:100',
+            'email'          => 'required|email|unique:users,email,' . $this->user->id,
+            'nip'            => 'nullable|string|unique:users,nip,' . $this->user->id,
+            'id_unit_kerja'  => 'required|exists:unit_kerja,id',
+            'password'       => 'nullable|min:6|confirmed',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required'          => 'Nama wajib diisi.',
+            'email.required'         => 'Email wajib diisi.',
+            'email.email'            => 'Format email tidak valid.',
+            'email.unique'           => 'Email sudah digunakan.',
+            'nip.unique'             => 'NIP sudah digunakan.',
+            'id_unit_kerja.required' => 'Unit Kerja wajib dipilih.',
+            'id_unit_kerja.exists'   => 'Unit Kerja tidak valid.',
+            'password.min'           => 'Password minimal 6 karakter.',
+            'password.confirmed'     => 'Konfirmasi password tidak sesuai.',
+        ];
+    }
+}

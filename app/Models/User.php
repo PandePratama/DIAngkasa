@@ -5,12 +5,21 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'nip',
+        'id_unit_kerja',
+        'password',
+    ];
 
     protected $guarded = ['id'];
 
@@ -39,5 +48,12 @@ class User extends Authenticatable
     public function orders()
     {
         return $this->hasMany(Order::class, 'id_user');
+    }
+
+    public function setPasswordAttribute($value)
+    {
+        if ($value) {
+            $this->attributes['password'] = Hash::make($value);
+        }
     }
 }

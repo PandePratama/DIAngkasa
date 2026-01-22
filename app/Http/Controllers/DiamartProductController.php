@@ -13,7 +13,7 @@ class DiamartProductController extends Controller
 {
     public function index()
     {
-        $products = ProductDiamart::with(['category', 'brand', 'primaryImage'])->latest()->get();
+        $products = ProductDiamart::with(['category', 'primaryImage'])->latest()->get();
         return view('admin.diamart.index', compact('products'));
     }
 
@@ -25,18 +25,16 @@ class DiamartProductController extends Controller
             ->orderBy('category_name')
             ->get();
 
-        $brands = Brands::orderBy('brand_name')->get();
-
-        return view('admin.diamart.create', compact('categories', 'brands'));
+        return view('admin.diamart.create', compact('categories'));
     }
     public function store(Request $request)
     {
         // 1. Validasi Input
         $validated = $request->validate([
+            'sku'         => 'required|unique:product_diamart,sku',
             'name'        => 'required|max:255',
             'desc'        => 'nullable|string',
             'id_category' => 'required|exists:categories,id',
-            'id_brand'    => 'required|exists:brands,id', // Wajib karena di DB Null=No
             'stock'       => 'required|integer|min:0',
             'price'       => 'required|numeric|min:0',
             'images'      => 'required|array|min:1',
@@ -48,10 +46,10 @@ class DiamartProductController extends Controller
             // 2. Simpan ke tabel product_diamart
             // Hapus 'sku' karena tidak ada di tabel
             $product = ProductDiamart::create([
+                'sku'         => $validated['sku'],
                 'name'        => $validated['name'],
                 'desc'        => $validated['desc'],
                 'id_category' => $validated['id_category'],
-                'id_brand'    => $validated['id_brand'],
                 'stock'       => $validated['stock'],
                 'price'       => $validated['price'],
             ]);
@@ -79,11 +77,10 @@ class DiamartProductController extends Controller
         // Cari produk berdasarkan ID di tabel product_diamart
         $product = ProductDiamart::with(['images'])->findOrFail($id);
 
-        // Ambil data kategori & brand untuk dropdown
+        // Ambil data kategori untuk dropdown
         $categories = Category::where('group', 'diamart')->orderBy('category_name')->get();
-        $brands = Brands::orderBy('brand_name')->get();
 
-        return view('admin.diamart.edit', compact('product', 'categories', 'brands'));
+        return view('admin.diamart.edit', compact('product', 'categories'));
     }
 
     // --- UPDATE (Menyimpan Perubahan) ---
@@ -93,10 +90,10 @@ class DiamartProductController extends Controller
 
         // 1. Validasi
         $validated = $request->validate([
+            'sku'         => 'required|unique:product_diamart,sku,' . $product->id,
             'name'        => 'required|max:255',
             'desc'        => 'nullable|string',
             'id_category' => 'required|exists:categories,id',
-            'id_brand'    => 'required|exists:brands,id',
             'stock'       => 'required|integer|min:0',
             'price'       => 'required|numeric|min:0',
             'images.*'    => 'image|mimes:jpg,jpeg,png,webp|max:2048', // Opsional jika tambah gambar
@@ -106,10 +103,10 @@ class DiamartProductController extends Controller
 
             // 2. Update Data Utama
             $product->update([
+                'sku'         => $validated['sku'],
                 'name'        => $validated['name'],
                 'desc'        => $validated['desc'],
                 'id_category' => $validated['id_category'],
-                'id_brand'    => $validated['id_brand'],
                 'stock'       => $validated['stock'],
                 'price'       => $validated['price'],
             ]);
@@ -142,5 +139,24 @@ class DiamartProductController extends Controller
         });
 
         return redirect()->route('diamart.index')->with('success', 'Produk berhasil diperbarui');
+    }
+
+    public function destroy($id)
+    {
+        $product = ProductDiamart::with('images')->findOrFail($id);
+
+        DB::transaction(function () use ($product) {
+            // Hapus file gambar dari storage
+            foreach ($product->images as $image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($image->image_path);
+                $image->delete();
+            }
+            // Hapus produk
+            $product->delete();
+        });
+
+        return redirect()
+            ->route('diamart.index')
+            ->with('success', 'Produk berhasil dihapus');
     }
 }

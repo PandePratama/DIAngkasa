@@ -34,11 +34,9 @@
                             <tr>
                                 <th>No</th>
                                 <th>Gambar</th>
-                                {{-- <th>SKU</th> --}}
+                                <th>SKU</th>
                                 <th>Nama Produk</th>
                                 <th>Kategori</th>
-                                {{-- Diamart mungkin menampilkan brand atau tidak, tergantung kebutuhan --}}
-                                <th>Brand</th>
                                 <th>Stok</th>
                                 <th>Harga</th>
                                 <th>Aksi</th>
@@ -56,10 +54,9 @@
                                             <span class="badge badge-secondary">No Image</span>
                                         @endif
                                     </td>
-                                    {{-- <td>{{ $product->sku }}</td> --}}
+                                    <td>{{ $product->sku }}</td>
                                     <td>{{ $product->name }}</td>
                                     <td>{{ $product->category->category_name ?? '-' }}</td>
-                                    <td>{{ $product->brand->brand_name ?? '-' }}</td>
                                     <td>{{ $product->stock }}</td>
                                     <td>Rp {{ number_format($product->price, 0, ',', '.') }}</td>
                                     <td>
