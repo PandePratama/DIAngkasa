@@ -9,12 +9,15 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\DiamartController;
+use App\Http\Controllers\DiamartProductController;
 use App\Http\Controllers\GadgetController;
 use App\Http\Controllers\MinimarketController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductMinimarketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
+use App\Http\Controllers\RadityaProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
@@ -38,20 +41,20 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', CategoryController::class);
-    Route::resource('products', ProductController::class);
-    Route::resource('minimarket-products', ProductMinimarketController::class);
+    // Route::resource('products', ProductController::class);
+    // Route::resource('minimarket-products', ProductMinimarketController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('users', UserController::class);
 
-    Route::delete(
-        'products/images/{image}',
-        [ProductController::class, 'destroyImage']
-    )->name('products.images.destroy');
+    // Route::delete(
+    //     'products/images/{image}',
+    //     [ProductController::class, 'destroyImage']
+    // )->name('products.images.destroy');
 
-    Route::patch(
-        'products/images/{image}/primary',
-        [ProductController::class, 'setPrimaryImage']
-    )->name('products.images.primary');
+    // Route::patch(
+    //     'products/images/{image}/primary',
+    //     [ProductController::class, 'setPrimaryImage']
+    // )->name('products.images.primary');
 
     Route::get('/qr-scan', function () {
         return view('admin.qrscan.index');
@@ -77,6 +80,56 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
     // )->name('admin.orders.downloadCsv');
 });
 
+Route::prefix('diamart')->group(function () {
+    Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
+    Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
+});
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+
+    // =============================================================
+    // 1. UNIT BISNIS: RADITYA (Gadget, Elektronik, Furniture)
+    // =============================================================
+
+    // A. Custom Routes untuk Images (Harus diletakkan SEBELUM resource)
+    Route::delete('raditya/images/{image}', [RadityaProductController::class, 'destroyImage'])
+        ->name('raditya.images.destroy');
+
+    Route::patch('raditya/images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])
+        ->name('raditya.images.primary');
+
+    // B. Resource Route Utama
+    // URL: /admin/raditya
+    // Route Names: raditya.index, raditya.create, dst.
+    Route::resource('raditya', RadityaProductController::class)
+        ->parameters(['raditya' => 'product']); // Agar di function controller tetap pakai variabel $product
+
+
+    // ROUTE PUBLIC (CUSTOMER)
+    Route::prefix('diamart')->group(function () {
+        // Halaman Utama Diamart
+        Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
+
+        // Halaman Detail Produk
+        Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
+    });
+    // =============================================================
+    // 2. UNIT BISNIS: DIAMART (Sembako, Minimarket)
+    // =============================================================
+
+    // A. Custom Routes untuk Images
+    Route::delete('diamart/images/{image}', [DiamartProductController::class, 'destroyImage'])
+        ->name('diamart.images.destroy');
+
+    Route::patch('diamart/images/{image}/primary', [DiamartProductController::class, 'setPrimaryImage'])
+        ->name('diamart.images.primary');
+
+    // B. Resource Route Utama
+    // URL: /admin/diamart
+    // Route Names: diamart.index, diamart.create, dst.
+    Route::resource('diamart', DiamartProductController::class)
+        ->parameters(['diamart' => 'product']); // Agar di function controller tetap pakai variabel $product
+
+});
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])

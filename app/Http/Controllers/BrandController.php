@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
+// Pastikan Model yang dipakai benar (Singular biasanya lebih standar: Brand)
+// Jika nama file model Anda Brands.php, pakai Brands. Jika Brand.php, pakai Brand.
+use App\Models\Brands;
 use Illuminate\Http\Request;
 
 class BrandController extends Controller
 {
     public function index()
     {
-        $brands = Brand::latest()->get();
+        // PERBAIKAN: Gunakan latest() agar data terbaru muncul di atas
+        $brands = Brands::latest()->get();
         return view('admin.brands.index', compact('brands'));
     }
 
@@ -20,12 +23,16 @@ class BrandController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validasi Input dari Form (field: name)
         $request->validate([
-            'name' => 'required|unique:brands,name',
+            'name' => 'required|unique:brands,brand_name',
         ]);
 
-        Brand::create([
-            'name' => $request->name,
+        // 2. Simpan ke Database
+        // Kolom DB: brand_name
+        // Input Form: name
+        Brands::create([
+            'brand_name' => $request->name, // PERBAIKAN: Ambil dari $request->name
         ]);
 
         return redirect()
@@ -33,20 +40,23 @@ class BrandController extends Controller
             ->with('success', 'Brand created successfully');
     }
 
-    public function edit(Brand $brand)
+    public function edit(Brands $brand)
     {
-        $brands = Brand::orderBy('name')->get();
-        return view('admin.brands.edit', compact('brand', 'brands'));
+        // Tidak perlu query Brand::orderBy... lagi, karena kita hanya edit 1 brand
+        return view('admin.brands.edit', compact('brand'));
     }
 
-    public function update(Request $request, Brand $brand)
+    public function update(Request $request, Brands $brand)
     {
+        // Validasi
         $request->validate([
-            'name' => 'required|unique:brands,name,' . $brand->id,
+            // unique:table,column,except_id
+            'name' => 'required|unique:brands,brand_name,' . $brand->id,
         ]);
 
+        // Update Data
         $brand->update([
-            'name' => $request->name,
+            'brand_name' => $request->name, // PERBAIKAN: Kolom DB 'brand_name', input 'name'
         ]);
 
         return redirect()
@@ -54,7 +64,7 @@ class BrandController extends Controller
             ->with('success', 'Brand updated successfully');
     }
 
-    public function destroy(Brand $brand)
+    public function destroy(Brands $brand)
     {
         $brand->delete();
 

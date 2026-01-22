@@ -10,6 +10,12 @@ class Category extends Model
     use HasFactory;
     protected $guarded = ['id'];
 
+    protected $fillable = [
+        'group', // <--- Tambahkan ini
+        'category_name',
+        'slug'
+    ];
+
     // Sama seperti brand, relasi ke kedua jenis produk
     public function productsDiamart()
     {

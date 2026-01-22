@@ -9,6 +9,17 @@ class ProductRaditya extends Model
 {
     use HasFactory;
     protected $table = 'product_diraditya';
+
+    protected $fillable = [
+        'sku',         // <--- Tambahkan ini
+        'id_category',
+        'id_brand',
+        'name',
+        'price',
+        'stock',
+        'desc',
+        'warranty'     // <--- Pastikan namanya warranty, bukan warranty_info
+    ];
     protected $guarded = ['id'];
 
     public function category()
