@@ -20,14 +20,10 @@ class MinimarketController extends Controller
 
         // 2. Ambil Produk Diamart
         // Gunakan Model ProductDiamart (bukan Product biasa)
-        $products = ProductDiamart::with(['primaryImage', 'category', 'brand'])
+        $products = ProductDiamart::with(['primaryImage', 'category'])
             ->when($request->category, function ($query) use ($request) {
                 // Perbaikan: category_id -> id_category
                 return $query->where('id_category', $request->category);
-            })
-            ->when($request->brand, function ($query) use ($request) {
-                // Perbaikan: brand_id -> id_brand
-                return $query->where('id_brand', $request->brand);
             })
             ->latest()
             ->paginate(20);
@@ -41,7 +37,7 @@ class MinimarketController extends Controller
     public function show($id)
     {
         // Ambil detail dari tabel product_diamart
-        $product = ProductDiamart::with(['images', 'category', 'brand'])
+        $product = ProductDiamart::with(['images', 'category'])
             ->findOrFail($id);
 
         // Ambil produk terkait (Related Products)
@@ -52,7 +48,7 @@ class MinimarketController extends Controller
             ->inRandomOrder()
             ->get();
 
-        return view('diamart_frontend.show', compact('product', 'relatedProducts'));
+        return view('minimarket.show', compact('product', 'relatedProducts'));
         // bisa ubah ke diamart_frontend.show || minimarket.show
     }
 }

@@ -138,27 +138,23 @@ Route::middleware('auth')->group(function () {
         ->name('profile.password');
 });
 
-Route::prefix('cart')->name('cart.')->group(function () {
-    Route::get('/', [CartController::class, 'index'])->name('index');
-    Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
-    Route::post('/update/{product}', [CartController::class, 'update'])->name('update');
-    Route::delete('/remove/{product}', [CartController::class, 'remove'])->name('remove');
+Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
+
+    Route::get('/', [CartController::class, 'index'])
+        ->name('index');
+
+    Route::post('/add/{id}', [CartController::class, 'add'])
+        ->name('add');
+
+    Route::post('/update/{itemId}', [CartController::class, 'update'])
+        ->name('update');
+
+    Route::delete('/remove/{itemId}', [CartController::class, 'remove'])
+        ->name('remove');
 });
 
+
 Route::middleware('auth')->group(function () {
-
-    // CART
-    Route::get('/cart', [CartController::class, 'index'])
-        ->name('cart.index');
-
-    Route::post('/cart/add/{product}', [CartController::class, 'add'])
-        ->name('cart.add');
-
-    Route::post('/cart/update/{product}', [CartController::class, 'update'])
-        ->name('cart.update');
-
-    Route::post('/cart/remove/{product}', [CartController::class, 'remove'])
-        ->name('cart.remove');
 
     // PAYMENT
     Route::get('/payment', [PaymentController::class, 'index'])

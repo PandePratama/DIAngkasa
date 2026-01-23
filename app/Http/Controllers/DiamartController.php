@@ -32,9 +32,8 @@ class DiamartController extends Controller
     public function show($id)
     {
         $product = ProductDiamart::with(['images', 'category'])
-            ->where('is_active', true)
             ->findOrFail($id);
 
-        return view('diamart.show', compact('product'));
+        return view('minimarket.show', compact('product'));
     }
 }

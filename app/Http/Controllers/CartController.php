@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
-use App\Models\Product;
+use App\Models\ProductDiamart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,8 +24,10 @@ class CartController extends Controller
         return view('cart.index', compact('items', 'total'));
     }
 
-    public function add(Request $request, Product $product)
+    public function add(Request $request, $id)
     {
+        $product = ProductDiamart::findOrFail($id);
+
         $request->validate([
             'purchase_type' => 'required|in:cash,credit',
             'tenor' => 'nullable|in:3,6,9,12'
@@ -38,10 +40,9 @@ class CartController extends Controller
         $type  = $request->purchase_type;
         $tenor = $type === 'credit' ? (int) $request->tenor : null;
 
-        // FIX match error
         $price = $type === 'credit'
-            ? match ((int) $tenor) {
-                3  => $product->price_3_months, 
+            ? match ($tenor) {
+                3  => $product->price_3_months,
                 6  => $product->price_6_months,
                 9  => $product->price_9_months,
                 12 => $product->price_12_months,
@@ -71,6 +72,7 @@ class CartController extends Controller
             ->with('success', 'Produk ditambahkan ke keranjang');
     }
 
+
     public function update(Request $request, $itemId)
     {
         $request->validate(['qty' => 'required|min:1']);
@@ -92,5 +94,4 @@ class CartController extends Controller
 
         return back();
     }
-
 }

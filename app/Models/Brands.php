@@ -11,11 +11,6 @@ class Brands extends Model
     use HasFactory;
     protected $guarded = ['id'];
 
-    public function productsDiamart()
-    {
-        return $this->hasMany(ProductDiamart::class, 'id_brand');
-    }
-
     public function productsDiraditya()
     {
         return $this->hasMany(ProductRaditya::class, 'id_brand');

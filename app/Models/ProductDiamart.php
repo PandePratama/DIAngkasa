@@ -17,11 +17,6 @@ class ProductDiamart extends Model
         return $this->belongsTo(Category::class, 'id_category');
     }
 
-    // public function brand()
-    // {
-    //     return $this->belongsTo(Brands::class, 'id_brand');
-    // }
-
     public function images()
     {
         return $this->hasMany(ProductImage::class, 'id_product_diamart');
