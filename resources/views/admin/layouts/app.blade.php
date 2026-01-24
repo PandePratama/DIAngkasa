@@ -18,6 +18,8 @@
 
     <link href="{{ asset('sbadmin/css/sb-admin-2.min.css') }}" rel="stylesheet">
 
+
+
     @stack('scripts')
 
 </head>

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
-use App\Providers\CreditService;
+use App\Models\Installment;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth; // Tambahkan ini
+use Illuminate\Support\Facades\Log;  // Tambahkan ini
 
 class PaymentController extends Controller
 {
@@ -16,91 +16,128 @@ class PaymentController extends Controller
     {
         $user = auth()->user();
 
-        $cart = Cart::with('items.product')
+        // Pastikan load relasi produk dengan benar
+        $cart = Cart::with(['items.productDiamart.primaryImage', 'items.productDiraditya.primaryImage'])
             ->where('user_id', $user->id)
             ->first();
 
-        $cartItems = $cart ? $cart->items : collect();
+        if (!$cart) {
+            return redirect()->route('cart.index');
+        }
 
-        // 🔥 TOTAL SELALU DARI PRODUCT PRICE
-        $total = $cartItems->sum(fn($item) => $item->qty * $item->product->price);
+        $cartItems = $cart->items;
 
-        return view('payment.index', compact('cartItems', 'total'));
+        // 1. Hitung Subtotal
+        $subtotal = $cartItems->sum(function ($item) {
+            $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+            return $item->qty * ($product->price ?? 0);
+        });
+
+        // 2. Logika Admin Fee
+        if ($cart->business_unit == 'diamart') {
+            $adminFee = 0;
+            $adminLabel = "Biaya Layanan (1%)"; // Label saja, nilai 0
+        } else {
+            $adminFee = 20000;
+            $adminLabel = "Biaya Admin";
+        }
+
+        $total = $subtotal + $adminFee;
+
+        return view('payment.index', compact('cart', 'cartItems', 'subtotal', 'adminFee', 'adminLabel', 'total'));
     }
 
     public function process(Request $request)
     {
         $request->validate([
-            'payment_method'  => 'required|in:cash,credit',
-            'shipping_method' => 'required'
+            'payment_method' => 'required|in:cash,credit',
+            'tenure' => 'nullable|integer'
         ]);
 
         $user = auth()->user();
 
-        $cart = Cart::with('items.product')
-            ->where('user_id', $user->id)
-            ->first();
+        // Ambil Cart
+        $cart = Cart::with(['items.productDiamart', 'items.productDiraditya'])
+            ->where('user_id', $user->id)->first();
 
-        if (!$cart || $cart->items->isEmpty()) {
-            return back()->with('error', 'Keranjang kosong');
+        if (!$cart) {
+            return redirect()->back()->with('error', 'Keranjang belanja tidak ditemukan.');
         }
 
-        // TOTAL
-        $total = $cart->items->sum(fn($item) => $item->qty * $item->product->price);
+        // Logic Admin Fee
+        $adminFee = ($cart->business_unit == 'diamart') ? 0 : 20000;
 
-        // VALIDASI CREDIT
-        if ($request->payment_method === 'credit') {
-            $sisaLimit = CreditService::remaining($user);
+        // Hitung Subtotal
+        $subtotal = $cart->items->sum(function ($item) {
+            $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+            return $item->qty * ($product->price ?? 0);
+        });
 
-            if ($sisaLimit < $total) {
-                return back()->with('error', 'Limit kredit tidak mencukupi');
-            }
+        // Tentukan Cicilan
+        $tenure = ($request->payment_method == 'credit') ? ($request->tenure ?? 3) : 1;
+        $monthlyPrincipal = $subtotal / $tenure;
+
+        // Tagihan Pertama
+        $firstBill = $monthlyPrincipal + $adminFee;
+
+        // Cek Saldo
+        if ($user->saldo < $firstBill) {
+            return redirect()->back()->with('error', 'Saldo tidak mencukupi. Sisa saldo: Rp ' . number_format($user->saldo));
         }
 
-        DB::transaction(function () use ($request, $user, $cart, $total) {
+        // --- MULAI PROSES TRANSAKSI ---
+        try {
+            DB::beginTransaction();
 
-            // 🔻 POTONG CREDIT
-            if ($request->payment_method === 'credit') {
-                $user->decrement('credit_limit', $total);
-            }
-
-            // 💾 CREATE ORDER
-            $order = Order::create([
-                'user_id'         => $user->id,
-                'payment_method'  => $request->payment_method,
-                'shipping_method' => $request->shipping_method
+            // 1. Simpan Transaksi
+            $trx = Transaction::create([
+                'user_id'      => $user->id,
+                'invoice_code' => 'INV-' . time() . rand(100, 999),
+                'grand_total'  => $subtotal + $adminFee,
+                'payment_type' => $request->payment_method,
+                'tenure'       => $tenure,
             ]);
 
-            // 🔁 LOOP ITEM CART
-            foreach ($cart->items as $item) {
-
-                // 🔒 LOCK PRODUCT ROW
-                $product = Product::where('id', $item->product_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                // ❌ CEK STOCK
-                if ($product->stock < $item->qty) {
-                    throw new \Exception("Stock {$product->name} tidak mencukupi");
-                }
-
-                // 🔻 POTONG STOCK
-                $product->decrement('stock', $item->qty);
-
-                // 💾 ORDER ITEM
-                OrderItem::create([
-                    'order_id'   => $order->id,
-                    'product_id' => $product->id,
-                    'qty'        => $item->qty,
+            // 2. Simpan Cicilan
+            for ($i = 1; $i <= $tenure; $i++) {
+                $amount = ($i == 1) ? $firstBill : $monthlyPrincipal;
+                Installment::create([
+                    'id_order'           => $trx->id, // Pastikan kolom ini benar di DB (id_order atau transaction_id)
+                    'installment_number' => $i,
+                    'amount'             => $amount,
+                    'due_date'           => now()->addMonths($i - 1),
+                    'status'             => ($i == 1) ? 'paid' : 'pending',
                 ]);
             }
 
-            // 🧹 CLEAR CART
-            $cart->items()->delete();
-        });
+            // 3. POTONG SALDO (UPDATE DATABASE)
+            // Ini akan langsung mengubah angka di database
+            $user->decrement('saldo', $firstBill);
 
-        return redirect()
-            ->route('payment.index')
-            ->with('success', 'Pesanan berhasil dibuat');
+            // 4. Kurangi Stok
+            foreach ($cart->items as $item) {
+                $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+                if ($product->stock < $item->qty) {
+                    throw new \Exception("Stok {$product->name} habis.");
+                }
+                $product->decrement('stock', $item->qty);
+            }
+
+            // 5. Hapus Keranjang
+            $cart->items()->delete();
+            $cart->delete();
+
+            DB::commit(); // Simpan Permanen
+
+            // UPDATE SESSION USER AGAR TIDAK LOGOUT
+            // Ini trik pentingnya:
+            Auth::user()->refresh();
+
+            return redirect()->route('transaction.success')->with('success', 'Pembayaran Berhasil!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Payment Error: " . $e->getMessage()); // Cek storage/logs/laravel.log jika error
+            return redirect()->back()->with('error', 'Gagal memproses: ' . $e->getMessage());
+        }
     }
 }

@@ -3,95 +3,140 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\ProductDiamart;
+use App\Models\ProductRaditya;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    // ================= CART =================
+
+    // Tambahkan di dalam class CartController
 
     public function index()
     {
-        $cart = Cart::with('items.product')
-            ->where('user_id', Auth::id())
-            ->first();
+        $user = \Illuminate\Support\Facades\Auth::user();
 
-        $items = $cart?->items ?? collect();
+        // 1. Ambil Keranjang User
+        // Kita gunakan 'with' (Eager Loading) agar query lebih hemat
+        $carts = \App\Models\Cart::with([
+            'items.productDiamart',   // Load data produk sembako
+            'items.productDiraditya'  // Load data produk elektronik
+        ])
+            ->where('user_id', $user->id)
+            ->get();
 
-        $total = $items->sum(fn($item) => $item->price * $item->qty);
+        // 2. Hitung Grand Total (Opsional, untuk display ringkasan)
+        $grandTotal = 0;
+        foreach ($carts as $cart) {
+            foreach ($cart->items as $item) {
+                // Ambil harga dari relasi produk (karena price tidak disimpan di cart_items)
+                $price = 0;
+                if ($item->id_product_diamart && $item->productDiamart) {
+                    $price = $item->productDiamart->price;
+                } elseif ($item->id_product_diraditya && $item->productDiraditya) {
+                    $price = $item->productDiraditya->price;
+                }
 
-        return view('cart.index', compact('items', 'total'));
+                $grandTotal += $price * $item->qty;
+            }
+        }
+
+        return view('cart.index', compact('carts', 'grandTotal'));
     }
-
-    public function add(Request $request, $id)
+    // --- 1. TAMBAH KERANJANG DIAMART (SEMBAKO) ---
+    // --- 1. TAMBAH KERANJANG DIAMART (SEMBAKO) ---
+    public function addDiamart(Request $request, $id)
     {
-        $product = ProductDiamart::findOrFail($id);
-
-        $request->validate([
-            'purchase_type' => 'required|in:cash,credit',
-            'tenor' => 'nullable|in:3,6,9,12'
-        ]);
+        $user = Auth::user();
 
         $cart = Cart::firstOrCreate([
-            'user_id' => Auth::id()
+            'user_id' => $user->id,
+            'business_unit' => 'diamart'
         ]);
 
-        $type  = $request->purchase_type;
-        $tenor = $type === 'credit' ? (int) $request->tenor : null;
-
-        $price = $type === 'credit'
-            ? match ($tenor) {
-                3  => $product->price_3_months,
-                6  => $product->price_6_months,
-                9  => $product->price_9_months,
-                12 => $product->price_12_months,
-                default => abort(400, 'Tenor tidak valid')
-            }
-            : $product->price;
-
-        $item = $cart->items()
-            ->where('product_id', $product->id)
-            ->where('purchase_type', $type)
-            ->where('tenor', $tenor)
+        $item = CartItem::where('id_cart', $cart->id)
+            ->where('id_product_diamart', $id)
             ->first();
 
         if ($item) {
-            $item->increment('qty');
+            // PERBAIKAN: Jika sudah ada, jangan di-increment.
+            // Langsung saja arahkan ke cart agar user mengaturnya di sana.
+            return redirect()->route('cart.index')->with('info', 'Produk sudah ada di keranjang.');
         } else {
-            $cart->items()->create([
-                'product_id'    => $product->id,
-                'purchase_type' => $type,
-                'tenor'         => $tenor,
-                'price'         => $price,
-                'qty'           => 1,
+            CartItem::create([
+                'id_cart' => $cart->id,
+                'id_product_diamart' => $id,
+                'qty' => 1 // Set awal selalu 1
             ]);
         }
 
-        return redirect()->route('cart.index')
-            ->with('success', 'Produk ditambahkan ke keranjang');
+        return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
+    // --- 2. TAMBAH KERANJANG RADITYA (ELEKTRONIK) ---
+    public function addRaditya(Request $request, $id)
+    {
+        $user = Auth::user();
+        $product = ProductRaditya::findOrFail($id);
 
+        $cart = Cart::firstOrCreate(
+            ['user_id' => $user->id, 'business_unit' => 'raditya']
+        );
+
+        $item = CartItem::where('id_cart', $cart->id)
+            ->where('id_product_diraditya', $product->id)
+            ->first();
+
+        if ($item) {
+            // PERBAIKAN: Sama seperti Diamart, jangan gunakan increment()
+            return redirect()->route('cart.index')->with('info', 'Produk sudah ada di keranjang.');
+        } else {
+            CartItem::create([
+                'id_cart'              => $cart->id,
+                'id_product_diamart'   => null,
+                'id_product_diraditya' => $product->id,
+                'qty'                  => 1,
+            ]);
+        }
+
+        return redirect()->route('cart.index')->with('success', 'Gadget berhasil masuk keranjang!');
+    }
+
+    // --- 3. UPDATE QUANTITY (+/-) ---
+    // --- 3. UPDATE QUANTITY DENGAN VALIDASI STOK ---
     public function update(Request $request, $itemId)
     {
-        $request->validate(['qty' => 'required|min:1']);
+        $item = CartItem::findOrFail($itemId);
 
-        Auth::user()->cart
-            ->items()
-            ->where('id', $itemId)
-            ->update(['qty' => $request->qty]);
+        // Ambil produk terkait untuk cek stok
+        $product = $item->id_product_diamart
+            ? $item->productDiamart
+            : $item->productDiraditya;
 
-        return back();
+        $maxStock = $product->stock; // Ambil stok asli dari gudang
+
+        // Validasi input manual dan batas stok
+        $request->validate([
+            'qty' => "required|integer|min:1|max:$maxStock"
+        ], [
+            'qty.max' => "Maaf, stok hanya tersedia $maxStock unit."
+        ]);
+
+        $item->update([
+            'qty' => $request->qty
+        ]);
+
+        return redirect()->back()->with('success', 'Keranjang diperbarui.');
     }
 
+    // --- 4. HAPUS ITEM ---
     public function remove($itemId)
     {
-        Auth::user()->cart
-            ->items()
-            ->where('id', $itemId)
-            ->delete();
+        $item = CartItem::findOrFail($itemId);
+        $item->delete();
 
-        return back();
+        return redirect()->back()->with('success', 'Produk dihapus dari keranjang.');
     }
 }

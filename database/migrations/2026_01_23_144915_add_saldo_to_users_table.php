@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('product_diamart', function (Blueprint $table) {
-            $table->string('sku')->after('id')->unique()->nullable()->before('id_category');
+        Schema::table('users', function (Blueprint $table) {
+            $table->decimal('saldo', 15, 2)->default(0)->after('email');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('product_diamart', function (Blueprint $table) {
-            //
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('saldo');
         });
     }
 };

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\DiamartController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -9,7 +10,6 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\DiamartController;
 use App\Http\Controllers\DiamartProductController;
 use App\Http\Controllers\GadgetController;
 use App\Http\Controllers\MinimarketController;
@@ -82,10 +82,10 @@ Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], functio
     // )->name('admin.orders.downloadCsv');
 });
 
-Route::prefix('diamart')->group(function () {
-    Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
-    Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
-});
+// Route::prefix('diamart')->group(function () {
+//     Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
+//     Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
+// });
 Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     // =============================================================
@@ -138,21 +138,41 @@ Route::middleware('auth')->group(function () {
         ->name('profile.password');
 });
 
-Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
+// routes/web.php
+Route::get('/transaction/success', function () {
+    return view('transaction.success');
+})->name('transaction.success');
+Route::middleware('auth')->group(function () {
 
-    Route::get('/', [CartController::class, 'index'])
-        ->name('index');
+    // --- 1. ROUTE KHUSUS MENAMBAH ITEM (DIPISAH) ---
+    // Karena logic 'add' beda antara sembako dan elektronik
 
-    Route::post('/add/{id}', [CartController::class, 'add'])
-        ->name('add');
+    // Tambah Sembako (Diamart)
+    Route::post('/diamart/cart/add/{id}', [CartController::class, 'addDiamart'])
+        ->name('cart.add.diamart');
 
-    Route::post('/update/{itemId}', [CartController::class, 'update'])
-        ->name('update');
+    // Tambah Elektronik (Raditya)
+    Route::post('/raditya/cart/add/{id}', [CartController::class, 'addRaditya'])
+        ->name('cart.add.raditya');
+    Route::post('/cart/update/{itemId}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/cart/remove/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
 
-    Route::delete('/remove/{itemId}', [CartController::class, 'remove'])
-        ->name('remove');
+    // --- 2. ROUTE UMUM KERANJANG (DIGABUNG) ---
+    Route::prefix('cart')->name('cart.')->group(function () {
+
+        // Halaman Keranjang (Menampilkan item Diamart & Raditya)
+        Route::get('/', [CartController::class, 'index'])
+            ->name('index');
+
+        // Update Qty (Bisa dipakai umum karena pakai ID CartItem)
+        Route::post('/update/{itemId}', [CartController::class, 'update'])
+            ->name('update');
+
+        // Hapus Item (Bisa dipakai umum karena pakai ID CartItem)
+        Route::delete('/remove/{itemId}', [CartController::class, 'remove'])
+            ->name('remove');
+    });
 });
-
 
 Route::middleware('auth')->group(function () {
 
