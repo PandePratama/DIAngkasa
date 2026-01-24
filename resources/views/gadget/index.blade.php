@@ -14,7 +14,7 @@
             @foreach ($categories as $category)
             <option value="{{ $category->id }}"
                 {{ request('category') == $category->id ? 'selected' : '' }}>
-                {{ $category->name }}
+                {{ $category->category_name }}
             </option>
             @endforeach
         </select>
@@ -27,10 +27,11 @@
             @foreach ($brands as $brand)
             <option value="{{ $brand->id }}"
                 {{ request('brand') == $brand->id ? 'selected' : '' }}>
-                {{ $brand->name }}
+                {{ $brand->brand_name }}
             </option>
             @endforeach
         </select>
+
 
     </div>
 </form>

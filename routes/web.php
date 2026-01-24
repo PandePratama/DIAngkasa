@@ -11,12 +11,12 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DiamartProductController;
-use App\Http\Controllers\GadgetController;
 use App\Http\Controllers\MinimarketController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductMinimarketController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrController;
+use App\Http\Controllers\RadityaController;
 use App\Http\Controllers\RadityaProductController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UnitKerjaController;
@@ -25,8 +25,8 @@ use App\Http\Controllers\WelcomeController;
 
 // Public Routes
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
-Route::get('/gadget', [GadgetController::class, 'index'])->name('gadget.index');
-Route::get('/gadget/{product}', [GadgetController::class, 'show'])
+Route::get('/gadget', [RadityaController::class, 'index'])->name('gadget.index');
+Route::get('/gadget/{product}', [RadityaController::class, 'show'])
     ->name('gadget.show');
 Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
 Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');

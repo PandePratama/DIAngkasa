@@ -32,7 +32,7 @@
                 <div class="text-sm text-gray-700 mb-6">
                     <h2 class="font-semibold mb-2">Spesifikasi</h2>
                     <div class="whitespace-pre-line leading-relaxed">
-                        {{ $product->specification }}
+                        {{ $product->desc }}
                     </div>
                 </div>
 

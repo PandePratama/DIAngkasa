@@ -82,8 +82,8 @@
             <a href="{{ route('profile') }}" class="block hover:text-teal-400">Profile</a>
             <a href="{{ route('home') }}" class="block hover:text-teal-400">Home</a>
             <a href="{{ route('cart.index') }}" class="block hover:text-teal-400">Cart</a>
-            <a href="{{ route('gadget.index') }}" class="block hover:text-teal-400">Gadget</a>
-            <a href="#" class="block hover:text-teal-400">Minimarket</a>
+            <a href="{{ route('gadget.index') }}" class="block hover:text-teal-400">Raditya</a>
+            <a href="#" class="block hover:text-teal-400">Diamart</a>
         </nav>
 
         {{-- Logout --}}

@@ -8,19 +8,21 @@ use Illuminate\Database\Eloquent\Model;
 class ProductRaditya extends Model
 {
     use HasFactory;
+
     protected $table = 'product_diraditya';
 
     protected $fillable = [
-        'sku',         // <--- Tambahkan ini
+        'sku',
         'id_category',
         'id_brand',
         'name',
         'price',
         'stock',
         'desc',
-        'warranty'     // <--- Pastikan namanya warranty, bukan warranty_info
+        'warranty',
     ];
-    protected $guarded = ['id'];
+
+    // ================= RELATIONS =================
 
     public function category()
     {
@@ -39,6 +41,7 @@ class ProductRaditya extends Model
 
     public function primaryImage()
     {
-        return $this->hasOne(ProductImage::class, 'id_product_diraditya')->latest();
+        return $this->hasOne(ProductImage::class, 'id_product_diraditya')
+            ->latest();
     }
 }
