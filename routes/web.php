@@ -132,9 +132,19 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
         ->parameters(['diamart' => 'product']); // Agar di function controller tetap pakai variabel $product
 
 });
+
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
-    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])
+
+    // Halaman Profile
+    Route::get('/profile', [ProfileController::class, 'index'])
+        ->name('profile');
+
+    // Update data profile (nama, unit kerja, dll)
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])
+        ->name('profile.update');
+
+    // Update password
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])
         ->name('profile.password');
 });
 
@@ -151,6 +161,9 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
 
     Route::delete('/remove/{itemId}', [CartController::class, 'remove'])
         ->name('remove');
+
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])
+        ->name('profile.password.update');
 });
 
 

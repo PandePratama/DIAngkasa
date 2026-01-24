@@ -19,6 +19,7 @@ class User extends Authenticatable
         'nip',
         'id_unit_kerja',
         'password',
+
     ];
 
     protected $guarded = ['id'];
@@ -50,10 +51,8 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'id_user');
     }
 
-    public function setPasswordAttribute($value)
-    {
-        if ($value) {
-            $this->attributes['password'] = Hash::make($value);
-        }
-    }
+    // public function transactions()
+    // {
+    //     return $this->hasMany(Transaction::class, 'user_id');
+    // }
 }

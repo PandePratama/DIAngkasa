@@ -35,10 +35,20 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user)
     {
-        $user->update($request->validated());
-        return redirect()->route('users.index')->with('success', 'User berhasil diperbarui');
-    }
+        $data = $request->validated();
 
+        // ⛔ Jangan update password jika kosong
+        if (empty($data['password'])) {
+            unset($data['password']);
+        }
+
+        $user->update($data);
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User berhasil diperbarui');
+    }
+    
     public function destroy(User $user)
     {
         if ($user->role === 'super_admin') {
