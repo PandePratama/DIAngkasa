@@ -36,10 +36,11 @@
                             <th>NIP</th>
                             <th>Nama</th>
                             {{-- <th>Role</th> --}}
-                            <th>Harga</th>
-                            <th>Nominal</th>
-                            <th>Saldo Awal</th>
-                            <th>Saldo Akhir</th>
+                            {{-- <th>Harga</th> --}}
+                            <th>Total Belanja</th>
+
+                            <th>Saldo Terpotong</th>
+                            <th>Sisa Saldo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,11 +51,14 @@
                                 <td>{{ $trx->user->nip }}</td>
                                 <td>{{ $trx->user->name }}</td>
                                 {{-- <td>{{ $trx->user->role }}</td> --}}
-                                <td>{{ $trx->admin_name }}</td>
+                                {{-- <td>{{ $trx->admin_name }}</td> --}}
 
-                                <td>Rp {{ number_format($trx->amount, 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format($trx->saldo_awal, 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format($trx->saldo_akhir, 0, ',', '.') }}</td>
+                                <td>Rp {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
+
+                                <td class="font-bold text-gray-700">
+                                    Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
+                                </td>
+                                <td>Rp {{ number_format($trx->user->saldo, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     </tbody>

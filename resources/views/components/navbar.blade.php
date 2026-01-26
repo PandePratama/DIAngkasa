@@ -43,7 +43,7 @@
 
                     <div x-show="open" @click.away="open = false"
                         class="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded shadow">
-                        <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                        <a href="{{ route('profile.index') }}" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button class="w-full text-left px-4 py-2 hover:bg-red-500">Logout</button>
@@ -79,7 +79,7 @@
 
         {{-- Menu --}}
         <nav class="flex-1 px-6 py-4 space-y-6 text-sm">
-            <a href="{{ route('profile') }}" class="block hover:text-teal-400">Profile</a>
+            <a href="{{ route('profile.index') }}" class="block hover:text-teal-400">Profile</a>
             <a href="{{ route('home') }}" class="block hover:text-teal-400">Home</a>
             <a href="{{ route('cart.index') }}" class="block hover:text-teal-400">Cart</a>
             <a href="{{ route('gadget.index') }}" class="block hover:text-teal-400">Raditya</a>

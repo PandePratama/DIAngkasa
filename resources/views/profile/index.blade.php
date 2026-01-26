@@ -48,6 +48,28 @@
                             History Transaksi
                         </button>
                     </div>
+                    {{-- FORM FILTER --}}
+                    <form method="GET" action="" class="mb-4 flex gap-2 items-end">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Dari</label>
+                            <input type="date" name="from" value="{{ request('from') }}"
+                                class="border rounded p-1 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Sampai</label>
+                            <input type="date" name="to" value="{{ request('to') }}"
+                                class="border rounded p-1 text-sm">
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700">
+                            Filter
+                        </button>
+                    </form>
+
+                    {{-- INFORMASI TOTAL --}}
+                    <div class="mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                        Total Belanja : <span class="font-bold">Rp
+                            {{ number_format($total, 0, ',', '.') }}</span>
+                    </div>
 
                     {{-- NOTIFICATION --}}
                     @if (session('success'))
@@ -135,28 +157,67 @@
                                 <thead class="bg-gray-50 text-gray-600 uppercase text-[11px] font-bold">
                                     <tr>
                                         <th class="p-3 border-b">Tanggal</th>
-                                        <th class="p-3 border-b">Invoice</th>
-                                        <th class="p-3 border-b">Total</th>
+                                        <th class="p-3 border-b">Invoice / ID</th>
+                                        <th class="p-3 border-b">Nominal</th>
                                         <th class="p-3 border-b text-center">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse ($transactions ?? [] as $trx)
+                                    @forelse ($transactions as $trx)
                                         <tr class="hover:bg-gray-50 transition">
-                                            <td class="p-3 border-b">{{ $trx->created_at->format('d M Y') }}</td>
-                                            <td class="p-3 border-b font-mono text-xs">{{ $trx->invoice }}</td>
-                                            <td class="p-3 border-b">Rp {{ number_format($trx->total, 0, ',', '.') }}</td>
+                                            {{-- 1. TANGGAL --}}
+                                            <td class="p-3 border-b">
+                                                {{ $trx->created_at->format('d M Y H:i') }}
+                                            </td>
+
+                                            {{-- 2. INVOICE (Menggunakan ID karena di Admin pakai ID) --}}
+                                            <td class="p-3 border-b font-mono text-xs">
+                                                @if (isset($trx->invoice))
+                                                    {{ $trx->invoice }}
+                                                @else
+                                                    {{-- Jika tidak ada kolom invoice, generate dari ID --}}
+                                                    #TRX-{{ str_pad($trx->id, 5, '0', STR_PAD_LEFT) }}
+                                                @endif
+                                            </td>
+
+                                            {{-- 3. TOTAL/NOMINAL (Menggunakan 'amount' sesuai kode Admin) --}}
+                                            <td class="p-3 border-b font-semibold text-gray-700">
+                                                Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                                            </td>
+
+                                            {{-- 4. STATUS --}}
                                             <td class="p-3 border-b text-center">
+                                                {{-- Cek apakah kolom status ada, jika tidak anggap 'success' --}}
+                                                @php
+                                                    $status = $trx->status ?? 'success';
+                                                    $colorClass = match ($status) {
+                                                        'paid', 'success' => 'bg-green-100 text-green-700',
+                                                        'pending' => 'bg-yellow-100 text-yellow-700',
+                                                        'failed', 'cancelled' => 'bg-red-100 text-red-700',
+                                                        default => 'bg-gray-100 text-gray-700',
+                                                    };
+                                                @endphp
+
                                                 <span
-                                                    class="px-2 py-1 rounded-full text-[10px] font-bold uppercase {{ $trx->status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-                                                    {{ $trx->status }}
+                                                    class="px-2 py-1 rounded-full text-[10px] font-bold uppercase {{ $colorClass }}">
+                                                    {{ $status }}
                                                 </span>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="p-8 text-center text-gray-400">Belum ada riwayat
-                                                transaksi.</td>
+                                            <td colspan="4" class="p-8 text-center text-gray-400">
+                                                <div class="flex flex-col items-center justify-center">
+                                                    <svg class="w-10 h-10 mb-2 text-gray-300" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                                        </path>
+                                                    </svg>
+                                                    <span>Belum ada riwayat transaksi.</span>
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforelse
                                 </tbody>

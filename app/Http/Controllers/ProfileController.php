@@ -9,14 +9,36 @@ use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $user = Auth::user();
+
+        // 1. Mulai Query Transaksi milik User ini
+        // Asumsi: Anda sudah membuat relasi 'transactions' di model User (lihat langkah 2 di bawah)
+        $query = $user->transactions()->latest();
+
+        // Alternatif jika belum ada relasi di model User:
+        // $query = \App\Models\Transaction::where('user_id', $user->id)->latest();
+
+        // 2. Logika Filter Tanggal (Sama seperti Admin tapi aman untuk User)
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('created_at', [
+                $request->from . ' 00:00:00',
+                $request->to . ' 23:59:59'
+            ]);
+        }
+
+        // 3. Eksekusi Query
+        $transactions = $query->get();
+
+        // 4. Hitung Total (Hanya dari data yang difilter/ditampilkan)
+        // Pastikan nama kolomnya sesuai database ('grand_total' atau 'amount')
+        $total = $transactions->sum('grand_total');
+
         return view('profile.index', [
-            'user' => Auth::user(),
-            'transactions' => Auth::user()
-                // ->transactions()
-                ->latest()
-                ->get()
+            'user' => $user,
+            'transactions' => $transactions,
+            'total' => $total, // Kirim variabel total ke view
         ]);
     }
 
