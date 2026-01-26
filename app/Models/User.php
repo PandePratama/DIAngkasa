@@ -19,6 +19,8 @@ class User extends Authenticatable
         'nip',
         'id_unit_kerja',
         'password',
+        'role',
+        'saldo'
 
     ];
 

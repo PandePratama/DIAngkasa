@@ -3,142 +3,215 @@
 @section('title', 'Scan QR Karyawan')
 
 @section('content')
-<div class="container-fluid pt-4">
+    <div class="container-fluid pt-4">
 
-    {{-- TITLE --}}
-    <h2 class="text-center mb-4 text-xl font-semibold">
-        Scan QR Employee
-    </h2>
+        {{-- TITLE --}}
+        <h2 class="text-center mb-4 font-weight-bold text-dark">
+            Scan QR Employee
+        </h2>
 
-    {{-- CAMERA --}}
-    <div class="d-flex justify-content-center">
-        <div class="camera-wrapper">
-            <div id="reader"></div>
+        {{-- CAMERA WRAPPER --}}
+        <div class="row justify-content-center">
+            <div class="col-md-6 d-flex justify-content-center">
+                <div class="camera-wrapper">
+                    <div id="reader"></div>
+                </div>
+            </div>
         </div>
+
+        <div class="text-center mt-3">
+            <small class="text-muted" id="status-text">Pastikan izin kamera aktif...</small>
+        </div>
+
     </div>
 
-</div>
+    {{-- STYLE --}}
+    <style>
+        .camera-wrapper {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 4px solid #4e73df;
+            /* Warna Primary Bootstrap */
+            background: #000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
+            position: relative;
+        }
 
-{{-- STYLE --}}
-<style>
-    .camera-wrapper {
-        width: 340px;
-        height: 260px;
-        border-radius: 16px;
-        overflow: hidden;
-        border: 3px solid #e5e7eb;
-        background: #000;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, .15);
-    }
+        #reader {
+            width: 100%;
+            min-height: 300px;
+        }
 
-    #reader,
-    #reader video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover;
-    }
-</style>
+        /* Hilangkan tombol bawaan library jika mengganggu */
+        #reader__dashboard_section_csr span {
+            display: none !important;
+        }
+    </style>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- SCRIPTS --}}
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script>
-    const html5QrCode = new Html5Qrcode("reader");
+    <script>
+        // Inisialisasi Scanner
+        const html5QrCode = new Html5Qrcode("reader");
+        const statusText = document.getElementById('status-text');
 
-    function startScanner() {
-        html5QrCode.start({
-                facingMode: "environment"
-            }, {
-                fps: 10,
-                qrbox: {
-                    width: 180,
-                    height: 180
+        function startScanner() {
+            statusText.innerText = "Memulai kamera...";
+
+            html5QrCode.start({
+                    facingMode: "environment"
+                }, // Pakai kamera belakang
+                {
+                    fps: 10,
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    },
+                    aspectRatio: 1.0
                 },
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                }
-            },
-            onScanSuccess
-        );
-    }
+                onScanSuccess, // Callback jika sukses scan
+                onScanFailure // Callback jika frame gagal (opsional, biasanya dikosongkan agar tidak spam console)
+            ).catch(err => {
+                // 🔥 TANGKAP ERROR KAMERA DISINI
+                console.error("Error start camera: ", err);
+                statusText.innerText = "Gagal: " + err;
+                statusText.classList.add('text-danger');
 
-    function onScanSuccess(decodedText) {
-        html5QrCode.stop();
-
-        fetch("{{ route('qr.validate') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({
-                    qr: decodedText.trim()
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status !== 'valid') {
-                    Swal.fire('GAGAL', data.message, 'error');
-                    return startScanner();
-                }
-
-                // 🔥 FORM INPUT BELANJA
                 Swal.fire({
-                    title: 'Transaksi Belanja',
-                    html: `
-                    <b>${data.name}</b><br>
-                    ${data.nip} - ${data.unit}<br><br>
-                    <b>Saldo:</b> Rp ${data.credit.toLocaleString()}<br><br>
-                    <input id="amount" class="swal2-input"
-                        placeholder="Nominal belanja"
-                        type="number" min="1">
-                `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Proses',
-                    cancelButtonText: 'Batal',
-                    preConfirm: () => {
-                        const amount = document.getElementById('amount').value;
-                        if (!amount || amount <= 0) {
-                            Swal.showValidationMessage('Nominal tidak valid');
-                        }
-                        return amount;
-                    }
-                }).then(result => {
-                    if (!result.isConfirmed) {
-                        startScanner();
+                    icon: 'error',
+                    title: 'Kamera Gagal Dibuka',
+                    text: 'Pastikan Anda menggunakan HTTPS atau localhost, dan izinkan akses kamera di browser.',
+                    footer: `<small>${err}</small>`
+                });
+            });
+        }
+
+        function onScanFailure(error) {
+            // Biarkan kosong agar console tidak penuh warning saat mencari QR
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // 1. Matikan scanner & mainkan suara beep (opsional)
+            html5QrCode.stop().then(() => {
+                console.log("QR Stopped. Data:", decodedText);
+                statusText.innerText = "Memproses data...";
+
+                // 2. Kirim ke Server
+                validateQr(decodedText);
+            }).catch(err => {
+                console.error("Failed to stop", err);
+            });
+        }
+
+        function validateQr(qrCode) {
+            fetch("{{ route('qr.validate') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({
+                        qr: qrCode.trim()
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 'valid') {
+                        Swal.fire('Data Tidak Ditemukan', data.message, 'error').then(() => startScanner());
                         return;
                     }
 
-                    // 🔥 KIRIM TRANSAKSI
-                    fetch("{{ route('qr.transaction') }}", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                            },
-                            body: JSON.stringify({
-                                nip: data.nip,
-                                amount: result.value
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(resp => {
-                            if (resp.status === 'success') {
-                                Swal.fire(
-                                    'BERHASIL',
-                                    `Sisa saldo: Rp ${resp.sisa_credit.toLocaleString()}`,
-                                    'success'
-                                );
-                            } else {
-                                Swal.fire('GAGAL', resp.message, 'error');
-                            }
-                            setTimeout(startScanner, 2500);
-                        });
+                    // 3. Tampilkan Form Input Nominal
+                    showTransactionForm(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error Sistem', 'Gagal menghubungi server', 'error').then(() => startScanner());
                 });
+        }
+
+        function showTransactionForm(data) {
+            Swal.fire({
+                title: 'Transaksi Belanja',
+                html: `
+                <div class="text-left" style="font-size: 0.9rem;">
+                    <strong>Nama:</strong> ${data.name}<br>
+                    <strong>NIP:</strong> ${data.nip}<br>
+                    <strong>Unit:</strong> ${data.unit}<br>
+                    <hr>
+                    <strong>Sisa Saldo:</strong> <span class="text-success font-weight-bold">Rp ${parseInt(data.credit).toLocaleString('id-ID')}</span>
+                </div>
+                <div class="mt-3">
+                    <label>Masukkan Nominal Belanja:</label>
+                    <input id="amount" class="swal2-input" type="number" placeholder="Contoh: 50000" min="1" autofocus>
+                </div>
+            `,
+                showCancelButton: true,
+                confirmButtonText: 'Bayar',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#4e73df',
+                preConfirm: () => {
+                    const amount = document.getElementById('amount').value;
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Nominal harus diisi!');
+                        return false;
+                    }
+                    if (parseInt(amount) > parseInt(data.credit)) {
+                        Swal.showValidationMessage('Saldo tidak mencukupi!');
+                        return false;
+                    }
+                    return amount;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processTransaction(data.nip, result.value);
+                } else {
+                    startScanner(); // Nyalakan kamera lagi jika batal
+                }
             });
-    }
+        }
 
-    startScanner();
-</script>
+        function processTransaction(nip, amount) {
+            Swal.fire({
+                title: 'Memproses...',
+                didOpen: () => Swal.showLoading()
+            });
 
+            fetch("{{ route('qr.transaction') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({
+                        nip: nip,
+                        amount: amount
+                    })
+                })
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: `Sisa saldo: Rp ${parseInt(resp.sisa_credit).toLocaleString('id-ID')}`,
+                            timer: 3000,
+                            showConfirmButton: false
+                        }).then(() => startScanner());
+                    } else {
+                        Swal.fire('Gagal', resp.message, 'error').then(() => startScanner());
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'Terjadi kesalahan koneksi', 'error').then(() => startScanner());
+                });
+        }
+
+        // Jalankan Scanner saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', startScanner);
+    </script>
 @endsection

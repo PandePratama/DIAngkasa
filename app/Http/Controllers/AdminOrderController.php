@@ -2,68 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\Transaction; // Ubah dari Order ke Transaction
+use Illuminate\Http\Request;
 
 class AdminOrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::with('user')
-            ->select('orders.*')
-            ->selectRaw('SUM(order_items.qty * products.price) as total_belanja')
-            ->leftJoin('order_items', 'order_items.order_id', '=', 'orders.id')
-            ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
-            ->groupBy('orders.id')
+        // PERBAIKAN:
+        // 1. Tidak perlu JOIN manual ke tabel products yang hilang.
+        // 2. Gunakan tabel 'transactions' yang sudah punya kolom 'grand_total'.
+
+        $orders = Transaction::with('user') // Eager load User
             ->latest()
             ->paginate(10);
 
+        // Kita tetap lempar variabel '$orders' agar Anda tidak perlu ubah banyak di View
         return view('admin.orders.index', compact('orders'));
     }
 
-    public function detailOrder($orderId)
+    public function detailOrder($id)
     {
-        $order = Order::with(['user', 'items.product'])
-            ->findOrFail($orderId);
+        // Ambil detail transaksi beserta jadwal cicilannya
+        $order = Transaction::with(['user', 'installments'])
+            ->findOrFail($id);
 
         return view('admin.orders.detail', compact('order'));
     }
-
-    // public function downloadOrderCsv(Order $order): StreamedResponse
-    // {
-    //     $filename = 'order_' . $order->id . '.csv';
-
-    //     return response()->streamDownload(function () use ($order) {
-
-    //         $handle = fopen('php://output', 'w');
-
-    //         fputcsv($handle, [
-    //             'Order ID',
-    //             'User',
-    //             'Produk',
-    //             'Qty',
-    //             'Harga',
-    //             'Tipe Pembelian',
-    //             'Tenor',
-    //             'Subtotal'
-    //         ]);
-
-    //         foreach ($order->items as $item) {
-    //             fputcsv($handle, [
-    //                 $order->id,
-    //                 $order->user->name ?? '-',
-    //                 $item->product->name,
-    //                 $item->qty,
-    //                 $item->price,
-    //                 strtoupper($item->purchase_type),
-    //                 $item->tenor ?? '-',
-    //                 $item->qty * $item->price
-    //             ]);
-    //         }
-
-    //         fclose($handle);
-    //     }, $filename, [
-    //         'Content-Type' => 'text/csv',
-    //     ]);
-    // }
 }

@@ -9,7 +9,8 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Transaction::with('user')->latest();
+        // Ganti 'transaction' menjadi 'order' (sesuai nama fungsi di Model)
+        $query = Transaction::with('order')->latest();
 
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('created_at', [
@@ -19,7 +20,9 @@ class TransactionController extends Controller
         }
 
         $transactions = $query->get();
-        $total = $transactions->sum('amount');
+
+        // Pastikan menggunakan 'grand_total' jika itu nama kolom di DB Anda
+        $total = $transactions->sum('grand_total');
 
         return view('admin.transactions.index', compact('transactions', 'total'));
     }

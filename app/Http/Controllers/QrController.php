@@ -16,6 +16,8 @@ class QrController extends Controller
     {
         $nip = strtoupper(trim($request->qr));
 
+        $user = User::with('unitKerja')->where('nip', $nip)->first();
+
         if (!$nip) {
             return response()->json([
                 'status'  => 'invalid',
