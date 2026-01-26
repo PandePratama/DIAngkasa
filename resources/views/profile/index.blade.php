@@ -1,70 +1,234 @@
 @extends('layouts.app')
 
 @section('content')
-    <main class="pt-[10px]">
-        <div class="max-w-sm mx-auto my-10 bg-white rounded-xl shadow text-center p-6">
+    <main class="pt-10 px-4 pb-12">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {{-- QR CODE --}}
-            <div class="flex justify-center mb-4">
-                <div id="qrcode" class="w-[220px] h-[220px] border rounded-lg flex items-center justify-center">
+            {{-- ================= LEFT : PROFILE CARD ================= --}}
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl shadow p-6 text-center">
+                    {{-- QR CODE CONTAINER --}}
+                    <div class="flex justify-center mb-4">
+                        <div id="qrcode" class="p-2 border rounded-lg bg-white">
+                            {{-- QR Code akan muncul di sini --}}
+                        </div>
+                    </div>
+
+                    <button onclick="downloadQR()"
+                        class="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm py-2 rounded-lg transition">
+                        Download QR Code
+                    </button>
+
+                    <div class="mt-6 border-t pt-4">
+                        <h2 class="font-bold text-xl text-gray-800">{{ $user->name }}</h2>
+                        <p class="text-sm text-gray-500">NIP: {{ $user->nip }}</p>
+                        <p class="text-sm text-gray-600 mt-1">{{ $user->unitKerja->unit_name ?? '-' }}</p>
+                    </div>
+
+                    <div class="mt-4 bg-teal-50 rounded-lg py-4">
+                        <p class="text-xs text-teal-600 uppercase tracking-wider font-semibold">Saldo / Credit Limit</p>
+                        <p class="font-bold text-teal-700 text-xl">
+                            Rp {{ number_format($user->saldo ?? 0, 0, ',', '.') }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {{-- DOWNLOAD BUTTON --}}
-            <button onclick="downloadQR('#ffffff')"
-                class="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm py-2 rounded-lg">
-                Download QR Code
-            </button>
+            {{-- ================= RIGHT : CONTENT TABS ================= --}}
+            <div class="md:col-span-2">
+                <div class="bg-white rounded-xl shadow p-6">
 
-            {{-- USER INFO --}}
-            <h2 class="font-semibold text-lg mt-4">{{ $user->name }}</h2>
-            <p class="text-sm text-gray-600">{{ $user->nip }}</p>
-            <p class="text-sm text-gray-600">{{ $user->unit_kerja }}</p>
+                    {{-- TAB NAVIGATION --}}
+                    <div class="border-b mb-6 flex gap-6">
+                        <button class="tab-btn font-semibold text-teal-600 border-b-2 border-teal-600 pb-2 transition"
+                            data-tab="profile">
+                            Profile & Password
+                        </button>
+                        <button class="tab-btn text-gray-500 pb-2 hover:text-teal-500 transition" data-tab="history">
+                            History Transaksi
+                        </button>
+                    </div>
 
-            <p class="font-semibold mt-3 text-teal-700">
-                Rp {{ number_format($user->saldo ?? 0, 0, ',', '.') }}
-            </p>
+                    {{-- NOTIFICATION --}}
+                    @if (session('success'))
+                        <div
+                            class="mb-4 rounded-lg bg-green-100 border border-green-300 text-green-800 px-4 py-3 text-sm flex justify-between items-center">
+                            <span>{{ session('success') }}</span>
+                            <button onclick="this.parentElement.remove()" class="font-bold text-green-700">×</button>
+                        </div>
+                    @endif
+
+                    {{-- TAB CONTENT : PROFILE --}}
+                    <div id="tab-profile" class="tab-content space-y-8">
+                        {{-- UPDATE PROFILE --}}
+                        <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
+                            @csrf
+                            @method('PUT')
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                    <input type="text" name="name" value="{{ $user->name }}"
+                                        class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-teal-500 mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Email</label>
+                                    <input type="email" name="email" value="{{ $user->email }}"
+                                        class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-teal-500 mt-1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Unit Kerja</label>
+                                <input type="text" value="{{ $user->unitKerja->unit_name ?? '-' }}" disabled
+                                    class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed mt-1">
+                                <p class="text-[10px] text-gray-400 mt-1 italic">* Unit kerja hanya dapat diubah oleh Admin.
+                                </p>
+                            </div>
+                            <button type="submit"
+                                class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg text-sm transition shadow-sm">
+                                Simpan Perubahan
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        {{-- UPDATE PASSWORD --}}
+                        <form action="{{ route('profile.password') }}" method="POST" class="space-y-4">
+                            @csrf
+                            @method('PUT')
+                            <h3 class="font-semibold text-gray-800">Ganti Password</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Password Lama</label>
+                                    <input type="password" name="current_password"
+                                        class="w-full border rounded-lg px-3 py-2 text-sm @error('current_password') border-red-500 @enderror"
+                                        required>
+                                    @error('current_password')
+                                        <p class="text-red-600 text-[10px] mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Password Baru</label>
+                                    <input type="password" name="password"
+                                        class="w-full border rounded-lg px-3 py-2 text-sm @error('password') border-red-500 @enderror"
+                                        required>
+                                    @error('password')
+                                        <p class="text-red-600 text-[10px] mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700">Konfirmasi Password</label>
+                                    <input type="password" name="password_confirmation"
+                                        class="w-full border rounded-lg px-3 py-2 text-sm" required>
+                                </div>
+                            </div>
+                            <button type="submit"
+                                class="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg text-sm transition">
+                                Update Password
+                            </button>
+                        </form>
+                    </div>
+
+                    {{-- TAB CONTENT : HISTORY --}}
+                    <div id="tab-history" class="tab-content hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border-collapse">
+                                <thead class="bg-gray-50 text-gray-600 uppercase text-[11px] font-bold">
+                                    <tr>
+                                        <th class="p-3 border-b">Tanggal</th>
+                                        <th class="p-3 border-b">Invoice</th>
+                                        <th class="p-3 border-b">Total</th>
+                                        <th class="p-3 border-b text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($transactions ?? [] as $trx)
+                                        <tr class="hover:bg-gray-50 transition">
+                                            <td class="p-3 border-b">{{ $trx->created_at->format('d M Y') }}</td>
+                                            <td class="p-3 border-b font-mono text-xs">{{ $trx->invoice }}</td>
+                                            <td class="p-3 border-b">Rp {{ number_format($trx->total, 0, ',', '.') }}</td>
+                                            <td class="p-3 border-b text-center">
+                                                <span
+                                                    class="px-2 py-1 rounded-full text-[10px] font-bold uppercase {{ $trx->status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                                                    {{ $trx->status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="p-8 text-center text-gray-400">Belum ada riwayat
+                                                transaksi.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </main>
 
-    {{-- QR LIB --}}
+    {{-- SCRIPTS --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            new QRCode(document.getElementById("qrcode"), {
-                text: "{{ trim($user->nip) }}",
-                width: 220,
-                height: 220,
+            // 1. Initialize QR Code
+            const qrContainer = document.getElementById("qrcode");
+            const nipValue = "{{ trim($user->nip) }}";
+
+            const qrcode = new QRCode(qrContainer, {
+                text: nipValue,
+                width: 200,
+                height: 200,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H // 🔥 WAJIB BIAR MUDAH DISCAN
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // 2. Tab Logic
+            const tabs = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.tab;
+
+                    // Reset tabs
+                    tabs.forEach(t => t.classList.remove('text-teal-600', 'border-teal-600',
+                        'border-b-2'));
+                    tabs.forEach(t => t.classList.add('text-gray-500'));
+
+                    // Active tab
+                    btn.classList.add('text-teal-600', 'border-teal-600', 'border-b-2');
+                    btn.classList.remove('text-gray-500');
+
+                    // Show content
+                    contents.forEach(c => c.classList.add('hidden'));
+                    document.getElementById('tab-' + target).classList.remove('hidden');
+                });
             });
         });
 
-        /**
-         * Download QR dengan background custom
-         * @param {string} bgColor contoh: '#ffffff', '#fef3c7'
-         */
+        // 3. Download QR logic
         function downloadQR(bgColor = '#ffffff') {
             const qrCanvas = document.querySelector('#qrcode canvas');
+            if (!qrCanvas) return alert("QR Code belum siap.");
 
-            // Buat canvas baru (agar background solid)
             const canvas = document.createElement('canvas');
-            const size = 300; // bikin lebih besar biar tajam
+            const padding = 40;
+            const size = qrCanvas.width + (padding * 2);
+
             canvas.width = size;
             canvas.height = size;
 
             const ctx = canvas.getContext('2d');
-
-            // Background
+            // Fill background
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, size, size);
+            // Draw original QR onto new canvas
+            ctx.drawImage(qrCanvas, padding, padding);
 
-            // Gambar QR ke canvas baru
-            ctx.drawImage(qrCanvas, 40, 40, size - 80, size - 80);
-
-            // Download
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
             link.download = "QR-{{ $user->nip }}.png";

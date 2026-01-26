@@ -1,196 +1,133 @@
 <?php
 
-use App\Http\Controllers\Admin\OrderController;
-use App\Http\Controllers\AdminOrderController;
-use App\Http\Controllers\DiamartController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\BrandController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\DiamartProductController;
-use App\Http\Controllers\MinimarketController;
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\ProductMinimarketController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\QrController;
-use App\Http\Controllers\RadityaController;
-use App\Http\Controllers\RadityaProductController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\UnitKerjaController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\{
+    AuthController,
+    DashboardController,
+    CategoryController,
+    ProductController,
+    BrandController,
+    CartController,
+    DiamartController,
+    DiamartProductController,
+    MinimarketController,
+    PaymentController,
+    ProfileController,
+    QrController,
+    RadityaController,
+    RadityaProductController,
+    TransactionController,
+    UnitKerjaController,
+    UserController,
+    WelcomeController,
+    AdminOrderController
+};
 
-// Public Routes
+/*
+|--------------------------------------------------------------------------
+| Public Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
+
+// Gadget (Raditya) - Public
 Route::get('/gadget', [RadityaController::class, 'index'])->name('gadget.index');
-Route::get('/gadget/{product}', [RadityaController::class, 'show'])
-    ->name('gadget.show');
+Route::get('/gadget/{product}', [RadityaController::class, 'show'])->name('gadget.show');
+
+// Minimarket (Diamart) - Public
 Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
 Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');
 
-// Auth Routes
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-
+// Auth
+Route::get('/login', fn() => view('auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::group(['middleware' => ['auth', 'check.role:super_admin,admin']], function () {
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes (Semua User Login)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+
+    // Profile Management
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'index')->name('profile');
+        Route::put('/profile', 'updateProfile')->name('profile.update');
+        Route::put('/profile/password', 'updatePassword')->name('profile.password');
+    });
+
+    // Cart Management
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [CartController::class, 'index'])->name('index');
+
+        // Add items (Logic berbeda antara Diamart & Raditya)
+        Route::post('/add/diamart/{id}', [CartController::class, 'addDiamart'])->name('add.diamart');
+        Route::post('/add/raditya/{id}', [CartController::class, 'addRaditya'])->name('add.raditya');
+
+        // Common Cart Actions
+        Route::post('/update/{itemId}', [CartController::class, 'update'])->name('update');
+        Route::delete('/remove/{itemId}', [CartController::class, 'remove'])->name('remove');
+    });
+
+    // Checkout & Payment
+    Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout.index');
+    Route::post('/checkout', [CartController::class, 'process'])->name('checkout.process');
+
+    Route::controller(PaymentController::class)->prefix('payment')->name('payment.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/process', 'process')->name('process');
+        Route::get('/download-csv', 'downloadCsv')->name('downloadCsv');
+    });
+
+    Route::get('/transaction/success', fn() => view('transaction.success'))->name('transaction.success');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Admin & Super Admin Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->group(function () {
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Master Data
     Route::resource('categories', CategoryController::class);
-    // Route::resource('products', ProductController::class);
-    // Route::resource('minimarket-products', ProductMinimarketController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('unit-kerja', UnitKerjaController::class);
     Route::resource('users', UserController::class);
 
-    // Route::delete(
-    //     'products/images/{image}',
-    //     [ProductController::class, 'destroyImage']
-    // )->name('products.images.destroy');
+    // QR Scan & Transactions
+    Route::get('/qr-scan', fn() => view('admin.qrscan.index'))->name('admin.qr.scan.view');
+    Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])->name('qr.validate');
+    Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])->name('qr.transaction');
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
 
-    // Route::patch(
-    //     'products/images/{image}/primary',
-    //     [ProductController::class, 'setPrimaryImage']
-    // )->name('products.images.primary');
+    // Order Management
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
+    Route::get('/orders/{id}', [AdminOrderController::class, 'detailOrder'])->name('admin.orders.detail');
 
-    Route::get('/qr-scan', function () {
-        return view('admin.qrscan.index');
-    })->name('admin.qr.scan.view');
-
-    Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])
-        ->name('qr.validate');
-
-    Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])
-        ->name('qr.transaction');
-
-    Route::get('/transactions', [TransactionController::class, 'index'])
-        ->name('transactions.index');
-
-    Route::get('/admin/orders', [AdminOrderController::class, 'index'])
-        ->name('admin.orders.index');
-    Route::get('/admin/orders/{id}', [AdminOrderController::class, 'detailOrder'])
-        ->name('admin.orders.detail');
-
-    // Route::get(
-    //     '/admin/orders/{order}/download-csv',
-    //     [AdminOrderController::class, 'downloadOrderCsv']
-    // )->name('admin.orders.downloadCsv');
-});
-
-// Route::prefix('diamart')->group(function () {
-//     Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
-//     Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
-// });
-Route::middleware(['auth'])->prefix('admin')->group(function () {
-
-    // =============================================================
-    // 1. UNIT BISNIS: RADITYA (Gadget, Elektronik, Furniture)
-    // =============================================================
-
-    // A. Custom Routes untuk Images (Harus diletakkan SEBELUM resource)
-    Route::delete('raditya/images/{image}', [RadityaProductController::class, 'destroyImage'])
-        ->name('raditya.images.destroy');
-
-    Route::patch('raditya/images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])
-        ->name('raditya.images.primary');
-
-    // B. Resource Route Utama
-    // URL: /admin/raditya
-    // Route Names: raditya.index, raditya.create, dst.
-    Route::resource('raditya', RadityaProductController::class)
-        ->parameters(['raditya' => 'product']); // Agar di function controller tetap pakai variabel $product
-
-
-    // ROUTE PUBLIC (CUSTOMER)
-    Route::prefix('diamart')->group(function () {
-        // Halaman Utama Diamart
-        Route::get('/', [DiamartController::class, 'index'])->name('front.diamart.index');
-
-        // Halaman Detail Produk
-        Route::get('/product/{id}', [DiamartController::class, 'show'])->name('front.diamart.show');
+    // --- UNIT BISNIS: RADITYA (Gadget/Elektronik) ---
+    Route::prefix('raditya')->name('raditya.')->group(function () {
+        Route::delete('images/{image}', [RadityaProductController::class, 'destroyImage'])->name('images.destroy');
+        Route::patch('images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])->name('images.primary');
     });
-    // =============================================================
-    // 2. UNIT BISNIS: DIAMART (Sembako, Minimarket)
-    // =============================================================
+    Route::resource('raditya', RadityaProductController::class)->parameters(['raditya' => 'product']);
 
-    // A. Custom Routes untuk Images
-    Route::delete('diamart/images/{image}', [DiamartProductController::class, 'destroyImage'])
-        ->name('diamart.images.destroy');
-
-    Route::patch('diamart/images/{image}/primary', [DiamartProductController::class, 'setPrimaryImage'])
-        ->name('diamart.images.primary');
-
-    // B. Resource Route Utama
-    // URL: /admin/diamart
-    // Route Names: diamart.index, diamart.create, dst.
-    Route::resource('diamart', DiamartProductController::class)
-        ->parameters(['diamart' => 'product']); // Agar di function controller tetap pakai variabel $product
-
-});
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
-    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])
-        ->name('profile.password');
-});
-
-// routes/web.php
-Route::get('/transaction/success', function () {
-    return view('transaction.success');
-})->name('transaction.success');
-Route::middleware('auth')->group(function () {
-
-    // --- 1. ROUTE KHUSUS MENAMBAH ITEM (DIPISAH) ---
-    // Karena logic 'add' beda antara sembako dan elektronik
-
-    // Tambah Sembako (Diamart)
-    Route::post('/diamart/cart/add/{id}', [CartController::class, 'addDiamart'])
-        ->name('cart.add.diamart');
-
-    // Tambah Elektronik (Raditya)
-    Route::post('/raditya/cart/add/{id}', [CartController::class, 'addRaditya'])
-        ->name('cart.add.raditya');
-    Route::post('/cart/update/{itemId}', [CartController::class, 'update'])->name('cart.update');
-    Route::delete('/cart/remove/{itemId}', [CartController::class, 'remove'])->name('cart.remove');
-
-    // --- 2. ROUTE UMUM KERANJANG (DIGABUNG) ---
-    Route::prefix('cart')->name('cart.')->group(function () {
-
-        // Halaman Keranjang (Menampilkan item Diamart & Raditya)
-        Route::get('/', [CartController::class, 'index'])
-            ->name('index');
-
-        // Update Qty (Bisa dipakai umum karena pakai ID CartItem)
-        Route::post('/update/{itemId}', [CartController::class, 'update'])
-            ->name('update');
-
-        // Hapus Item (Bisa dipakai umum karena pakai ID CartItem)
-        Route::delete('/remove/{itemId}', [CartController::class, 'remove'])
-            ->name('remove');
+    // --- UNIT BISNIS: DIAMART (Sembako/Minimarket) ---
+    Route::prefix('diamart')->name('diamart.')->group(function () {
+        Route::delete('images/{image}', [DiamartProductController::class, 'destroyImage'])->name('images.destroy');
+        Route::patch('images/{image}/primary', [DiamartProductController::class, 'setPrimaryImage'])->name('images.primary');
     });
+    Route::resource('diamart', DiamartProductController::class)->parameters(['diamart' => 'product']);
 });
 
-Route::middleware('auth')->group(function () {
-
-    // PAYMENT
-    Route::get('/payment', [PaymentController::class, 'index'])
-        ->name('payment.index');
-
-    Route::post('/payment/process', [PaymentController::class, 'process'])
-        ->name('payment.process');
-
-    // Download CSV mock
-    Route::get('/payment/download-csv', [PaymentController::class, 'downloadCsv'])
-        ->name('payment.downloadCsv');
-
-    // CHECKOUT
-    Route::get('/checkout', [CartController::class, 'checkout'])
-        ->name('checkout.index');
-
-    Route::post('/checkout', [CartController::class, 'process'])
-        ->name('checkout.process');
+// Front-end Diamart (Customer View)
+Route::prefix('diamart')->name('front.diamart.')->group(function () {
+    Route::get('/', [DiamartController::class, 'index'])->name('index');
+    Route::get('/product/{id}', [DiamartController::class, 'show'])->name('show');
 });
