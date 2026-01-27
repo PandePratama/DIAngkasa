@@ -55,6 +55,22 @@
                     @method('PUT')
 
                     <div>
+                        <label class="text-sm font-medium">NIK</label>
+                        <input type="text"
+                            name="nik"
+                            id="nik"
+                            maxlength="16"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            value="{{ $user->nik }}"
+                            class="form-input w-full border rounded-lg px-3 py-2 text-sm"
+                            placeholder="Masukkan NIK">
+                        @error('nik')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label class="text-sm font-medium">Nama</label>
                         <input type="text"
                             name="name"
@@ -68,6 +84,22 @@
                             name="email"
                             value="{{ $user->email }}"
                             class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="text-sm font-medium">No. Telp</label>
+                        <input type="text"
+                            name="no_telp"
+                            id="no_telp"
+                            maxlength="15"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            value="{{ $user->no_telp }}"
+                            class="form-input w-full border rounded-lg px-3 py-2 text-sm"
+                            placeholder="Masukkan No. Telp">
+                        @error('no_telp')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     {{-- UNIT KERJA (READ ONLY) --}}
@@ -232,4 +264,35 @@
         link.click();
     }
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        function numericOnly(input, maxLength) {
+
+            // ⌨️ ketik & paste
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '').slice(0, maxLength);
+            });
+
+            // 📋 paste handler
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                const digits = text.replace(/\D/g, '').slice(0, maxLength);
+
+                document.execCommand('insertText', false, digits);
+            });
+
+            // 🚫 drag & drop
+            input.addEventListener('drop', e => e.preventDefault());
+        }
+
+        numericOnly(document.getElementById('nik'), 16);
+        numericOnly(document.getElementById('no_telp'), 15);
+    });
+</script>
+
+
 @endsection

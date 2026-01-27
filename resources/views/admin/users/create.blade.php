@@ -38,8 +38,23 @@
                 <input type="email"
                     name="email"
                     value="{{ old('email') }}"
-                    class="form-control"
-                    required>
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>No. Telp</label>
+                <input type="text"
+                    name="no_telp"
+                    value="{{ old('no_telp') }}"
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>NIK</label>
+                <input type="text"
+                    name="nik"
+                    value="{{ old('nik') }}"
+                    class="form-control">
             </div>
 
             <div class="form-group">

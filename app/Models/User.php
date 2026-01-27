@@ -19,6 +19,8 @@ class User extends Authenticatable
         'nip',
         'id_unit_kerja',
         'password',
+        'no_telp',
+        'nik',
 
     ];
 
@@ -51,8 +53,8 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'id_user');
     }
 
-    // public function transactions()
-    // {
-    //     return $this->hasMany(Transaction::class, 'user_id');
-    // }
+    public function cart()
+    {
+        return $this->hasOne(Cart::class, 'id_user');
+    }
 }

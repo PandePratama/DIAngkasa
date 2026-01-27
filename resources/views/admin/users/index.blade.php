@@ -19,7 +19,9 @@
                         <th width="50">No</th>
                         <th>Name</th>
                         <th>Email</th>
+                        <th>No. Telp</th>
                         <th>NIP</th>
+                        <th>NIK</th>
                         <th>Unit Kerja</th>
                         <th width="120">Action</th>
                     </tr>
@@ -30,7 +32,9 @@
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $user->name }}</td>
                         <td>{{ $user->email }}</td>
+                        <td>{{ $user->no_telp }}</td>
                         <td>{{ $user->nip ?? '-' }}</td>
+                        <td>{{ $user->nik ?? '-' }}</td>
                         <td>{{ $user->unitKerja->unit_name ?? '-' }}</td>
                         <td>
                             <a href="{{ route('users.edit', $user->id) }}"

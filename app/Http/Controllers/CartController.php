@@ -14,7 +14,7 @@ class CartController extends Controller
     public function index()
     {
         $cart = Cart::with('items.product')
-            ->where('user_id', Auth::id())
+            ->where('id_user', Auth::id())
             ->first();
 
         $items = $cart?->items ?? collect();
@@ -34,7 +34,7 @@ class CartController extends Controller
         ]);
 
         $cart = Cart::firstOrCreate([
-            'user_id' => Auth::id()
+            'id_user' => Auth::id()
         ]);
 
         $type  = $request->purchase_type;
