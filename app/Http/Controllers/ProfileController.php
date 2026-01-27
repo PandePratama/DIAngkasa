@@ -13,14 +13,12 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Mulai Query Transaksi milik User ini
-        // Asumsi: Anda sudah membuat relasi 'transactions' di model User (lihat langkah 2 di bawah)
+        // 1. Mulai Query
+        // Pastikan relasi 'transactions' ada di Model User.
+        // Jika error, ganti jadi: \App\Models\Transaction::where('user_id', $user->id)->latest();
         $query = $user->transactions()->latest();
 
-        // Alternatif jika belum ada relasi di model User:
-        // $query = \App\Models\Transaction::where('user_id', $user->id)->latest();
-
-        // 2. Logika Filter Tanggal (Sama seperti Admin tapi aman untuk User)
+        // 2. Filter Tanggal
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('created_at', [
                 $request->from . ' 00:00:00',
@@ -28,17 +26,19 @@ class ProfileController extends Controller
             ]);
         }
 
-        // 3. Eksekusi Query
-        $transactions = $query->get();
+        // 3. HITUNG TOTAL (Lakukan INI SEBELUM Pagination)
+        // Kita ingin total uang dari SEMUA data yang difilter, bukan cuma 10 data di halaman 1.
+        $total = $query->sum('grand_total');
 
-        // 4. Hitung Total (Hanya dari data yang difilter/ditampilkan)
-        // Pastikan nama kolomnya sesuai database ('grand_total' atau 'amount')
-        $total = $transactions->sum('grand_total');
+        // 4. EKSEKUSI PAGINATION (SOLUSI ERROR ANDA)
+        // Ganti get() menjadi paginate(10)
+        $transactions = $query->paginate(10)->withQueryString();
+        // withQueryString() penting agar saat klik Halaman 2, filter tanggal tidak hilang.
 
         return view('profile.index', [
             'user' => $user,
             'transactions' => $transactions,
-            'total' => $total, // Kirim variabel total ke view
+            'total' => $total,
         ]);
     }
 

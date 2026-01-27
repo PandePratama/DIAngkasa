@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
-use App\Models\Installment;
 use App\Models\Transaction;
+use App\Models\PurchaseType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth; // Tambahkan ini
-use Illuminate\Support\Facades\Log;  // Tambahkan ini
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -16,7 +16,6 @@ class PaymentController extends Controller
     {
         $user = auth()->user();
 
-        // Pastikan load relasi produk dengan benar
         $cart = Cart::with(['items.productDiamart.primaryImage', 'items.productDiraditya.primaryImage'])
             ->where('user_id', $user->id)
             ->first();
@@ -25,18 +24,16 @@ class PaymentController extends Controller
             return redirect()->route('cart.index');
         }
 
-        $cartItems = $cart->items;
-
         // 1. Hitung Subtotal
-        $subtotal = $cartItems->sum(function ($item) {
+        $subtotal = $cart->items->sum(function ($item) {
             $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
             return $item->qty * ($product->price ?? 0);
         });
 
-        // 2. Logika Admin Fee
+        // 2. Hitung Admin Fee
         if ($cart->business_unit == 'diamart') {
             $adminFee = 0;
-            $adminLabel = "Biaya Layanan (1%)"; // Label saja, nilai 0
+            $adminLabel = "Biaya Layanan";
         } else {
             $adminFee = 20000;
             $adminLabel = "Biaya Admin";
@@ -44,19 +41,19 @@ class PaymentController extends Controller
 
         $total = $subtotal + $adminFee;
 
-        return view('payment.index', compact('cart', 'cartItems', 'subtotal', 'adminFee', 'adminLabel', 'total'));
+        return view('payment.index', compact('cart', 'subtotal', 'adminFee', 'adminLabel', 'total'));
     }
 
     public function process(Request $request)
     {
+        // 1. Validasi Input
         $request->validate([
-            'payment_method' => 'required|in:cash,credit',
-            'tenure' => 'nullable|integer'
+            'payment_method' => 'required|exists:purchase_types,code',
         ]);
 
         $user = auth()->user();
 
-        // Ambil Cart
+        // 2. Ambil Cart
         $cart = Cart::with(['items.productDiamart', 'items.productDiraditya'])
             ->where('user_id', $user->id)->first();
 
@@ -64,25 +61,43 @@ class PaymentController extends Controller
             return redirect()->back()->with('error', 'Keranjang belanja tidak ditemukan.');
         }
 
-        // Logic Admin Fee
-        $adminFee = ($cart->business_unit == 'diamart') ? 0 : 20000;
+        // 3. Ambil Data Tipe Pembayaran
+        $purchaseType = PurchaseType::where('code', $request->payment_method)->first();
+        if (!$purchaseType) {
+            return redirect()->back()->with('error', 'Metode pembayaran tidak valid.');
+        }
 
-        // Hitung Subtotal
+        // 4. Hitung Total Akhir
         $subtotal = $cart->items->sum(function ($item) {
             $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
             return $item->qty * ($product->price ?? 0);
         });
 
-        // Tentukan Cicilan
-        $tenure = ($request->payment_method == 'credit') ? ($request->tenure ?? 3) : 1;
-        $monthlyPrincipal = $subtotal / $tenure;
+        $adminFee = ($cart->business_unit == 'diamart') ? 0 : 20000;
+        $grandTotal = $subtotal + $adminFee;
 
-        // Tagihan Pertama
-        $firstBill = $monthlyPrincipal + $adminFee;
+        // --- LOGIKA STATUS & SNAPSHOT SALDO ---
 
-        // Cek Saldo
-        if ($user->saldo < $firstBill) {
-            return redirect()->back()->with('error', 'Saldo tidak mencukupi. Sisa saldo: Rp ' . number_format($user->saldo));
+        $currentBalance = $user->saldo;
+        $balanceSnapshot = $currentBalance;
+
+        // Default Status (Cash)
+        $transactionStatus = 'ongoing';
+        $paymentStatus = 'unpaid';
+
+        // KHUSUS BALANCE (POTONG SALDO)
+        if ($purchaseType->code == 'balance') {
+            // Cek Saldo
+            if ($user->saldo < $grandTotal) {
+                return redirect()->back()->with('error', 'Saldo tidak mencukupi. Sisa saldo: Rp ' . number_format($user->saldo));
+            }
+
+            // Hitung sisa saldo SETELAH transaksi (Snapshot)
+            $balanceSnapshot = $currentBalance - $grandTotal;
+
+            // Set status jadi selesai
+            $transactionStatus = 'completed';
+            $paymentStatus = 'paid';
         }
 
         // --- MULAI PROSES TRANSAKSI ---
@@ -91,53 +106,49 @@ class PaymentController extends Controller
 
             // 1. Simpan Transaksi
             $trx = Transaction::create([
-                'user_id'      => $user->id,
-                'invoice_code' => 'INV-' . time() . rand(100, 999),
-                'grand_total'  => $subtotal + $adminFee,
-                'payment_type' => $request->payment_method,
-                'tenure'       => $tenure,
+                'user_id'          => $user->id,
+                'invoice_code'     => 'INV-' . time() . rand(100, 999),
+                'grand_total'      => $grandTotal,
+                'purchase_type_id' => $purchaseType->id,
+                'payment_method'   => $purchaseType->code, // Pastikan view success.blade.php membaca kolom ini
+                'status'           => $transactionStatus,
+                'payment_status'   => $paymentStatus,
+                'balance_after'    => $balanceSnapshot,
             ]);
 
-            // 2. Simpan Cicilan
-            for ($i = 1; $i <= $tenure; $i++) {
-                $amount = ($i == 1) ? $firstBill : $monthlyPrincipal;
-                Installment::create([
-                    'id_order'           => $trx->id, // Pastikan kolom ini benar di DB (id_order atau transaction_id)
-                    'installment_number' => $i,
-                    'amount'             => $amount,
-                    'due_date'           => now()->addMonths($i - 1),
-                    'status'             => ($i == 1) ? 'paid' : 'pending',
-                ]);
+            // 2. EKSEKUSI POTONG SALDO (Jika Balance)
+            if ($purchaseType->code == 'balance') {
+                $user->decrement('saldo', $grandTotal);
+                // Auth::user()->refresh() tidak wajib di sini karena request akan berakhir/redirect
             }
 
-            // 3. POTONG SALDO (UPDATE DATABASE)
-            // Ini akan langsung mengubah angka di database
-            $user->decrement('saldo', $firstBill);
-
-            // 4. Kurangi Stok
+            // 3. KURANGI STOK
             foreach ($cart->items as $item) {
                 $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+
                 if ($product->stock < $item->qty) {
-                    throw new \Exception("Stok {$product->name} habis.");
+                    throw new \Exception("Stok produk {$product->name} tidak mencukupi.");
                 }
                 $product->decrement('stock', $item->qty);
             }
 
-            // 5. Hapus Keranjang
+            // 4. BERSIHKAN KERANJANG
             $cart->items()->delete();
             $cart->delete();
 
-            DB::commit(); // Simpan Permanen
+            DB::commit();
 
-            // UPDATE SESSION USER AGAR TIDAK LOGOUT
-            // Ini trik pentingnya:
-            Auth::user()->refresh();
+            // --- PERUBAHAN DI SINI (REDIRECT) ---
 
-            return redirect()->route('transaction.success')->with('success', 'Pembayaran Berhasil!');
+            // Kita hapus logika "If Cash -> Index".
+            // Sekarang SEMUA metode (Cash & Balance) masuk ke halaman Success.
+            // Biarkan file success.blade.php yang mengatur tampilan teks (Kuning/Hijau).
+
+            return redirect()->route('transaction.success');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Payment Error: " . $e->getMessage()); // Cek storage/logs/laravel.log jika error
-            return redirect()->back()->with('error', 'Gagal memproses: ' . $e->getMessage());
+            Log::error("Payment Error: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
         }
     }
 }

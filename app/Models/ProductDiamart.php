@@ -12,9 +12,17 @@ class ProductDiamart extends Model
     protected $table = 'product_diamart'; // Wajib didefinisikan
     protected $guarded = ['id'];
 
-    // protected $fillable = [
+    protected $fillable = [
+        'sku',
+        'id_category',
+        'id_brand',
+        'name',
+        'price',
+        'stock',
+        'is_active',
+        'desc',
 
-    // ];
+    ];
 
     public function category()
     {

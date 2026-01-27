@@ -18,13 +18,16 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Rincian Barang</h2>
                         <div class="space-y-4">
-                            @forelse($cartItems as $item)
+                            {{-- PERBAIKAN: Gunakan $cart->items, bukan $cartItems --}}
+                            @forelse($cart->items as $item)
                                 @php
                                     // Logika menentukan produk Diamart atau Raditya
                                     $product = $item->id_product_diamart
                                         ? $item->productDiamart
                                         : $item->productDiraditya;
+
                                     $price = $product->price ?? 0;
+
                                     $image = $product->primaryImage
                                         ? asset('storage/' . $product->primaryImage->image_path)
                                         : asset('images/placeholder.png');
@@ -62,39 +65,31 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Metode Pembayaran</h2>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{-- Opsi Cash --}}
+                        <div class="space-y-3">
+
+                            {{-- OPSI 1: POTONG SALDO --}}
                             <label
-                                class="relative flex flex-col p-4 border rounded-xl cursor-pointer hover:border-teal-500 transition shadow-sm bg-gray-50">
-                                <input type="radio" name="payment_method" value="cash"
-                                    class="absolute top-4 right-4 text-teal-600 focus:ring-teal-500" required checked
-                                    onclick="toggleTenure(false)">
-                                <span class="font-bold text-sm text-gray-800">Bayar Tunai</span>
-                                <span class="text-[10px] text-gray-500 mt-1">Potong saldo otomatis</span>
+                                class="relative flex items-center p-4 border rounded-xl cursor-pointer hover:border-teal-500 transition shadow-sm bg-gray-50 has-[:checked]:border-teal-50 has-[:checked]:bg-teal-50">
+                                <input type="radio" name="payment_method" value="balance"
+                                    class="h-4 w-4 text-teal-600 focus:ring-teal-500" required checked>
+                                <div class="ml-3 block">
+                                    <span class="font-bold text-sm text-gray-800 block">Potong Saldo</span>
+                                    <span class="text-xs text-gray-500">Sisa Saldo: Rp
+                                        {{ number_format(auth()->user()->saldo, 0, ',', '.') }}</span>
+                                </div>
                             </label>
 
-                            {{-- Opsi Kredit (Hanya muncul jika unit bisnis Raditya) --}}
-                            @if ($cart->business_unit == 'raditya')
-                                <label
-                                    class="relative flex flex-col p-4 border rounded-xl cursor-pointer hover:border-teal-500 transition shadow-sm bg-gray-50">
-                                    <input type="radio" name="payment_method" value="credit"
-                                        class="absolute top-4 right-4 text-teal-600 focus:ring-teal-500"
-                                        onclick="toggleTenure(true)">
-                                    <span class="font-bold text-sm text-gray-800">Kredit Karyawan</span>
-                                    <span class="text-[10px] text-gray-500 mt-1">Cicilan bulanan</span>
-                                </label>
-                            @endif
-                        </div>
+                            {{-- OPSI 2: CASH / TUNAI --}}
+                            <label
+                                class="relative flex items-center p-4 border rounded-xl cursor-pointer hover:border-teal-500 transition shadow-sm bg-gray-50 has-[:checked]:border-teal-50 has-[:checked]:bg-teal-50">
+                                <input type="radio" name="payment_method" value="cash"
+                                    class="h-4 w-4 text-teal-600 focus:ring-teal-500">
+                                <div class="ml-3 block">
+                                    <span class="font-bold text-sm text-gray-800 block">Cash / Tunai</span>
+                                    <span class="text-xs text-gray-500">Bayar langsung di kasir toko</span>
+                                </div>
+                            </label>
 
-                        {{-- Pilihan Tenor (Hidden by default) --}}
-                        <div id="tenure-section" class="mt-6 hidden animate-fade-in-down">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Tenor Cicilan</label>
-                            <select name="tenure"
-                                class="w-full bg-white border border-gray-300 rounded-lg p-3 text-sm focus:ring-teal-500 focus:border-teal-500">
-                                <option value="3">3 Bulan</option>
-                                <option value="6">6 Bulan</option>
-                                <option value="12">12 Bulan (1 Tahun)</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -107,7 +102,8 @@
                         <div class="space-y-3 mb-6">
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-500 font-medium">Subtotal Belanja</span>
-                                <span class="font-bold text-gray-900">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                                <span class="font-bold text-gray-900">Rp
+                                    {{ number_format($subtotal, 0, ',', '.') }}</span>
                             </div>
 
                             {{-- Tampilkan Admin Fee Jika Ada --}}
@@ -121,22 +117,14 @@
 
                         <div class="bg-teal-50 rounded-xl p-4 mb-6 border border-teal-100">
                             <p class="text-[10px] text-teal-600 font-bold uppercase text-center mb-1 tracking-widest">
-                                Total Potong Saldo
+                                Total Tagihan
                             </p>
                             <p class="text-2xl font-black text-teal-700 text-center">
-                                @php
-                                    $isCredit = $cart->business_unit == 'raditya';
-                                    // Hitung total tampilan (Jika kredit: cicilan pertama + admin, Jika cash: full + admin)
-                                    $displayTotal = $isCredit ? $subtotal / 3 + $adminFee : $subtotal + $adminFee;
-                                @endphp
-                                Rp {{ number_format($displayTotal, 0, ',', '.') }}
+                                Rp {{ number_format($total, 0, ',', '.') }}
                             </p>
-                            @if ($isCredit)
-                                <p class="text-[10px] text-center text-teal-600 mt-1">*Estimasi cicilan pertama</p>
-                            @endif
                         </div>
 
-                        {{-- TOMBOL BAYAR (Type Button, bukan Submit) --}}
+                        {{-- TOMBOL BAYAR --}}
                         <button type="button" onclick="confirmPayment()"
                             class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1">
                             Konfirmasi & Bayar
@@ -153,57 +141,55 @@
     </main>
 
     {{-- SCRIPT AREA --}}
-    {{-- Memuat SweetAlert2 dari CDN --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // 1. Fungsi Toggle Tampilan Tenor
-        function toggleTenure(show) {
-            const section = document.getElementById('tenure-section');
-            if (section) {
-                section.style.display = show ? 'block' : 'none';
-
-                // Animasi kecil (opsional)
-                if (show) {
-                    section.classList.remove('opacity-0');
-                    section.classList.add('opacity-100');
-                }
-            }
-        }
-
-        // 2. Fungsi Konfirmasi Pembayaran (Profesional UX)
+        // Fungsi Konfirmasi Pembayaran (Dinamis: Cash vs Saldo)
         function confirmPayment() {
+            // 1. Cek Metode Pembayaran yang dipilih user
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+            let titleText = 'Konfirmasi Pembayaran';
+            let bodyText = "Saldo Anda akan terpotong otomatis.";
+            let btnText = 'Ya, Potong Saldo!';
+
+            // 2. Ubah teks jika memilih Cash
+            if (paymentMethod === 'cash') {
+                bodyText = "Pesanan akan dibuat. Silakan lakukan pembayaran tunai di kasir.";
+                btnText = 'Ya, Buat Pesanan!';
+            }
+
+            // 3. Tampilkan SweetAlert
             Swal.fire({
-                title: 'Konfirmasi Pembayaran',
-                text: "Saldo Anda akan terpotong otomatis untuk transaksi ini.",
+                title: titleText,
+                text: bodyText,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#0d9488', // Warna Teal-600
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Bayar Sekarang!',
+                confirmButtonText: btnText,
                 cancelButtonText: 'Batal',
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
 
-                    // --- EFEK LOADING PROFESIONAL ---
+                    // --- EFEK LOADING ---
                     Swal.fire({
                         title: 'Sedang Memproses...',
                         html: 'Mohon tunggu, jangan tutup halaman ini.',
                         allowOutsideClick: false,
                         didOpen: () => {
-                            Swal.showLoading(); // Munculkan spinner
+                            Swal.showLoading();
                         }
                     });
 
-                    // Submit form secara programmatically
-                    // Pastikan ID form sesuai: 'payment-form'
+                    // Submit form
                     document.getElementById('payment-form').submit();
                 }
             })
         }
 
-        // 3. Menangkap Pesan Error dari Controller (Misal: Saldo Kurang)
+        // Menangkap Pesan Error
         @if (session('error'))
             Swal.fire({
                 icon: 'error',
@@ -213,7 +199,7 @@
             });
         @endif
 
-        // 4. Menangkap Pesan Sukses
+        // Menangkap Pesan Sukses
         @if (session('success'))
             Swal.fire({
                 icon: 'success',

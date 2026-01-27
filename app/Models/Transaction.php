@@ -14,9 +14,10 @@ class Transaction extends Model
         'user_id',
         'invoice_code',
         'grand_total',
-        'payment_type',
+        'purchase_type_id',
         'tenure',
         'status',
+        'balance_after'
 
     ];
 
@@ -32,5 +33,17 @@ class Transaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+    public function purchaseType()
+    {
+        // Pastikan namespace PurchaseType benar
+        return $this->belongsTo(PurchaseType::class, 'purchase_type_id');
+    }
+
+    public function getPaymentLabelAttribute()
+    {
+        if ($this->payment_method == 'balance') return 'Potong Saldo';
+        if ($this->payment_method == 'cash') return 'Cash / Tunai';
+        return '-';
     }
 }

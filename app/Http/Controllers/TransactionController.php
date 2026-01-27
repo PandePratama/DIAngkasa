@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Tambahkan 'user' ke dalam with() (Eager Loading)
-        // Kita butuh data user untuk mengambil saldo-nya.
+        // 1. Query Dasar
         $query = Transaction::with(['order', 'user'])->latest();
 
+        // 2. Filter Tanggal (Lebih Rapi)
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('created_at', [
                 $request->from . ' 00:00:00',
@@ -20,24 +21,44 @@ class TransactionController extends Controller
             ]);
         }
 
-        $transactions = $query->get();
+        // Simpan total seluruh data (sebelum dipaginate) untuk keperluan statistik (Opsional)
+        // Hati-hati, sum() pada query besar juga bisa berat.
+        // Sebaiknya hanya hitung total halaman ini saja atau gunakan cache.
+        $grandTotalSemua = $query->sum('grand_total');
 
-        // 2. LOGIKA MATEMATIKA DISINI (Transform)
-        // Kita memodifikasi data sebelum dikirim ke View
-        $transactions->transform(function ($trx) {
-            // Cek apakah ada data user (untuk menghindari error jika user terhapus)
-            $currentSaldo = $trx->user ? $trx->user->saldo : 0;
+        // 3. Gunakan Pagination (Wajib untuk Admin)
+        $transactions = $query->paginate(20);
 
-            // Rumus: Saldo User Saat Ini - Grand Total Transaksi
-            // Hasilnya disimpan dalam atribut baru bernama 'sisa_saldo_kalkulasi'
-            $trx->sisa_saldo_kalkulasi = $currentSaldo - $trx->grand_total;
+        // 4. Transformasi Data (Hanya untuk yang tampil di halaman ini)
+        // getCollection() digunakan karena kita pakai paginate
+        $transactions->getCollection()->transform(function ($trx) {
+
+            // Opsi A: Jika ingin menampilkan Sisa Saldo User SAAT INI (Realtime)
+            $trx->user_current_saldo = $trx->user ? $trx->user->saldo : 0;
+
+            // Opsi B: LOGIKA YANG ANDA MINTA (TAPI LOGISNYA SALAH SEPERTI DIJELASKAN DI ATAS)
+            // Saya sarankan JANGAN pakai logika pengurangan ini untuk history.
+            // $trx->sisa_saldo_kalkulasi = $trx->user_current_saldo - $trx->grand_total;
 
             return $trx;
         });
 
-        // Hitung total semua transaksi
-        $total = $transactions->sum('grand_total');
+        return view('admin.transactions.index', compact('transactions', 'grandTotalSemua'));
+    }
 
-        return view('admin.transactions.index', compact('transactions', 'total'));
+    public function success()
+    {
+        // 1. Ambil transaksi paling baru milik user yang sedang login
+        $transaction = Transaction::where('user_id', Auth::id())
+            ->latest() // Mengurutkan dari yang terbaru
+            ->first(); // Ambil satu saja
+
+        // 2. Cek jika data tidak ditemukan (misal user iseng akses url tanpa belanja)
+        if (!$transaction) {
+            return redirect()->route('home')->with('error', 'Belum ada transaksi.');
+        }
+
+        // 3. Kirim variable $transaction ke view
+        return view('transaction.success', compact('transaction'));
     }
 }

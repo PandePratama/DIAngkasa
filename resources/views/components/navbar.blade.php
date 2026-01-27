@@ -16,13 +16,13 @@
             <a href="{{ route('minimarket.index') }}" class="hover:text-gray-200">Diamart</a>
             <a href="{{ route('gadget.index') }}" class="hover:text-gray-200">Raditya</a>
 
-<<<<<<< HEAD
             {{-- Cart Icon with Dynamic Badge --}}
             <a href="{{ route('cart.index') }}"
                 class="group relative p-2 text-gray-700 hover:text-teal-600 transition-colors duration-200">
-                <i class="fa-solid fa-cart-shopping text-xl"></i>
+                <i class="fa-solid fa-cart-shopping text-xl text-white hover:text-gray-200"></i>
 
-                @if ($cart_count > 0)
+                {{-- Pastikan variable $cart_count dikirim dari Controller atau ViewComposer --}}
+                @if (isset($cart_count) && $cart_count > 0)
                     <span class="absolute top-0 right-0 -mr-1 -mt-1 flex h-5 w-5">
                         <span
                             class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -30,15 +30,6 @@
                             class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-[10px] font-bold text-white items-center justify-center">
                             {{ $cart_count }}
                         </span>
-=======
-            {{-- Cart --}}
-            <a href="{{ route('cart.index') }}" class="relative text-lg hover:text-gray-200">
-                <i class="fa-solid fa-cart-shopping"></i>
-                @if (session('cart_count'))
-                    <span
-                        class="absolute -top-2 -right-2 bg-red-500 text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                        {{ session('cart_count') }}
->>>>>>> 2ca0543610cf7841ddcf6c76bf289f351fe5654b
                     </span>
                 @endif
             </a>
@@ -53,14 +44,10 @@
 
                     <div x-show="open" @click.away="open = false"
                         class="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded shadow">
-<<<<<<< HEAD
                         <a href="{{ route('profile.index') }}" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
-=======
-                        <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
->>>>>>> 2ca0543610cf7841ddcf6c76bf289f351fe5654b
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button class="w-full text-left px-4 py-2 hover:bg-red-500">Logout</button>
+                            <button class="w-full text-left px-4 py-2 hover:bg-red-500 hover:text-white">Logout</button>
                         </form>
                     </div>
                 </div>
@@ -97,7 +84,7 @@
             <a href="{{ route('home') }}" class="block hover:text-teal-400">Home</a>
             <a href="{{ route('cart.index') }}" class="block hover:text-teal-400">Cart</a>
             <a href="{{ route('gadget.index') }}" class="block hover:text-teal-400">Raditya</a>
-            <a href="#" class="block hover:text-teal-400">Diamart</a>
+            <a href="{{ route('minimarket.index') }}" class="block hover:text-teal-400">Diamart</a>
         </nav>
 
         {{-- Logout --}}
@@ -118,5 +105,3 @@
         </div>
     </aside>
 </header>
-
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

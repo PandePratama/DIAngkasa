@@ -39,17 +39,15 @@ Route::get('/gadget/{product}', [RadityaController::class, 'show'])->name('gadge
 Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
 Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');
 
-<<<<<<< HEAD
+
 // Auth
 Route::get('/login', fn() => view('auth.login'))->name('login');
-=======
+
 
 // Auth Routes
 Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
-
->>>>>>> 2ca0543610cf7841ddcf6c76bf289f351fe5654b
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -92,8 +90,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/process', 'process')->name('process');
         Route::get('/download-csv', 'downloadCsv')->name('downloadCsv');
     });
-
-    Route::get('/transaction/success', fn() => view('transaction.success'))->name('transaction.success');
+    Route::get('/transaction/success', [TransactionController::class, 'success'])->name('transaction.success');
 });
 
 
@@ -117,6 +114,7 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
     Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])->name('qr.validate');
     Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])->name('qr.transaction');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/history', [TransactionController::class, 'history'])->name('history.index');
 
     // Order Management
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
