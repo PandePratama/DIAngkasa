@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            $table->dropForeign(['product_id']);
-            $table->foreign('product_id')
-                ->references('id')->on('products')
-                ->onDelete('cascade');
+        Schema::table('categories', function (Blueprint $table) {
+            $table->enum('group', ['raditya', 'diamart'])->default('raditya')->after('id');
         });
     }
 
@@ -24,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            //
+        Schema::table('categories', function (Blueprint $table) {
+            $table->dropColumn('group');
         });
     }
 };

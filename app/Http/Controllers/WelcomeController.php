@@ -2,31 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use Illuminate\Http\Request;
+// Panggil Model yang baru dibuat (sesuai nama tabel yang dipisah)
+use App\Models\ProductDiraditya;
+use App\Models\ProductDiamart;
+use App\Models\ProductRaditya;
 
 class WelcomeController extends Controller
 {
     public function home()
     {
-        // Gadget categories
-        $gadgetCategories = ['Gadget', 'Elektronik', 'Furniture'];
-
-        $productsGadget = Product::with('primaryImage', 'category')
-            ->whereHas('category', function ($q) use ($gadgetCategories) {
-                $q->whereIn('name', $gadgetCategories);
-            })
-            ->latest()
-            ->limit(4) // ambil 8 best seller
+        // -----------------------------------------------------------
+        // 1. Section Gadget & Furniture (Raditya)
+        // -----------------------------------------------------------
+        // Ambil data langsung dari tabel 'product_diraditya'.
+        // Tabel ini secara logika bisnis sudah pasti berisi Gadget/Elektronik.
+        $productsGadget = ProductRaditya::with(['primaryImage', 'category'])
+            ->latest()   // Urutkan dari yang terbaru
+            ->limit(4)   // Ambil 4 item
             ->get();
 
-        // Minimarket categories (kecuali gadget)
-        $productsMinimarket = Product::with('primaryImage', 'category')
-            ->whereHas('category', function ($q) use ($gadgetCategories) {
-                $q->whereNotIn('name', $gadgetCategories);
-            })
+        // -----------------------------------------------------------
+        // 2. Section Minimarket (Diamart)
+        // -----------------------------------------------------------
+        // Ambil data langsung dari tabel 'product_diamart'.
+        // Tabel ini secara logika bisnis sudah pasti berisi Sembako/Harian.
+        $productsMinimarket = ProductDiamart::with(['primaryImage', 'category'])
             ->latest()
-            ->limit(4) // ambil 8 best seller minimarket
+            ->limit(4)
             ->get();
 
         return view('welcome', compact('productsGadget', 'productsMinimarket'));

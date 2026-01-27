@@ -13,16 +13,17 @@
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+            <table class="table table-bordered table-hover" width="100%">
                 <thead class="thead-light">
                     <tr>
                         <th width="50">No</th>
                         <th>Name</th>
-                        <th>Username</th>
                         <th>Email</th>
+                        <th>No. Telp</th>
                         <th>NIP</th>
+                        <th>NIK</th>
                         <th>Unit Kerja</th>
-                        <th width="150">Action</th>
+                        <th width="120">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,10 +31,11 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $user->name }}</td>
-                        <td>{{ $user->username }}</td>
-                        <td>{{ $user->email ?? '-' }}</td>
+                        <td>{{ $user->email }}</td>
+                        <td>{{ $user->no_telp }}</td>
                         <td>{{ $user->nip ?? '-' }}</td>
-                        <td>{{ $user->unit_kerja ?? '-' }}</td>
+                        <td>{{ $user->nik ?? '-' }}</td>
+                        <td>{{ $user->unitKerja->unit_name ?? '-' }}</td>
                         <td>
                             <a href="{{ route('users.edit', $user->id) }}"
                                 class="btn btn-warning btn-sm">
@@ -41,7 +43,8 @@
                             </a>
 
                             <form action="{{ route('users.destroy', $user->id) }}"
-                                method="POST" class="d-inline">
+                                method="POST"
+                                class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button onclick="return confirm('Delete this user?')"
@@ -53,7 +56,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted">
+                        <td colspan="6" class="text-center text-muted">
                             No users found
                         </td>
                     </tr>

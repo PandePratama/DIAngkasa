@@ -70,7 +70,7 @@ class QrController extends Controller
                 $user->update(['credit_limit' => $saldoAkhir]);
 
                 Transaction::create([
-                    'user_id'     => $user->id,
+                    'id_user'     => $user->id,
                     'nip'         => $user->nip,
                     'admin_name'  => auth()->user()->name,
                     'amount'      => $request->amount,

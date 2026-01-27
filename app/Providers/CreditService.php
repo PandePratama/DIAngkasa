@@ -17,14 +17,14 @@ class CreditService extends ServiceProvider
         [$start, $end] = CreditPeriod::current();
 
         // 🔹 QR
-        $qr = Transaction::where('user_id', $user->id)
+        $qr = Transaction::where('id_user', $user->id)
             ->whereBetween('created_at', [$start, $end])
             ->sum('amount');
 
         // 🔹 ORDER CREDIT
         $order = Order::join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
-            ->where('orders.user_id', $user->id)
+            ->where('orders.id_user', $user->id)
             ->where('orders.payment_method', 'credit')
             ->whereBetween('orders.created_at', [$start, $end])
             ->sum(DB::raw('order_items.qty * products.price'));
@@ -46,14 +46,14 @@ class CreditService extends ServiceProvider
         }
 
         // ✅ QR USER SAJA
-        $totalQr = Transaction::where('user_id', $user->id)
+        $totalQr = Transaction::where('id_user', $user->id)
             ->whereBetween('created_at', [$start, $end])
             ->sum('amount');
 
         // ✅ ORDER CREDIT USER SAJA
         $totalOrderCredit = Order::join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
-            ->where('orders.user_id', $user->id)
+            ->where('orders.id_user', $user->id)
             ->where('orders.payment_method', 'credit')
             ->whereBetween('orders.created_at', [$start, $end])
             ->sum(DB::raw('order_items.qty * products.price'));

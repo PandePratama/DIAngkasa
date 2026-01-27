@@ -1,86 +1,82 @@
-@extends('admin.layouts.app')
-
-@section('title', 'Minimarket Products')
+@extends('layouts.app')
+{{-- Pastikan layouts.app ini layout Public (bukan Admin Dashboard) --}}
 
 @section('content')
-<div class="card shadow mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Minimarket Products</h6>
-        <a href="{{ route('minimarket-products.create') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Add Product
-        </a>
-    </div>
+    {{-- Filter Bar --}}
+    {{-- PERBAIKAN 1: Tambahkan action route agar filter berfungsi --}}
+    <form action="{{ route('front.diamart.index') }}" method="GET" class="bg-gray-200 px-6 py-3 mb-4">
+        <div class="flex flex-wrap gap-3">
 
-    {{-- Tampilkan Error Validation --}}
-    @if ($errors->any())
-    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-        <ul class="list-disc list-inside">
-            @foreach ($errors->all() as $error)
-            <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
+            {{-- Category --}}
+            <select name="category" onchange="this.form.submit()" class="px-3 py-1 rounded border text-sm">
+                <option value="">Semua Kategori</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
 
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                <thead class="thead-light">
-                    <tr>
-                        <th width="50">No</th>
-                        <th>Code</th>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Stock</th>
-                        <th>Price</th>
-                        <th>Image</th>
-                        <th width="180">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($products as $product)
-                    <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td>{{ $product->product_code }}</td>
-                        <td>{{ $product->name }}</td>
-                        <td>{{ $product->category->name ?? '-' }}</td>
-                        <td>{{ $product->stock }}</td>
-                        <td>Rp {{ number_format($product->price, 0, ',', '.') }}</td>
-                        <td>
-                            @if($product->primaryImage)
-                            <img src="{{ asset('storage/'.$product->primaryImage->image_path) }}"
-                                width="80" class="img-thumbnail">
-                            @else
-                            <span class="text-muted">No Image</span>
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ route('minimarket-products.edit', $product->id) }}"
-                                class="btn btn-warning btn-sm">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                        {{-- PERBAIKAN 2: name -> category_name --}}
+                        {{ $category->category_name }}
 
-                            <form action="{{ route('minimarket-products.destroy', $product->id) }}"
-                                method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button onclick="return confirm('Delete this product?')"
-                                    class="btn btn-danger btn-sm">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">
-                            No products found
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </option>
+                @endforeach
+            </select>
+
         </div>
+    </form>
+
+    {{-- Produk Grid --}}
+    <div class="container mx-auto px-6 py-8">
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+
+            @forelse ($products as $product)
+                <div class="bg-white border rounded-lg p-3 hover:shadow transition">
+
+                    {{-- PERBAIKAN 3: Route ke front.diamart.show --}}
+                    <a href="{{ route('front.diamart.show', $product->id) }}" class="block">
+
+                        <div class="h-32 w-full flex items-center justify-center mb-3 bg-gray-50 rounded">
+                            @if ($product->primaryImage)
+                                <img src="{{ asset('storage/' . $product->primaryImage->image_path) }}"
+                                    class="h-full object-contain" alt="{{ $product->name }}">
+                            @else
+                                {{-- Placeholder jika tidak ada gambar --}}
+                                <div class="text-gray-400 text-xs">No Image</div>
+                            @endif
+                        </div>
+
+                        <p class="text-sm font-semibold leading-tight truncate">
+                            {{ $product->name }}
+                        </p>
+
+                        <p class="text-xs text-gray-600 mb-2">
+                            {{ $product->category->category_name ?? 'Umum' }}
+                        </p>
+
+                        <p class="text-sm font-bold text-teal-600">
+                            Rp {{ number_format($product->price, 0, ',', '.') }}
+                        </p>
+
+                        <div class="flex justify-end mt-2">
+                            <button class="text-gray-500 hover:text-teal-700">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </button>
+                        </div>
+                    </a>
+                </div>
+            @empty
+                <div class="col-span-full text-center py-10">
+                    <p class="text-gray-500 text-lg">Produk tidak ditemukan</p>
+                    <a href="{{ route('front.diamart.index') }}" class="text-teal-600 text-sm hover:underline">Reset
+                        Filter</a>
+                </div>
+            @endforelse
+
+        </div>
+
+        {{-- Pagination --}}
+        <div class="mt-8">
+            {{ $products->withQueryString()->links() }}
+        </div>
+
     </div>
-</div>
 @endsection

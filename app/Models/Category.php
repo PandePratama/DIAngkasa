@@ -8,13 +8,22 @@ use Illuminate\Database\Eloquent\Model;
 class Category extends Model
 {
     use HasFactory;
-    
+    protected $guarded = ['id'];
+
     protected $fillable = [
-        'name',    
+        'group', // <--- Tambahkan ini
+        'category_name',
+        'slug'
     ];
 
-    public function products()
+    // Sama seperti brand, relasi ke kedua jenis produk
+    public function productsDiamart()
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(ProductDiamart::class, 'id_category');
+    }
+
+    public function productsDiraditya()
+    {
+        return $this->hasMany(ProductRaditya::class, 'id_category');
     }
 }

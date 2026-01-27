@@ -2,21 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'nip',
-        'admin_name',
-        'amount',
-        'saldo_awal',
-        'saldo_akhir',
+    use HasFactory;
+    protected $guarded = ['id'];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
     ];
 
-    public function user()
+    public function order()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Order::class, 'id_order');
     }
 }

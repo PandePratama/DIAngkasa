@@ -74,8 +74,8 @@
     <div class="login-box px-3">
         <div class="card">
             <div class="brand-title">
-                <img src="{{ asset('sbadmin/img/Raditya logo R.png') }}" alt="Raditya Logo" class="brand-logo mt-2">
-                <img src="{{ asset('sbadmin/img/Logo Dia_Green.png') }}" alt="Diamar Logo" class="brand-logo mt-2">
+                <img src="{{ asset('sbadmin/img/Raditya logo R.webp') }}" alt="Raditya Logo" class="brand-logo mt-2">
+                <img src="{{ asset('sbadmin/img/Logo Dia_Green.webp') }}" alt="Diamar Logo" class="brand-logo mt-2">
             </div>
             <div class="card-body px-4 pt-1">
                 <h5 class="text-center mb-4 fw-bold">Login</h5>

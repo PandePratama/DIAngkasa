@@ -6,16 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Testing\Fluent\Concerns\Has;
 
-class Brand extends Model
+class Brands extends Model
 {
     use HasFactory;
+    protected $guarded = ['id'];
 
-    protected $fillable = [
-        'name',
-    ];
-
-    public function products()
+    public function productsDiraditya()
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(ProductRaditya::class, 'id_brand');
     }
 }

@@ -34,15 +34,6 @@
             </div>
 
             <div class="form-group">
-                <label>Username</label>
-                <input type="text"
-                    name="username"
-                    value="{{ old('username') }}"
-                    class="form-control"
-                    required>
-            </div>
-
-            <div class="form-group">
                 <label>Email</label>
                 <input type="email"
                     name="email"
@@ -51,30 +42,40 @@
             </div>
 
             <div class="form-group">
-                <label>NIP</label>
+                <label>No. Telp</label>
                 <input type="text"
-                    name="nip"
-                    value="{{ old('nip') }}"
-                    class="form-control"
-                    placeholder="Opsional (khusus employee)">
-            </div>
-
-            <div class="form-group">
-                <label>Unit Kerja</label>
-                <input type="text"
-                    name="unit_kerja"
-                    value="{{ old('unit_kerja') }}"
+                    name="no_telp"
+                    value="{{ old('no_telp') }}"
                     class="form-control">
             </div>
 
             <div class="form-group">
-                <label>Credit Limit</label>
-                <input type="number"
-                    name="credit_limit"
-                    value="{{ old('credit_limit') }}"
-                    class="form-control"
-                    min="0"
-                    step="0.01">
+                <label>NIK</label>
+                <input type="text"
+                    name="nik"
+                    value="{{ old('nik') }}"
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>NIP</label>
+                <input type="text"
+                    name="nip"
+                    value="{{ old('nip') }}"
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>Unit Kerja</label>
+                <select name="id_unit_kerja" class="form-control" required>
+                    <option value="">-- Pilih Unit Kerja --</option>
+                    @foreach ($unitKerja as $unit)
+                    <option value="{{ $unit->id }}"
+                        {{ old('id_unit_kerja') == $unit->id ? 'selected' : '' }}>
+                        {{ $unit->unit_name }}
+                    </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="row">

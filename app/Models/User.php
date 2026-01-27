@@ -5,64 +5,56 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
+
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $table = 'users';
-
-    /**
-     * Field yang BOLEH diisi dari form
-     * role sengaja TIDAK dimasukkan
-     */
     protected $fillable = [
-        'nip',
-        'unit_kerja',
         'name',
-        'username',
         'email',
+        'nip',
+        'id_unit_kerja',
         'password',
-        'role',
-        'credit_limit',
-        'is_active',
+        'no_telp',
+        'nik',
+
     ];
 
-    /**
-     * Field yang disembunyikan
-     */
+    protected $guarded = ['id'];
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Casting
-     */
     protected $casts = [
-        'is_active'     => 'boolean',
-        'last_login_at' => 'datetime',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
-    /**
-     * Helper role
-     */
-    public function isAdmin(): bool
+    // Relasi
+    public function unitKerja()
     {
-        return in_array($this->role, ['admin', 'super_admin']);
+        return $this->belongsTo(UnitKerja::class, 'id_unit_kerja');
     }
 
-    public function isSuperAdmin(): bool
+    public function activeCart()
     {
-        return $this->role === 'super_admin';
+        // Asumsi 1 User hanya punya 1 Cart aktif
+        return $this->hasOne(Cart::class, 'id_user');
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'id_user');
+    }
+
     public function cart()
     {
-        return $this->hasOne(Cart::class);
-    }
-
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class);
+        return $this->hasOne(Cart::class, 'id_user');
     }
 }

@@ -17,7 +17,7 @@ class PaymentController extends Controller
         $user = auth()->user();
 
         $cart = Cart::with('items.product')
-            ->where('user_id', $user->id)
+            ->where('id_user', $user->id)
             ->first();
 
         $cartItems = $cart ? $cart->items : collect();
@@ -38,7 +38,7 @@ class PaymentController extends Controller
         $user = auth()->user();
 
         $cart = Cart::with('items.product')
-            ->where('user_id', $user->id)
+            ->where('id_user', $user->id)
             ->first();
 
         if (!$cart || $cart->items->isEmpty()) {
@@ -66,7 +66,7 @@ class PaymentController extends Controller
 
             // 💾 CREATE ORDER
             $order = Order::create([
-                'user_id'         => $user->id,
+                'id_user'         => $user->id,
                 'payment_method'  => $request->payment_method,
                 'shipping_method' => $request->shipping_method
             ]);

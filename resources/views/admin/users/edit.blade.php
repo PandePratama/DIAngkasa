@@ -35,19 +35,26 @@
             </div>
 
             <div class="form-group">
-                <label>Username</label>
-                <input type="text"
-                    name="username"
-                    value="{{ old('username', $user->username) }}"
-                    class="form-control"
-                    required>
-            </div>
-
-            <div class="form-group">
                 <label>Email</label>
                 <input type="email"
                     name="email"
                     value="{{ old('email', $user->email) }}"
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>No. Telp</label>
+                <input type="text"
+                    name="no_telp"
+                    value="{{ old('no_telp', $user->no_telp) }}"
+                    class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label>NIK</label>
+                <input type="text"
+                    name="nik"
+                    value="{{ old('nik', $user->nik) }}"
                     class="form-control">
             </div>
 
@@ -61,39 +68,34 @@
 
             <div class="form-group">
                 <label>Unit Kerja</label>
-                <input type="text"
-                    name="unit_kerja"
-                    value="{{ old('unit_kerja', $user->unit_kerja) }}"
-                    class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label>Credit Limit</label>
-                <input type="number"
-                    name="credit_limit"
-                    value="{{ old('credit_limit', $user->credit_limit) }}"
-                    class="form-control"
-                    min="0"
-                    step="0.01">
+                <select name="id_unit_kerja" class="form-control" required>
+                    <option value="">-- Pilih Unit Kerja --</option>
+                    @foreach ($unitKerja as $unit)
+                    <option value="{{ $unit->id }}"
+                        {{ old('id_unit_kerja', $user->id_unit_kerja) == $unit->id ? 'selected' : '' }}>
+                        {{ $unit->unit_name }}
+                    </option>
+                    @endforeach
+                </select>
             </div>
 
             <hr>
 
             <div class="row">
                 <div class="col-md-6">
-                    <label>New Password</label>
+                    <label>Password Baru</label>
                     <input type="password"
                         name="password"
                         class="form-control"
-                        placeholder="Leave blank if not changing">
+                        placeholder="Kosongkan jika tidak diubah">
                 </div>
 
                 <div class="col-md-6">
-                    <label>Confirm New Password</label>
+                    <label>Konfirmasi Password</label>
                     <input type="password"
                         name="password_confirmation"
                         class="form-control"
-                        placeholder="Leave blank if not changing">
+                        placeholder="Kosongkan jika tidak diubah">
                 </div>
             </div>
 

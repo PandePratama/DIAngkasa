@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cart_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->integer('qty')->default(1);
-            $table->enum('purchase_type', ['cash', 'credit']);
-            $table->integer('tenor')->nullable();
-            $table->bigInteger('price');
+            $table->foreignId('id_cart')->constrained('carts')->onDelete('cascade');
+            $table->foreignId('id_product_diamart')->nullable()->constrained('product_diamart');
+            $table->foreignId('id_product_diraditya')->nullable()->constrained('product_diraditya');
+            $table->integer('qty');
             $table->timestamps();
         });
     }

@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transaction_qr_log', function (Blueprint $table) {
+        Schema::create('product_diamart', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('nip');
-            $table->string('admin_name');
-            $table->decimal('amount', 15, 2);
+            $table->foreignId('id_category')->constrained('categories');
+            $table->foreignId('id_brand')->constrained('brands');
+            $table->string('name');
+            $table->decimal('price', 15, 2);
+            $table->integer('stock');
+            $table->text('desc')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transaction_qr_log');
+        Schema::dropIfExists('product_diamart');
     }
 };
