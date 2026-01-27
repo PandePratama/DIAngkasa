@@ -31,6 +31,7 @@ Route::get('/gadget/{product}', [RadityaController::class, 'show'])
 Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
 Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');
 
+
 // Auth Routes
 Route::get('/login', function () {
     return view('auth.login');

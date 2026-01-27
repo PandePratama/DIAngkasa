@@ -12,6 +12,10 @@ class ProductDiamart extends Model
     protected $table = 'product_diamart'; // Wajib didefinisikan
     protected $guarded = ['id'];
 
+    // protected $fillable = [
+
+    // ];
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'id_category');

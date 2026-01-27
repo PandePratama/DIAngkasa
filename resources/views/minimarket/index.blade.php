@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-
 {{-- Filter Bar --}}
 <form method="GET" class="bg-gray-200 px-6 py-3 mb-4">
     <div class="flex flex-wrap gap-3">
@@ -14,7 +13,7 @@
             @foreach ($categories as $category)
             <option value="{{ $category->id }}"
                 {{ request('category') == $category->id ? 'selected' : '' }}>
-                {{ $category->category_name }}
+                {{ $category->name }}
             </option>
             @endforeach
         </select>
@@ -30,15 +29,12 @@
         @forelse ($products as $product)
         <div class="bg-white border rounded-lg p-3 hover:shadow transition">
 
-            <a href="{{ route('minimarket.show', $product->id) }}"
-                class="block">
+            <a href="{{ route('minimarket.show', $product->id) }}" class="block">
 
-                <img
-                    src="{{ $product->primaryImage
-                        ? asset('storage/'.$product->primaryImage->image_path)
-                        : asset('images/placeholder.png') }}"
-                    class="mx-auto h-32 object-contain mb-3"
-                    alt="{{ $product->name }}">
+                <img src="{{ $product->primaryImage
+                            ? asset('storage/' . $product->primaryImage->image_path)
+                            : asset('images/placeholder.png') }}"
+                    class="mx-auto h-32 object-contain mb-3" alt="{{ $product->name }}">
 
                 <p class="text-sm font-semibold leading-tight">
                     {{ $product->name }}
@@ -69,5 +65,4 @@
     </div>
 
 </div>
-
 @endsection
