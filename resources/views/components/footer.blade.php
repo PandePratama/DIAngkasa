@@ -5,7 +5,8 @@
         <div>
             <h3 class="text-lg font-semibold mb-4">Tentang DiRaditya</h3>
             <p class="text-gray-200 text-sm">
-                DiRaditya Marketplace menyediakan berbagai produk gadget dan kebutuhan rumah tangga dengan harga terbaik dan pelayanan cepat.
+                DiRaditya Marketplace menyediakan berbagai produk gadget dan kebutuhan rumah tangga dengan harga terbaik
+                dan pelayanan cepat.
             </p>
         </div>
 

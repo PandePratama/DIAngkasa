@@ -1,0 +1,28 @@
+[33mf217908[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtransaksi[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{0}: checkout: moving from master to transaksi
+[33mf217908[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtransaksi[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{1}: checkout: moving from transaksi to master
+[33mf217908[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtransaksi[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{2}: checkout: moving from transaksi to transaksi
+[33mf217908[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtransaksi[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{3}: reset: moving to master
+[33m798072b[m[33m ([m[1;31morigin/transaksi[m[33m)[m HEAD@{4}: checkout: moving from master to transaksi
+[33mf217908[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtransaksi[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{5}: reset: moving to origin/master
+[33m798072b[m[33m ([m[1;31morigin/transaksi[m[33m)[m HEAD@{6}: reset: moving to HEAD
+[33m798072b[m[33m ([m[1;31morigin/transaksi[m[33m)[m HEAD@{7}: checkout: moving from transaksi to master
+[33m798072b[m[33m ([m[1;31morigin/transaksi[m[33m)[m HEAD@{8}: reset: moving to master
+[33m1263260[m HEAD@{9}: checkout: moving from master to transaksi
+[33m798072b[m[33m ([m[1;31morigin/transaksi[m[33m)[m HEAD@{10}: commit: update payment
+[33md7ac51b[m HEAD@{11}: commit (merge): test
+[33m17de679[m HEAD@{12}: checkout: moving from transaksi to master
+[33m1263260[m HEAD@{13}: commit (merge): update
+[33m65838be[m HEAD@{14}: commit: test
+[33m2ca0543[m HEAD@{15}: checkout: moving from master to transaksi
+[33m17de679[m HEAD@{16}: commit: update history transaksi
+[33mff7788f[m HEAD@{17}: commit: update transaksi
+[33mdcf0d0a[m HEAD@{18}: commit (merge): Merge branch 'profile' of https://github.com/PandePratama/DIAngkasa
+[33mdb4450b[m HEAD@{19}: pull origin raditya --no-rebase: Merge made by the 'ort' strategy.
+[33mbdfcaf3[m HEAD@{20}: commit: diamart
+[33m6deb891[m[33m ([m[1;31morigin/new_konsep[m[33m)[m HEAD@{21}: pull origin new_konsep: Fast-forward
+[33mcab09cc[m HEAD@{22}: checkout: moving from transaksi to master
+[33m2ca0543[m HEAD@{23}: commit: WIP perubahan sebelum ambil new_konsep dari remote
+[33m9760e9a[m HEAD@{24}: commit: update product
+[33m9f65085[m HEAD@{25}: commit: new branch transaction
+[33mcab09cc[m HEAD@{26}: checkout: moving from master to transaksi
+[33mcab09cc[m HEAD@{27}: clone: from https://github.com/PandePratama/DIAngkasa.git

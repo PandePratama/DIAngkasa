@@ -26,8 +26,8 @@
                 {{-- SKU --}}
                 <div class="form-group">
                     <label>SKU Produk</label>
-                    <input type="text" name="sku" value="{{ old('sku') }}" class="form-control"
-                        placeholder="Contoh: DMRT-001" required autocomplete="off">
+                    <input type="text" class="form-control" value="Auto Generate" readonly>
+
                 </div>
 
                 {{-- Nama Produk --}}
@@ -36,7 +36,6 @@
                     <input type="text" name="name" value="{{ old('name') }}" class="form-control"
                         placeholder="Contoh: Beras Ramos 5kg" required autocomplete="off">
                 </div>
-
                 {{-- Deskripsi --}}
                 <div class="form-group">
                     <label>Deskripsi (Opsional)</label>
@@ -72,13 +71,31 @@
                     </div>
 
                     <div class="col-md-6">
-                        {{-- Harga --}}
                         <div class="form-group">
-                            <label>Harga Jual (Rp)</label>
-                            <input type="number" name="price" value="{{ old('price') }}" class="form-control"
-                                min="0" required>
+                            <label class="font-weight-bold text-primary">Harga Jual</label>
+
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Rp</span>
+                                </div>
+
+                                {{-- Input Tampilan --}}
+                                <input type="text" id="price_display"
+                                    class="form-control @error('price') is-invalid @enderror" placeholder="0"
+                                    autocomplete="off">
+
+                                {{-- Input Hidden (Ke Database) --}}
+                                <input type="hidden" name="price" id="price" value="{{ old('price') }}">
+                            </div>
+
+                            <small class="text-muted">Format otomatis (Contoh: 1.000.000)</small>
+
+                            @error('price')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
+
                 </div>
 
                 {{-- Upload Gambar --}}
@@ -206,5 +223,36 @@
                 previewContainer.classList.add('d-none');
             }
         }
+    </script>
+
+    <script>
+        function formatRupiah(angka) {
+            return angka.replace(/\D/g, '')
+                .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function initCurrencyInput(displayId, hiddenId) {
+            const displayInput = document.getElementById(displayId);
+            const hiddenInput = document.getElementById(hiddenId);
+
+            if (!displayInput || !hiddenInput) return;
+
+            // Set nilai awal dari old()
+            if (hiddenInput.value) {
+                displayInput.value = formatRupiah(hiddenInput.value);
+            }
+
+            displayInput.addEventListener('input', function() {
+                let rawValue = this.value.replace(/\D/g, '');
+                this.value = formatRupiah(rawValue);
+                hiddenInput.value = rawValue;
+            });
+        }
+
+        // Init semua currency input
+        document.addEventListener('DOMContentLoaded', function() {
+            initCurrencyInput('saldo_display', 'saldo');
+            initCurrencyInput('price_display', 'price');
+        });
     </script>
 @endpush

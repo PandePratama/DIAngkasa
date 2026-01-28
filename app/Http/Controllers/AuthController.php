@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -57,5 +59,30 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home'); // ✅ UX lebih baik
+    }
+
+    public function store(Request $request)
+    {
+        // 1. Validasi
+        $validated = $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'nip'           => 'nullable|string',
+            'id_unit_kerja' => 'required|exists:unit_kerjas,id', // Sesuaikan nama tabel unit kerja
+            'password'      => 'required|min:6|confirmed',
+            'role'          => 'required|in:user,admin,super_admin', // <--- Validasi Role
+        ]);
+
+        // 2. Simpan User
+        User::create([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'nip'           => $request->nip,
+            'id_unit_kerja' => $request->id_unit_kerja,
+            'password'      => Hash::make($request->password), // Jangan lupa Hash password
+            'role'          => $request->role, // <--- Simpan Role
+        ]);
+
+        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan');
     }
 }

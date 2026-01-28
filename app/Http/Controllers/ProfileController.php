@@ -9,14 +9,36 @@ use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $user = Auth::user();
+
+        // 1. Mulai Query
+        // Pastikan relasi 'transactions' ada di Model User.
+        // Jika error, ganti jadi: \App\Models\Transaction::where('user_id', $user->id)->latest();
+        $query = $user->transactions()->latest();
+
+        // 2. Filter Tanggal
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereBetween('created_at', [
+                $request->from . ' 00:00:00',
+                $request->to . ' 23:59:59'
+            ]);
+        }
+
+        // 3. HITUNG TOTAL (Lakukan INI SEBELUM Pagination)
+        // Kita ingin total uang dari SEMUA data yang difilter, bukan cuma 10 data di halaman 1.
+        $total = $query->sum('grand_total');
+
+        // 4. EKSEKUSI PAGINATION (SOLUSI ERROR ANDA)
+        // Ganti get() menjadi paginate(10)
+        $transactions = $query->paginate(10)->withQueryString();
+        // withQueryString() penting agar saat klik Halaman 2, filter tanggal tidak hilang.
+
         return view('profile.index', [
-            'user' => Auth::user(),
-            'transactions' => Auth::user()
-                // ->transactions()
-                ->latest()
-                ->get()
+            'user' => $user,
+            'transactions' => $transactions,
+            'total' => $total,
         ]);
     }
 

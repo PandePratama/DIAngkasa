@@ -37,9 +37,9 @@
                 </div>
 
                 {{-- FORM --}}
-                <form method="POST" action="{{ route('cart.add', $product->id) }}">
+                <form method="POST" action="{{ route('cart.add.diamart', $product->id) }}">
                     @csrf
-                    <input type="hidden" name="purchase_type" value="cash">
+                    {{-- <input type="hidden" name="purchase_type" value="cash"> --}}
 
                     <button
                         class="mt-6 w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-full font-semibold">

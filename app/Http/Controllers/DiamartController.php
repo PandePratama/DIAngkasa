@@ -36,4 +36,15 @@ class DiamartController extends Controller
 
         return view('minimarket.show', compact('product'));
     }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+        ]);
+
+        ProductDiamart::whereIn('id', $request->product_ids)->delete();
+
+        return redirect()->back()->with('success', 'Produk terpilih berhasil diproses.');
+    }
 }

@@ -19,6 +19,7 @@ class StoreUserRequest extends FormRequest
             'nip'            => 'nullable|string|unique:users,nip,',
             'id_unit_kerja'  => 'required|exists:unit_kerja,id',
             'password'       => 'nullable|min:6|confirmed',
+            'saldo'     => 'nullable|numeric|min:0',
             'no_telp'       => 'nullable|string|max:20',
             'nik'           => 'nullable|string|max:20|unique:users,nik,',
         ];
@@ -36,6 +37,7 @@ class StoreUserRequest extends FormRequest
             'id_unit_kerja.exists'   => 'Unit Kerja tidak valid.',
             'password.min'           => 'Password minimal 6 karakter.',
             'password.confirmed'     => 'Konfirmasi password tidak sesuai.',
+
             
         ];
     }
