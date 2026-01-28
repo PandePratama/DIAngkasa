@@ -47,12 +47,23 @@ class ProfileController extends Controller
         $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'no_telp' => 'required|string|digits_between:10,15',
+            'nik' => 'required|string|digits:16',
+        ], [
+            'name.required' => 'Nama wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+
+            'no_telp.digits_between' => 'No. Telp harus 10–15 digit angka',
+            'nik.digits' => 'NIK harus terdiri dari 16 digit angka',
         ]);
 
         $user = Auth::user();
         $user->update([
             'name'  => $request->name,
             'email' => $request->email,
+            'no_telp' => $request->no_telp,
+            'nik' => $request->nik,
         ]);
 
         return back()->with('success', 'Profile berhasil diperbarui');
