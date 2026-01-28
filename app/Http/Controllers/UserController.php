@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\UnitKerja;
+use Illuminate\Support\Facades\Hash; // Tambahkan ini untuk hashing password
 
 class UserController extends Controller
 {
@@ -23,7 +24,19 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
-        User::create($request->validated());
+        // 1. Ambil data yang sudah divalidasi
+        $data = $request->validated();
+
+        // 2. Set Default Saldo ke 0 jika kosong
+        // (Input 'saldo' didapat dari hidden input hasil JS formatting)
+        $data['saldo'] = $request->saldo ?? 0;
+
+        // 3. Hash Password (Default 'password123' jika tidak diisi admin)
+        $rawPassword = $request->password ?? 'password123';
+        $data['password'] = Hash::make($rawPassword);
+
+        User::create($data);
+
         return redirect()->route('users.index')->with('success', 'User berhasil dibuat');
     }
 
@@ -35,20 +48,29 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        // 1. Ambil data validasi
         $data = $request->validated();
 
-        // ⛔ Jangan update password jika kosong
+        // 2. Handle Password
+        // Jika kosong, hapus dari array agar password lama tidak tertimpa null/kosong
         if (empty($data['password'])) {
             unset($data['password']);
+        } else {
+            // Jika diisi, hash password baru
+            $data['password'] = Hash::make($data['password']);
         }
+
+        // 3. Handle Saldo
+        // Pastikan saldo terupdate (jika null dianggap 0)
+        $data['saldo'] = $request->saldo ?? 0;
 
         $user->update($data);
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User berhasil diperbarui');
+            ->with('success', 'Saldo berhasil diupdate!');
     }
-    
+
     public function destroy(User $user)
     {
         if ($user->role === 'super_admin') {

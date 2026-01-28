@@ -15,7 +15,6 @@ class ProductDiamart extends Model
     protected $fillable = [
         'sku',
         'id_category',
-        'id_brand',
         'name',
         'price',
         'stock',

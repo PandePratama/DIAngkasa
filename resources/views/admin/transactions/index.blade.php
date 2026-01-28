@@ -40,6 +40,7 @@
                             <th>Total Belanja</th>
                             <th>Saldo Terpotong</th>
                             <th>Sisa Saldo User (Saat Ini)</th>
+                            <th width="100">Aksi</th> {{-- KOLOM BARU --}}
                         </tr>
                     </thead>
                     <tbody>
@@ -119,6 +120,12 @@
                                             Tidak tercatat
                                         </span>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ route('transactions.print_invoice', $trx->id) }}" target="_blank"
+                                        class="btn btn-sm btn-info shadow-sm" title="Cetak Invoice">
+                                        <i class="fas fa-print"></i>
+                                    </a>
                                 </td>
                             </tr>
                         @empty

@@ -18,6 +18,8 @@
 
     <link href="{{ asset('sbadmin/css/sb-admin-2.min.css') }}" rel="stylesheet">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 
     @stack('scripts')
@@ -226,6 +228,64 @@
     <script src="{{ asset('sbadmin/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
 
     <script src="{{ asset('sbadmin/js/sb-admin-2.min.js') }}"></script>
+
+    <script>
+        // Cek apakah ada session 'success' dari Controller
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 2000 // Otomatis tutup setelah 2 detik
+            });
+        @endif
+
+        // Cek apakah ada session 'error' atau 'failed' dari Controller
+        @if (session('error') || session('failed'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: "{{ session('error') ?? session('failed') }}",
+                confirmButtonText: 'OK'
+            });
+        @endif
+
+        // (Opsional) Cek Error Validasi Form
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian!',
+                html: '<ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>',
+            });
+        @endif
+    </script>
+
+    <script>
+        // Fungsi Konfirmasi Delete Global
+        function confirmDelete(event) {
+            event.preventDefault(); // Tahan dulu submit formnya
+
+            // Ambil form terdekat dari tombol yang diklik
+            const form = event.target.closest('form');
+
+            Swal.fire({
+                title: 'Apakah Anda Yakin?',
+                text: "Data yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33', // Merah
+                cancelButtonColor: '#3085d6', // Biru
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Jika user klik Ya, baru submit form secara manual
+                    form.submit();
+                }
+            });
+        }
+    </script>
 
 </body>
 

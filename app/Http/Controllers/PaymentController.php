@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cart;
 use App\Models\Transaction;
+use App\Models\TransactionItem; // Pastikan Model ini ada
 use App\Models\PurchaseType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -104,45 +105,57 @@ class PaymentController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Simpan Transaksi
+            // 1. Simpan Header Transaksi
             $trx = Transaction::create([
                 'user_id'          => $user->id,
                 'invoice_code'     => 'INV-' . time() . rand(100, 999),
                 'grand_total'      => $grandTotal,
                 'purchase_type_id' => $purchaseType->id,
-                'payment_method'   => $purchaseType->code, // Pastikan view success.blade.php membaca kolom ini
+                'payment_method'   => $purchaseType->code,
                 'status'           => $transactionStatus,
                 'payment_status'   => $paymentStatus,
                 'balance_after'    => $balanceSnapshot,
             ]);
 
-            // 2. EKSEKUSI POTONG SALDO (Jika Balance)
-            if ($purchaseType->code == 'balance') {
-                $user->decrement('saldo', $grandTotal);
-                // Auth::user()->refresh() tidak wajib di sini karena request akan berakhir/redirect
-            }
-
-            // 3. KURANGI STOK
+            // ============================================================
+            // 2. (BARU) SIMPAN DETAIL BARANG KE transaction_items
+            // ============================================================
             foreach ($cart->items as $item) {
+                // Tentukan produknya siapa (Diamart atau Raditya)
                 $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+                $price   = $product->price ?? 0;
 
+                // A. Simpan ke TransactionItem (Data Permanen/Snapshot)
+                TransactionItem::create([
+                    'transaction_id'       => $trx->id,
+                    'id_product_diamart'   => $item->id_product_diamart,
+                    'id_product_diraditya' => $item->id_product_diraditya,
+
+                    // SNAPSHOT (Simpan Text & Angka aslinya saat beli)
+                    'product_name'         => $product->name,
+                    'price'                => $price,
+                    'qty'                  => $item->qty,
+                    'subtotal'             => $price * $item->qty,
+                ]);
+
+                // B. KURANGI STOK PRODUK
                 if ($product->stock < $item->qty) {
                     throw new \Exception("Stok produk {$product->name} tidak mencukupi.");
                 }
                 $product->decrement('stock', $item->qty);
             }
+            // ============================================================
 
-            // 4. BERSIHKAN KERANJANG
+            // 3. EKSEKUSI POTONG SALDO (Jika Balance)
+            if ($purchaseType->code == 'balance') {
+                $user->decrement('saldo', $grandTotal);
+            }
+
+            // 4. BERSIHKAN KERANJANG (Aman dihapus karena data sudah dicopy ke transaction_items)
             $cart->items()->delete();
             $cart->delete();
 
             DB::commit();
-
-            // --- PERUBAHAN DI SINI (REDIRECT) ---
-
-            // Kita hapus logika "If Cash -> Index".
-            // Sekarang SEMUA metode (Cash & Balance) masuk ke halaman Success.
-            // Biarkan file success.blade.php yang mengatur tampilan teks (Kuning/Hijau).
 
             return redirect()->route('transaction.success');
         } catch (\Exception $e) {

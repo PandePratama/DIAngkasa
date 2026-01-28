@@ -47,7 +47,8 @@
                                     <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button onclick="return confirm('Delete this user?')" class="btn btn-danger btn-sm">
+                                        {{-- Panggil confirmDelete(event) disini --}}
+                                        <button type="submit" onclick="confirmDelete(event)" class="btn btn-danger btn-sm">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>

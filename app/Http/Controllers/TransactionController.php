@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,5 +61,22 @@ class TransactionController extends Controller
 
         // 3. Kirim variable $transaction ke view
         return view('transaction.success', compact('transaction'));
+    }
+
+    public function printInvoice($id)
+    {
+        // 1. Ambil data transaksi spesifik berdasarkan ID
+        // PENTING: Wajib load relasi 'items' agar tidak error foreach
+        $transaction = \App\Models\Transaction::with(['user.unitKerja', 'items', 'purchaseType'])
+            ->findOrFail($id);
+
+        // 2. Load View Invoice (Kita buat file baru khusus invoice)
+        $pdf = Pdf::loadView('admin.transactions.invoice', compact('transaction'));
+
+        // 3. Set ukuran kertas (A4 atau struk termal, disini kita pakai A4 setengah atau A5 biar rapi)
+        $pdf->setPaper('a5', 'portrait');
+
+        // 4. Stream PDF (Tampilkan di browser)
+        return $pdf->stream('Invoice-' . $transaction->invoice_code . '.pdf');
     }
 }

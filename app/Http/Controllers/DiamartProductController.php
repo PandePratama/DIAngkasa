@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brands;
 use App\Models\Category;
 use App\Models\ProductDiamart; // Pake Model Diamart
 use App\Models\ProductImage;
@@ -29,9 +28,8 @@ class DiamartProductController extends Controller
     }
     public function store(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi Input (SKU DIHAPUS)
         $validated = $request->validate([
-            'sku'         => 'required|unique:product_diamart,sku',
             'name'        => 'required|max:255',
             'desc'        => 'nullable|string',
             'id_category' => 'required|exists:categories,id',
@@ -43,23 +41,28 @@ class DiamartProductController extends Controller
 
         DB::transaction(function () use ($validated, $request) {
 
-            // 2. Simpan ke tabel product_diamart
-            // Hapus 'sku' karena tidak ada di tabel
+            // 2. CREATE PRODUCT TANPA SKU DULU
             $product = ProductDiamart::create([
-                'sku'         => $validated['sku'],
                 'name'        => $validated['name'],
-                'desc'        => $validated['desc'],
+                'desc'        => $validated['desc'] ?? null,
                 'id_category' => $validated['id_category'],
                 'stock'       => $validated['stock'],
                 'price'       => $validated['price'],
             ]);
 
-            // 3. Simpan Gambar ke tabel product_images
+            // 3. GENERATE SKU DARI ID (AMAN & UNIK)
+            $sku = 'DMRT-' . str_pad($product->id, 4, '0', STR_PAD_LEFT);
+
+            $product->update([
+                'sku' => $sku
+            ]);
+
+            // 4. SIMPAN GAMBAR
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('products/diamart', 'public');
 
                 ProductImage::create([
-                    'id_product_diamart' => $product->id, // Link ke produk baru
+                    'id_product_diamart' => $product->id,
                     'image_path'         => $path,
                     'is_primary'         => $index === 0,
                 ]);
@@ -70,6 +73,7 @@ class DiamartProductController extends Controller
             ->route('diamart.index')
             ->with('success', 'Produk Sembako berhasil ditambahkan');
     }
+
 
     // --- EDIT (Menampilkan Form Edit) ---
     public function edit($id)
@@ -146,12 +150,20 @@ class DiamartProductController extends Controller
         $product = ProductDiamart::with('images')->findOrFail($id);
 
         DB::transaction(function () use ($product) {
-            // Hapus file gambar dari storage
+
+            // 1. Hapus Item di Keranjang (Cart Items) yang referensi ke produk ini
+            // Pastikan Anda import namespace DB di atas atau pakai \DB
+            DB::table('cart_items')
+                ->where('id_product_diamart', $product->id)
+                ->delete();
+
+            // 2. Hapus file gambar dari storage & database
             foreach ($product->images as $image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($image->image_path);
                 $image->delete();
             }
-            // Hapus produk
+
+            // 3. Hapus produk
             $product->delete();
         });
 

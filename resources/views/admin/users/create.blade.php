@@ -83,20 +83,25 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="font-weight-bold">Limit Anggaran</label>
+                            <label class="font-weight-bold text-primary">Limit Anggaran / Saldo Awal</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">Rp</span>
                                 </div>
-                                <input type="text" id="price_display"
-                                    class="form-control @error('price') is-invalid @enderror" placeholder="0"
+
+                                {{-- 1. Input Visual (Untuk Tampilan User) --}}
+                                <input type="text" id="saldo_display"
+                                    class="form-control @error('saldo') is-invalid @enderror" placeholder="0"
                                     autocomplete="off">
 
-                                {{-- Hidden Input untuk Backend --}}
-                                <input type="hidden" name="price" id="price">
+                                {{-- 2. Input Hidden (Untuk dikirim ke Database) --}}
+                                {{-- Value diambil dari old('saldo') jika user gagal validasi form sebelumnya --}}
+                                <input type="hidden" name="saldo" id="saldo" value="{{ old('saldo') }}">
                             </div>
-                            <small class="text-muted">Kosongkan jika tidak ada limit.</small>
-                            @error('price')
+
+                            <small class="text-muted">Format otomatis (Contoh: 1.000.000). Kosongkan jika 0.</small>
+
+                            @error('saldo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
@@ -134,22 +139,44 @@
     </div>
 @endsection
 
-{{-- Script tetap sama --}}
+{{-- SCRIPT FORMATTER (Wajib ada di file create.blade.php) --}}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const display = document.getElementById('price_display');
-        const hidden = document.getElementById('price');
+        const displayInput = document.getElementById('saldo_display');
+        const hiddenInput = document.getElementById('saldo');
 
+        // Fungsi Format Rupiah
         function formatRupiah(angka) {
-            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            if (!angka) return '';
+            let number_string = angka.toString().replace(/[^,\d]/g, ''),
+                split = number_string.split(','),
+                sisa = split[0].length % 3,
+                rupiah = split[0].substr(0, sisa),
+                ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            return rupiah;
         }
 
-        if (display) {
-            display.addEventListener('input', function(e) {
-                let raw = this.value.replace(/\D/g, '');
-                hidden.value = raw;
-                this.value = raw ? formatRupiah(raw) : '';
-            });
+        // 1. Event Listener saat mengetik
+        displayInput.addEventListener('keyup', function(e) {
+            // Ambil angka murni untuk input hidden
+            let cleanValue = this.value.replace(/\D/g, '');
+            hiddenInput.value = cleanValue;
+
+            // Update tampilan visual dengan titik
+            this.value = formatRupiah(this.value);
+        });
+
+        // 2. Cek Old Data (Penting saat Create gagal validasi)
+        // Jika user submit -> error -> kembali ke form, angka yang tadi diketik muncul lagi
+        if (hiddenInput.value) {
+            displayInput.value = formatRupiah(hiddenInput.value);
         }
     });
 </script>

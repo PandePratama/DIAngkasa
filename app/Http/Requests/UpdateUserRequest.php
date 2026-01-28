@@ -19,6 +19,7 @@ class UpdateUserRequest extends FormRequest
             'nip'            => 'nullable|string|unique:users,nip,' . $this->user->id,
             'id_unit_kerja'  => 'required|exists:unit_kerja,id',
             'password'       => 'nullable|min:6|confirmed',
+            'saldo'     => 'nullable|numeric|min:0',
         ];
     }
 

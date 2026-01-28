@@ -46,4 +46,9 @@ class Transaction extends Model
         if ($this->payment_method == 'cash') return 'Cash / Tunai';
         return '-';
     }
+
+    public function items()
+    {
+        return $this->hasMany(TransactionItem::class, 'transaction_id');
+    }
 }

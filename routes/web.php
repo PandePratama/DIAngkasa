@@ -42,8 +42,11 @@ Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('min
 
 // Auth
 Route::get('/login', fn() => view('auth.login'))->name('login');
+Route::post('/diamart/bulk-action', [DiamartController::class, 'bulkAction'])
+    ->name('diamart.bulk-action');
 
-
+Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])
+    ->name('transactions.print_invoice');
 // Auth Routes
 Route::get('/login', function () {
     return view('auth.login');
