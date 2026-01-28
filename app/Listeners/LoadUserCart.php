@@ -17,7 +17,7 @@ class LoadUserCart
             'items.productDiamart.primaryImage',
             'items.productDiraditya.primaryImage'
         ])
-            ->where('user_id', $event->user->id)
+            ->where('id_user', $event->user->id)
             ->first();
 
         if (!$cart) return;

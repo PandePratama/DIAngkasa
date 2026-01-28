@@ -24,7 +24,7 @@ class CartController extends Controller
             'items.productDiamart',   // Load data produk sembako
             'items.productDiraditya'  // Load data produk elektronik
         ])
-            ->where('user_id', $user->id)
+            ->where('id_user', $user->id)
             ->get();
 
         // 2. Hitung Grand Total (Opsional, untuk display ringkasan)
@@ -52,7 +52,7 @@ class CartController extends Controller
         $user = Auth::user();
 
         $cart = Cart::firstOrCreate([
-            'user_id' => $user->id,
+            'id_user' => $user->id,
             'business_unit' => 'diamart'
         ]);
 
@@ -75,6 +75,78 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
+    public function addToCart(Request $request)
+    {
+        $user = auth()->user();
+
+        // 1. Tentukan produk ini milik unit mana
+        // Asumsi: form mengirim input hidden 'business_unit' ATAU kita cek dari ID produk
+        if ($request->has('id_product_diamart')) {
+            $targetUnit = 'diamart';
+        } elseif ($request->has('id_product_diraditya')) { // sesuaikan nama input gadget anda
+            $targetUnit = 'raditya';
+        } else {
+            return back()->with('error', 'Produk tidak valid.');
+        }
+
+        // 2. Cek Keranjang Existing User
+        $existingCart = \App\Models\Cart::where('id_user', $user->id)->first();
+
+        // 3. LOGIKA VALIDASI (SATPAM)
+        if ($existingCart) {
+            // Jika keranjang sudah ada, TAPI unit bisnisnya beda
+            if ($existingCart->business_unit != $targetUnit) {
+
+                $currentUnit = ucfirst($existingCart->business_unit);
+                $newUnit = ucfirst($targetUnit);
+
+                // STOP PROSES & KIRIM ERROR
+                return redirect()->back()->withErrors([
+                    'error' => "Gagal! Keranjang Anda sedang aktif untuk <b>{$currentUnit}</b>.<br>
+                            Tidak bisa dicampur dengan produk <b>{$newUnit}</b>.<br>
+                            Selesaikan transaksi atau hapus keranjang dulu."
+                ]);
+            }
+
+            // Jika lolos (Unit sama), gunakan cart ID yang sudah ada
+            $cartId = $existingCart->id;
+        } else {
+            // 4. Jika Belum Punya Keranjang -> BUAT BARU
+            $newCart = \App\Models\Cart::create([
+                'id_user' => $user->id,
+                'business_unit' => $targetUnit, // Kunci keranjang ini untuk unit tersebut
+            ]);
+            $cartId = $newCart->id;
+        }
+
+        // 5. PROSES SIMPAN ITEM (Cart Item)
+        // Gunakan $cartId yang didapat dari logika di atas
+
+        // Cek apakah item produk yang sama sudah ada di cart ini?
+        $existingItem = \App\Models\CartItem::where('cart_id', $cartId)
+            ->when($targetUnit == 'diamart', function ($q) use ($request) {
+                return $q->where('id_product_diamart', $request->id_product_diamart);
+            })
+            ->when($targetUnit == 'raditya', function ($q) use ($request) {
+                return $q->where('id_product_diraditya', $request->id_product_diraditya);
+            })
+            ->first();
+
+        if ($existingItem) {
+            // Update Qty jika barang sudah ada
+            $existingItem->increment('qty', $request->qty ?? 1);
+        } else {
+            // Create Item Baru
+            \App\Models\CartItem::create([
+                'cart_id' => $cartId,
+                'id_product_diamart' => $request->id_product_diamart ?? null,
+                'id_product_diraditya' => $request->id_product_diraditya ?? null,
+                'qty' => $request->qty ?? 1
+            ]);
+        }
+
+        return redirect()->route('cart.index')->with('success', 'Produk berhasil masuk keranjang');
+    }
     // --- 2. TAMBAH KERANJANG RADITYA (ELEKTRONIK) ---
     public function addRaditya(Request $request, $id)
     {
@@ -82,7 +154,7 @@ class CartController extends Controller
         $product = ProductRaditya::findOrFail($id);
 
         $cart = Cart::firstOrCreate(
-            ['user_id' => $user->id, 'business_unit' => 'raditya']
+            ['id_user' => $user->id, 'business_unit' => 'raditya']
         );
 
         $item = CartItem::where('id_cart', $cart->id)
