@@ -18,7 +18,7 @@ class PaymentController extends Controller
         $user = auth()->user();
 
         $cart = Cart::with(['items.productDiamart.primaryImage', 'items.productDiraditya.primaryImage'])
-            ->where('user_id', $user->id)
+            ->where('id_user', $user->id)
             ->first();
 
         if (!$cart) {
@@ -56,7 +56,7 @@ class PaymentController extends Controller
 
         // 2. Ambil Cart
         $cart = Cart::with(['items.productDiamart', 'items.productDiraditya'])
-            ->where('user_id', $user->id)->first();
+            ->where('id_user', $user->id)->first();
 
         if (!$cart) {
             return redirect()->back()->with('error', 'Keranjang belanja tidak ditemukan.');
@@ -107,7 +107,7 @@ class PaymentController extends Controller
 
             // 1. Simpan Header Transaksi
             $trx = Transaction::create([
-                'user_id'          => $user->id,
+                'id_user'          => $user->id,
                 'invoice_code'     => 'INV-' . time() . rand(100, 999),
                 'grand_total'      => $grandTotal,
                 'purchase_type_id' => $purchaseType->id,

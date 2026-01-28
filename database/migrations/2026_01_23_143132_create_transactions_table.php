@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('id_user')->constrained('users');
             $table->string('invoice_code')->unique();
             $table->decimal('grand_total', 15, 2);
             $table->enum('payment_type', ['cash', 'credit']);

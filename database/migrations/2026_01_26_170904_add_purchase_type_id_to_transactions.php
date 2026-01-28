@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('transactions', function (Blueprint $table) {
             // Tambah kolom ID
-            $table->unsignedBigInteger('purchase_type_id')->nullable()->after('user_id');
+            $table->unsignedBigInteger('purchase_type_id')->nullable()->after('id_user');
 
             // (Opsional) Hapus kolom lama jika sudah tidak dipakai nanti
             // $table->dropColumn('payment_method');
