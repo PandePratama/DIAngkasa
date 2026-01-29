@@ -41,19 +41,24 @@ class RadityaController extends Controller
         ));
     }
 
-    public function show(ProductRaditya $product)
+    public function show($id)
     {
-        $product->load(['images', 'category', 'brand']);
+        // 1. Ambil Data Produk
+        $product = \App\Models\ProductRaditya::with('images')->findOrFail($id);
 
-        $relatedProducts = ProductRaditya::with('primaryImage')
-            ->where('id_category', $product->id_category)
-            ->where('id', '!=', $product->id)
-            ->limit(8)
-            ->get();
+        // 2. LOGIKA CART LOCK (SATPAM)
+        // Cek apakah user sedang punya keranjang Diamart (Sembako)?
+        $cartLock = null;
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $userCart = \App\Models\Cart::where('id_user', \Illuminate\Support\Facades\Auth::id())->first();
 
-        return view('gadget.show', compact(
-            'product',
-            'relatedProducts'
-        ));
+            // Jika ada keranjang, DAN unitnya BUKAN 'raditya' (berarti 'diamart')
+            if ($userCart && $userCart->business_unit != 'raditya') {
+                $cartLock = 'diamart'; // Kunci halaman ini
+            }
+        }
+
+        // 3. Kirim ke View
+        return view('gadget.show', compact('product', 'cartLock'));
     }
 }

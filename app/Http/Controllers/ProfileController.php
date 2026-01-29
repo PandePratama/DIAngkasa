@@ -18,7 +18,10 @@ class ProfileController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-
+        // 1. Mulai Query
+        // Pastikan relasi 'transactions' ada di Model User.
+        // Jika error, ganti jadi: \App\Models\Transaction::where('id_user', $user->id)->latest();
+        $query = $user->transactions()->latest();
         $baseQuery = $user->transactions()->latest();
 
         // Filter tanggal

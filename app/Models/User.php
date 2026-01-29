@@ -23,6 +23,9 @@ class User extends Authenticatable
         'password',
         'role',
         'saldo',
+        'no_telp',
+        'nik',
+
     ];
 
     protected $hidden = [
@@ -42,17 +45,18 @@ class User extends Authenticatable
         return $this->belongsTo(UnitKerja::class, 'id_unit_kerja');
     }
 
-    public function cart()
-    {
-        return $this->hasOne(Cart::class, 'id_user');
-    }
-
     public function orders()
     {
         return $this->hasMany(Order::class, 'id_user');
     }
 
     public function transactions()
+    {
+
+
+        return $this->hasMany(Transaction::class, 'id_user');
+    }
+    public function cart()
     {
         return $this->hasMany(Transaction::class, 'id_user');
     }
