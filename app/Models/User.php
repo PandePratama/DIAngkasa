@@ -17,6 +17,8 @@ class User extends Authenticatable
         'name',
         'email',
         'nip',
+        'nik',
+        'no_telp',
         'id_unit_kerja',
         'password',
         'role',
@@ -25,8 +27,6 @@ class User extends Authenticatable
         'nik',
 
     ];
-
-    protected $guarded = ['id'];
 
     protected $hidden = [
         'password',
@@ -38,16 +38,11 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    // Relasi
+    // ================= RELASI =================
+
     public function unitKerja()
     {
         return $this->belongsTo(UnitKerja::class, 'id_unit_kerja');
-    }
-
-    public function activeCart()
-    {
-        // Asumsi 1 User hanya punya 1 Cart aktif
-        return $this->hasOne(Cart::class, 'id_user');
     }
 
     public function orders()
@@ -58,10 +53,11 @@ class User extends Authenticatable
     public function transactions()
     {
 
+
         return $this->hasMany(Transaction::class, 'id_user');
     }
     public function cart()
     {
-        return $this->hasOne(Cart::class, 'id_user');
+        return $this->hasMany(Transaction::class, 'id_user');
     }
 }

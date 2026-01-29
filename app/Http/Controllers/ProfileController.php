@@ -5,70 +5,87 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
+    /**
+     * ======================
+     * HALAMAN PROFILE
+     * ======================
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
-
         // 1. Mulai Query
         // Pastikan relasi 'transactions' ada di Model User.
         // Jika error, ganti jadi: \App\Models\Transaction::where('id_user', $user->id)->latest();
         $query = $user->transactions()->latest();
+        $baseQuery = $user->transactions()->latest();
 
-        // 2. Filter Tanggal
+        // Filter tanggal
         if ($request->filled('from') && $request->filled('to')) {
-            $query->whereBetween('created_at', [
+            $baseQuery->whereBetween('created_at', [
                 $request->from . ' 00:00:00',
                 $request->to . ' 23:59:59'
             ]);
         }
 
-        // 3. HITUNG TOTAL (Lakukan INI SEBELUM Pagination)
-        // Kita ingin total uang dari SEMUA data yang difilter, bukan cuma 10 data di halaman 1.
-        $total = $query->sum('grand_total');
+        $total = (clone $baseQuery)->sum('grand_total');
 
-        // 4. EKSEKUSI PAGINATION (SOLUSI ERROR ANDA)
-        // Ganti get() menjadi paginate(10)
-        $transactions = $query->paginate(10)->withQueryString();
-        // withQueryString() penting agar saat klik Halaman 2, filter tanggal tidak hilang.
+        $transactions = (clone $baseQuery)
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('profile.index', [
-            'user' => $user,
-            'transactions' => $transactions,
-            'total' => $total,
-        ]);
+        return view('profile.index', compact(
+            'user',
+            'transactions',
+            'total'
+        ));
     }
 
+    /**
+     * ======================
+     * UPDATE PROFILE USER
+     * ======================
+     */
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore(Auth::id()),
+            ],
             'no_telp' => 'required|string|digits_between:10,15',
             'nik' => 'required|string|digits:16',
         ], [
             'name.required' => 'Nama wajib diisi',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
-
-            'no_telp.digits_between' => 'No. Telp harus 10–15 digit angka',
-            'nik.digits' => 'NIK harus terdiri dari 16 digit angka',
+            'email.unique' => 'Email sudah digunakan',
+            'no_telp.digits_between' => 'No. Telp harus 10–15 digit',
+            'nik.digits' => 'NIK harus 16 digit',
         ]);
 
-        $user = Auth::user();
-        $user->update([
-            'name'  => $request->name,
-            'email' => $request->email,
+        Auth::user()->update([
+            'name'    => $request->name,
+            'email'   => $request->email,
             'no_telp' => $request->no_telp,
-            'nik' => $request->nik,
+            'nik'     => $request->nik,
         ]);
 
-        return back()->with('success', 'Profile berhasil diperbarui');
+        return back()->with('success', 'Profile berhasil diperbarui ✅');
     }
 
+    /**
+     * ======================
+     * UPDATE PASSWORD
+     * ======================
+     */
     public function updatePassword(Request $request)
     {
         $request->validate([
@@ -77,32 +94,30 @@ class ProfileController extends Controller
         ], [
             'current_password.required' => 'Password lama wajib diisi',
             'password.required' => 'Password baru wajib diisi',
-            'password.min' => 'Password baru minimal 8 karakter',
+            'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
         ]);
 
         $user = Auth::user();
 
-        // ❌ Password lama salah
+        // Password lama salah
         if (!Hash::check($request->current_password, $user->password)) {
             throw ValidationException::withMessages([
                 'current_password' => 'Password lama tidak sesuai',
             ]);
         }
 
-        // ❌ Password baru sama dengan password lama
+        // Password baru sama
         if (Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'password' => 'Password baru tidak boleh sama dengan password lama',
+                'password' => 'Password baru tidak boleh sama',
             ]);
         }
 
-        // ✅ Update password
         $user->update([
             'password' => Hash::make($request->password),
         ]);
 
-        // OPTIONAL (AMAN): logout semua session lain
         Auth::logoutOtherDevices($request->password);
 
         return back()->with('success', 'Password berhasil diperbarui 🔐');
