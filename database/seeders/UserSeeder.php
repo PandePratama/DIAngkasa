@@ -12,7 +12,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $unitKerja = DB::table('unit_kerja')
-            ->where('unit_name', '=', 'Airport Operation Air Side Section')
+            ->where('unit_name', '=', 'IT Support')
             ->first();
 
         if (! $unitKerja) {
@@ -37,16 +37,6 @@ class UserSeeder extends Seeder
                 'email'          => 'admin@example.com',
                 'password'       => Hash::make('12345678'),
                 'role'           => 'admin',
-                'created_at'     => Carbon::now(),
-                'updated_at'     => Carbon::now(),
-            ],
-            [
-                'nip'            => '9981169-EMP',
-                'id_unit_kerja'  => $unitKerja->id,
-                'name'           => 'Employee Demo',
-                'email'          => 'employee@example.com',
-                'password'       => Hash::make('12345678'),
-                'role'           => 'employee',
                 'created_at'     => Carbon::now(),
                 'updated_at'     => Carbon::now(),
             ],

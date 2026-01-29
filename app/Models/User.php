@@ -21,6 +21,8 @@ class User extends Authenticatable
         'password',
         'role',
         'saldo'
+        'no_telp',
+        'nik',
 
     ];
 
@@ -55,6 +57,13 @@ class User extends Authenticatable
 
     public function transactions()
     {
+<<<<<<< HEAD
         return $this->hasMany(Transaction::class, 'id_user');
+=======
+        return $this->hasMany(Transaction::class, 'user_id');
+    public function cart()
+    {
+        return $this->hasOne(Cart::class, 'id_user');
+>>>>>>> 46a546bea3f9010ad6a230d1537a3986e526ce73
     }
 }

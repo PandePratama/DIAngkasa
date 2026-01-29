@@ -15,11 +15,13 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name'           => 'required|string|max:100',
-            'email'          => 'required|email|unique:users,email,',
+            'email'          => 'nullable|email|unique:users,email,',
             'nip'            => 'nullable|string|unique:users,nip,',
             'id_unit_kerja'  => 'required|exists:unit_kerja,id',
             'password'       => 'nullable|min:6|confirmed',
             'saldo'     => 'nullable|numeric|min:0',
+            'no_telp'       => 'nullable|string|max:20',
+            'nik'           => 'nullable|string|max:20|unique:users,nik,',
         ];
     }
 
@@ -36,6 +38,7 @@ class StoreUserRequest extends FormRequest
             'password.min'           => 'Password minimal 6 karakter.',
             'password.confirmed'     => 'Konfirmasi password tidak sesuai.',
 
+            
         ];
     }
 }

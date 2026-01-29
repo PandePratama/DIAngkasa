@@ -15,11 +15,13 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name'           => 'required|string|max:100',
-            'email'          => 'required|email|unique:users,email,' . $this->user->id,
+            'email'          => 'nullable|email|unique:users,email,' . $this->user->id,
             'nip'            => 'nullable|string|unique:users,nip,' . $this->user->id,
             'id_unit_kerja'  => 'required|exists:unit_kerja,id',
             'password'       => 'nullable|min:6|confirmed',
             'saldo'     => 'nullable|numeric|min:0',
+            'no_telp'       => 'nullable|string|max:20',
+            'nik'           => 'nullable|string|max:20|unique:users,nik,'
         ];
     }
 
