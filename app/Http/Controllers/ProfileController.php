@@ -15,7 +15,7 @@ class ProfileController extends Controller
 
         // 1. Mulai Query
         // Pastikan relasi 'transactions' ada di Model User.
-        // Jika error, ganti jadi: \App\Models\Transaction::where('user_id', $user->id)->latest();
+        // Jika error, ganti jadi: \App\Models\Transaction::where('id_user', $user->id)->latest();
         $query = $user->transactions()->latest();
 
         // 2. Filter Tanggal

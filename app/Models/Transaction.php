@@ -11,7 +11,7 @@ class Transaction extends Model
     protected $guarded = ['id'];
 
     protected $fillable = [
-        'user_id',
+        'id_user',
         'invoice_code',
         'grand_total',
         'purchase_type_id',
@@ -32,7 +32,7 @@ class Transaction extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'id_user');
     }
     public function purchaseType()
     {

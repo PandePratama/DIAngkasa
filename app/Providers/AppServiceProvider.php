@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
             if (Auth::check()) {
                 // Gunakan count() untuk menghitung jumlah JENIS produk
                 $count = CartItem::whereHas('cart', function ($query) {
-                    $query->where('user_id', Auth::id());
+                    $query->where('id_user', Auth::id());
                 })->count();
 
                 $view->with('cart_count', $count);

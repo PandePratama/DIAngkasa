@@ -50,7 +50,7 @@ class TransactionController extends Controller
     public function success()
     {
         // 1. Ambil transaksi paling baru milik user yang sedang login
-        $transaction = Transaction::where('user_id', Auth::id())
+        $transaction = Transaction::where('id_user', Auth::id())
             ->latest() // Mengurutkan dari yang terbaru
             ->first(); // Ambil satu saja
 

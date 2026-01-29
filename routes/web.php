@@ -72,14 +72,15 @@ Route::middleware('auth')->group(function () {
     });
 
     // Cart Management
+    // Cart Management
     Route::prefix('cart')->name('cart.')->group(function () {
+        // Rute untuk melihat keranjang (Hanya GET)
         Route::get('/', [CartController::class, 'index'])->name('index');
 
-        // Add items (Logic berbeda antara Diamart & Raditya)
-        Route::post('/add/diamart/{id}', [CartController::class, 'addDiamart'])->name('add.diamart');
-        Route::post('/add/raditya/{id}', [CartController::class, 'addRaditya'])->name('add.raditya');
-
-        // Common Cart Actions
+        // TAMBAHKAN ATAU SESUAIKAN BARIS INI:
+        // Rute untuk memproses tambah barang (Harus POST)
+        Route::post('/add', [CartController::class, 'addToCart'])->name('add');
+        // Rute lainnya...
         Route::post('/update/{itemId}', [CartController::class, 'update'])->name('update');
         Route::delete('/remove/{itemId}', [CartController::class, 'remove'])->name('remove');
     });

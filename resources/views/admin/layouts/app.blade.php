@@ -118,11 +118,11 @@
                     <span>Riwayat Transaksi</span></a>
             </li>
 
-            <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+            {{-- <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.orders.index') }}">
                     <i class="fas fa-fw fa-shopping-cart"></i>
                     <span>Order Masuk</span></a>
-            </li>
+            </li> --}}
 
             <hr class="sidebar-divider d-none d-md-block">
 
