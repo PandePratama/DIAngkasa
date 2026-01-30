@@ -101,6 +101,15 @@
                             @enderror
                         </div>
 
+                        <div>
+                            <label class="text-sm font-medium">Alamat</label>
+                            <input type="text" name="address" value="{{ old('address', $user->address) }}"
+                                class="w-full border rounded px-3 py-2">
+                            @error('address')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <button type="submit"
                             class="bg-teal-600 text-white px-6 py-2 rounded">
                             Simpan Perubahan

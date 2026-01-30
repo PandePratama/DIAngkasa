@@ -62,6 +62,7 @@ class ProfileController extends Controller
             ],
             'no_telp' => 'required|string|digits_between:10,15',
             'nik' => 'required|string|digits:16',
+            'address' => 'required|string',
         ], [
             'name.required' => 'Nama wajib diisi',
             'email.required' => 'Email wajib diisi',
@@ -69,6 +70,7 @@ class ProfileController extends Controller
             'email.unique' => 'Email sudah digunakan',
             'no_telp.digits_between' => 'No. Telp harus 10–15 digit',
             'nik.digits' => 'NIK harus 16 digit',
+            'address.required' => 'Silakan masukkan alamat yang lengkap & valid',
         ]);
 
         Auth::user()->update([
@@ -76,6 +78,7 @@ class ProfileController extends Controller
             'email'   => $request->email,
             'no_telp' => $request->no_telp,
             'nik'     => $request->nik,
+            'address' => $request->address,
         ]);
 
         return back()->with('success', 'Profile berhasil diperbarui ✅');
