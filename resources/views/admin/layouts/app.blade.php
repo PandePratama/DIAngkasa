@@ -114,10 +114,18 @@
 
             <li class="nav-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('transactions.index') }}">
-                    <i class="fas fa-fw fa-chart-area"></i>
-                    <span>Riwayat Transaksi</span></a>
+                    <i class="fas fa-fw fa-history"></i> {{-- Saya ganti icon biar beda --}}
+                    <span>Riwayat Transaksi</span>
+                </a>
             </li>
 
+            <li class="nav-item {{ request()->routeIs('credits.*') ? 'active' : '' }}">
+                {{-- Arahkan ke route baru: credits.index --}}
+                <a class="nav-link" href="{{ route('credits.index') }}">
+                    <i class="fas fa-fw fa-file-invoice-dollar"></i> {{-- Saya ganti icon biar beda --}}
+                    <span>Tanggungan Tenor</span>
+                </a>
+            </li>
             {{-- <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.orders.index') }}">
                     <i class="fas fa-fw fa-shopping-cart"></i>

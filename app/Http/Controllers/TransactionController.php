@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditTransaction; // Pastikan Model ini di-use
 use App\Models\Transaction;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -11,72 +12,98 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Query Dasar
-        $query = Transaction::with(['order', 'user'])->latest();
+        // ==========================================
+        // 1. DATA TRANSAKSI REGULER (TUNAI/SALDO)
+        // ==========================================
 
-        // 2. Filter Tanggal (Lebih Rapi)
+        // Eager load 'purchaseType' juga agar efisien di view
+        $query = Transaction::with(['order', 'user', 'purchaseType'])->latest();
+
+        // Filter Tanggal (Berlaku untuk kedua query)
+        $dateRange = null;
         if ($request->filled('from') && $request->filled('to')) {
-            $query->whereBetween('created_at', [
+            $dateRange = [
                 $request->from . ' 00:00:00',
                 $request->to . ' 23:59:59'
-            ]);
+            ];
+            $query->whereBetween('created_at', $dateRange);
         }
 
-        // Simpan total seluruh data (sebelum dipaginate) untuk keperluan statistik (Opsional)
-        // Hati-hati, sum() pada query besar juga bisa berat.
-        // Sebaiknya hanya hitung total halaman ini saja atau gunakan cache.
+        // Hitung Total Omset (Hanya dari transaksi reguler/cash)
         $grandTotalSemua = $query->sum('grand_total');
 
-        // 3. Gunakan Pagination (Wajib untuk Admin)
-        $transactions = $query->paginate(20);
+        // Pagination Transaksi Biasa
+        // PENTING: Gunakan page name 'trx_page' agar tidak bentrok dengan tab sebelah
+        $transactions = $query->paginate(10, ['*'], 'trx_page');
 
-        // 4. Transformasi Data (Hanya untuk yang tampil di halaman ini)
-        // getCollection() digunakan karena kita pakai paginate
+        // Transformasi Data (Opsional, untuk menampilkan saldo saat ini)
         $transactions->getCollection()->transform(function ($trx) {
-
-            // Opsi A: Jika ingin menampilkan Sisa Saldo User SAAT INI (Realtime)
             $trx->user_current_saldo = $trx->user ? $trx->user->saldo : 0;
-
-            // Opsi B: LOGIKA YANG ANDA MINTA (TAPI LOGISNYA SALAH SEPERTI DIJELASKAN DI ATAS)
-            // Saya sarankan JANGAN pakai logika pengurangan ini untuk history.
-            // $trx->sisa_saldo_kalkulasi = $trx->user_current_saldo - $trx->grand_total;
-
             return $trx;
         });
 
-        return view('admin.transactions.index', compact('transactions', 'grandTotalSemua'));
+
+        // ==========================================
+        // 2. DATA TRANSAKSI KREDIT (BARU)
+        // ==========================================
+
+        // Load relasi user dan product (karena di view kita panggil $credit->product->name)
+        $creditQuery = CreditTransaction::with(['user', 'product'])->latest();
+
+        // Terapkan Filter Tanggal yang sama
+        if ($dateRange) {
+            $creditQuery->whereBetween('created_at', $dateRange);
+        }
+
+        // Pagination Transaksi Kredit
+        // PENTING: Gunakan page name 'credit_page'
+        $creditTransactions = $creditQuery->paginate(10, ['*'], 'credit_page');
+
+
+        // ==========================================
+        // 3. RETURN VIEW
+        // ==========================================
+        return view('admin.transactions.index', compact(
+            'transactions',
+            'creditTransactions',
+            'grandTotalSemua'
+        ));
     }
 
     public function success()
     {
-        // 1. Ambil transaksi paling baru milik user yang sedang login
-        $transaction = Transaction::where('id_user', Auth::id())
-            ->latest() // Mengurutkan dari yang terbaru
-            ->first(); // Ambil satu saja
+        // 1. CEK SESSION KREDIT (Prioritas cek session dari PaymentController)
+        if (session()->has('credit_trx_id')) {
+            $transaction = \App\Models\CreditTransaction::with('product')->find(session('credit_trx_id'));
+            $type = 'credit'; // <--- INI PENTING
+        }
+        // 2. JIKA TIDAK ADA SESSION, AMBIL TRANSAKSI BIASA TERBARU
+        else {
+            $transaction = \App\Models\Transaction::where('id_user', \Illuminate\Support\Facades\Auth::id())
+                ->latest()
+                ->first();
+            $type = 'regular'; // <--- INI PENTING
+        }
 
-        // 2. Cek jika data tidak ditemukan (misal user iseng akses url tanpa belanja)
+        // 3. Validasi jika data kosong (User belum pernah belanja)
         if (!$transaction) {
             return redirect()->route('home')->with('error', 'Belum ada transaksi.');
         }
 
-        // 3. Kirim variable $transaction ke view
-        return view('transaction.success', compact('transaction'));
+        // 4. KIRIM DATA KE VIEW
+        return view('transaction.success', compact('transaction', 'type'));
     }
-
     public function printInvoice($id)
     {
-        // 1. Ambil data transaksi spesifik berdasarkan ID
-        // PENTING: Wajib load relasi 'items' agar tidak error foreach
+        // Method ini khusus cetak Invoice Transaksi Biasa (Cash/Saldo)
+        // Untuk Kredit, biasanya ada method terpisah (printContract misalnya)
+
         $transaction = \App\Models\Transaction::with(['user.unitKerja', 'items', 'purchaseType'])
             ->findOrFail($id);
 
-        // 2. Load View Invoice (Kita buat file baru khusus invoice)
         $pdf = Pdf::loadView('admin.transactions.invoice', compact('transaction'));
-
-        // 3. Set ukuran kertas (A4 atau struk termal, disini kita pakai A4 setengah atau A5 biar rapi)
         $pdf->setPaper('a5', 'portrait');
 
-        // 4. Stream PDF (Tampilkan di browser)
         return $pdf->stream('Invoice-' . $transaction->invoice_code . '.pdf');
     }
 }

@@ -7,140 +7,178 @@
 
         <h3 class="mb-4">Riwayat Transaksi</h3>
 
-        {{-- FILTER --}}
-        <form method="GET" class="row g-2 mb-3">
+        {{-- FILTER TANGGAL (Berlaku untuk kedua tab) --}}
+        <form method="GET" class="row g-2 mb-4 bg-white p-3 rounded shadow-sm">
             <div class="col-md-3">
+                <label class="small text-muted">Dari Tanggal</label>
                 <input type="date" name="from" class="form-control" value="{{ request('from') }}">
             </div>
             <div class="col-md-3">
+                <label class="small text-muted">Sampai Tanggal</label>
                 <input type="date" name="to" class="form-control" value="{{ request('to') }}">
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100">Filter</button>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> Filter</button>
             </div>
         </form>
 
-        {{-- TOTAL --}}
-        {{-- PERBAIKAN 1: Ganti $total menjadi $grandTotalSemua --}}
-        <div class="alert alert-info">
-            <b>Total Transaksi:</b> Rp {{ number_format($grandTotalSemua ?? ($total ?? 0), 0, ',', '.') }}
-        </div>
+        {{-- NAVIGASI TAB --}}
+        <ul class="nav nav-tabs mb-3" id="trxTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="cash-tab" data-bs-toggle="tab" data-bs-target="#cash" type="button"
+                    role="tab">
+                    <i class="fas fa-money-bill-wave text-success me-1"></i> Tunai / Saldo
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="credit-tab" data-bs-toggle="tab" data-bs-target="#credit" type="button"
+                    role="tab">
+                    <i class="fas fa-file-contract text-primary me-1"></i> Kredit / Cicilan
+                </button>
+            </li>
+        </ul>
 
-        {{-- TABLE --}}
-        <div class="card shadow">
-            <div class="card-body table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th>Id Transaksi</th>
-                            <th>Waktu</th>
-                            <th>NIP</th>
-                            <th>Nama</th>
-                            <th>Metode Bayar</th>
-                            <th>Total Belanja</th>
-                            <th>Saldo Terpotong</th>
-                            <th>Sisa Saldo User (Saat Ini)</th>
-                            <th width="100">Aksi</th> {{-- KOLOM BARU --}}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($transactions as $trx)
-                            <tr>
-                                <td>{{ $trx->id }}</td>
-                                <td>{{ $trx->created_at->format('d-m-Y H:i') }}</td>
-                                <td>{{ $trx->user->nip ?? '-' }}</td>
-                                <td>{{ $trx->user->name ?? 'User Terhapus' }}</td>
+        <div class="tab-content" id="trxTabsContent">
 
-                                {{-- GANTI BAGIAN <td> METODE BAYAR DENGAN INI --}}
-                                <td>
-                                    @php
-                                        // 1. Cek Data: Prioritaskan ambil dari Relasi (purchaseType), baru kolom biasa
-                                        $code = null;
+            {{-- TAB 1: TRANSAKSI BIASA (Existing Code) --}}
+            <div class="tab-pane fade show active" id="cash" role="tabpanel">
+                <div class="alert alert-info py-2">
+                    <b>Total Omset Tunai:</b> Rp {{ number_format($grandTotalSemua, 0, ',', '.') }}
+                </div>
 
-                                        if ($trx->purchaseType) {
-                                            $code = $trx->purchaseType->code; // Ambil dari tabel relasi
-                                        } elseif ($trx->payment_method) {
-                                            $code = $trx->payment_method; // Fallback ke kolom string
-                                        }
-
-                                        // 2. Tentukan Label & Warna berdasarkan CODE yang didapat
-                                        if ($code == 'balance') {
-                                            $label = 'Potong Saldo';
-                                            $badgeClass = 'badge bg-primary text-white'; // Bootstrap class
-                                            $icon = 'fa-wallet';
-                                        } elseif ($code == 'cash') {
-                                            $label = 'Cash / Tunai';
-                                            $badgeClass = 'badge bg-success text-white';
-                                            $icon = 'fa-money-bill-wave';
-                                        } else {
-                                            // Jika null atau tidak dikenali
-                                            $label = $code ? ucfirst($code) : '-';
-                                            $badgeClass = 'badge bg-secondary text-white';
-                                            $icon = 'fa-circle-question';
-                                        }
-                                    @endphp
-
-                                    <span class="{{ $badgeClass }} p-2" style="font-size: 0.85rem;">
-                                        <i class="fa-solid {{ $icon }} me-1"></i> {{ $label }}
-                                    </span>
-                                </td>
-
-                                <td>Rp {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
-
-                                {{-- KOLOM SALDO TERPOTONG --}}
-                                <td class="font-bold text-danger">
-                                    @php
-                                        // 1. Definisikan ulang logic pengambilan kodenya (Sama seperti kolom sebelah)
-                                        // Cek Relasi dulu, baru cek kolom biasa
-                                        $code = null;
-                                        if ($trx->purchaseType) {
-                                            $code = $trx->purchaseType->code;
-                                        } else {
-                                            $code = $trx->payment_method;
-                                        }
-                                    @endphp
-
-                                    {{-- 2. Gunakan variabel $code yang sudah pasti terisi --}}
-                                    @if ($code == 'balance')
-                                        - Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
-                                    @else
-                                        {{-- Untuk Cash atau status lainnya --}}
-                                        <span class="text-muted" style="font-weight: normal;">0 (Tunai)</span>
-                                    @endif
-                                </td>
-
-                                {{-- SISA SALDO USER SAAT INI --}}
-                                <td>
-                                    @if (isset($trx->balance_after))
-                                        {{-- Tampilkan saldo yang tersimpan saat transaksi terjadi --}}
-                                        Rp {{ number_format($trx->balance_after, 0, ',', '.') }}
-                                    @else
-                                        {{-- Fallback untuk data lama (sebelum fitur ini ada) atau transaksi Cash --}}
-                                        <span class="text-muted small" style="font-size: 0.75rem;">
-                                            Tidak tercatat
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <a href="{{ route('transactions.print_invoice', $trx->id) }}" target="_blank"
-                                        class="btn btn-sm btn-info shadow-sm" title="Cetak Invoice">
-                                        <i class="fas fa-print"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center p-4">Belum ada data transaksi.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                <div class="card shadow border-0">
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Waktu</th>
+                                    <th>User</th>
+                                    <th>Metode</th>
+                                    <th>Total</th>
+                                    <th>Saldo User</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($transactions as $trx)
+                                    <tr>
+                                        <td>#{{ $trx->id }}</td>
+                                        <td>{{ $trx->created_at->format('d/m/Y H:i') }}</td>
+                                        <td>
+                                            <div class="fw-bold">{{ $trx->user->name ?? '-' }}</div>
+                                            <small class="text-muted">{{ $trx->user->nip ?? '' }}</small>
+                                        </td>
+                                        <td>
+                                            @php
+                                                $code = $trx->purchaseType
+                                                    ? $trx->purchaseType->code
+                                                    : $trx->payment_method;
+                                                $badge = $code == 'balance' ? 'bg-primary' : 'bg-success';
+                                                $label = $code == 'balance' ? 'Potong Saldo' : 'Tunai';
+                                            @endphp
+                                            <span class="badge {{ $badge }}">{{ $label }}</span>
+                                        </td>
+                                        <td>Rp {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
+                                        <td>
+                                            @if ($trx->balance_after)
+                                                Rp {{ number_format($trx->balance_after, 0, ',', '.') }}
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('transactions.print_invoice', $trx->id) }}" target="_blank"
+                                                class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">Tidak ada data transaksi tunai.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white">
+                        {{ $transactions->appends(request()->query())->links() }}
+                    </div>
+                </div>
             </div>
 
-            {{-- PERBAIKAN 2: Tambahkan Tombol Pagination --}}
-            <div class="card-footer">
-                {{ $transactions->withQueryString()->links() }}
+            {{-- TAB 2: TRANSAKSI KREDIT (NEW - Sesuai Schema) --}}
+            <div class="tab-pane fade" id="credit" role="tabpanel">
+                <div class="card shadow border-0">
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Waktu</th>
+                                    <th>User</th>
+                                    <th>Barang</th> {{-- id_product --}}
+                                    <th>Tenor</th> {{-- tenor --}}
+                                    <th>Cicilan/Bln</th> {{-- monthly_amount --}}
+                                    <th>Status</th> {{-- status --}}
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($creditTransactions as $credit)
+                                    <tr>
+                                        <td>#{{ $credit->id }}</td>
+                                        <td>{{ $credit->created_at->format('d/m/Y H:i') }}</td>
+                                        <td>
+                                            <div class="fw-bold">{{ $credit->user->name ?? '-' }}</div>
+                                            <small class="text-muted">{{ $credit->user->nip ?? '' }}</small>
+                                        </td>
+                                        <td>
+                                            {{-- Relasi ke Product Raditya --}}
+                                            {{ $credit->product->name ?? 'Produk Dihapus' }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">{{ $credit->tenor }} Bulan</span>
+                                        </td>
+                                        <td class="fw-bold">
+                                            Rp {{ number_format($credit->monthly_amount, 0, ',', '.') }}
+                                        </td>
+                                        <td>
+                                            @php
+                                                $statusClass = match ($credit->status) {
+                                                    'progress' => 'bg-warning text-dark',
+                                                    'paid' => 'bg-success',
+                                                    'complete' => 'bg-success',
+                                                    default => 'bg-secondary',
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $statusClass }}">
+                                                {{ ucfirst($credit->status) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{-- Tombol ke detail cicilan (Kartu Piutang) --}}
+                                            {{-- Pastikan route 'credits.show' atau sejenisnya ada --}}
+                                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Detail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">Tidak ada data pengajuan kredit.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white">
+                        {{ $creditTransactions->appends(request()->query())->links() }}
+                    </div>
+                </div>
             </div>
+
         </div>
 
     </div>
