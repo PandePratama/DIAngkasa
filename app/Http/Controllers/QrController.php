@@ -16,8 +16,6 @@ class QrController extends Controller
     {
         $nip = strtoupper(trim($request->qr));
 
-        $user = User::with('unitKerja')->where('nip', $nip)->first();
-
         if (!$nip) {
             return response()->json([
                 'status'  => 'invalid',
@@ -25,7 +23,7 @@ class QrController extends Controller
             ]);
         }
 
-        $user = User::where('nip', $nip)->first();
+        $user = User::with('unitKerja')->where('nip', $nip)->first();
 
         if (!$user) {
             return response()->json([
@@ -38,8 +36,8 @@ class QrController extends Controller
             'status' => 'valid',
             'nip'    => $user->nip,
             'name'   => $user->name,
-            'unit'   => $user->unit_kerja,
-            'credit' => $user->credit_limit
+            'unit'   => $user->unitKerja?->unit_name ?? '-',
+            'saldo'  => (int) ($user->saldo ?? 0)
         ]);
     }
 
@@ -58,38 +56,41 @@ class QrController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $sisa = CreditService::remaining($user);
-
-                if ($sisa < $request->amount) {
+                // ✅ cek saldo
+                if ($user->saldo < $request->amount) {
                     throw ValidationException::withMessages([
-                        'amount' => 'Limit kredit tidak mencukupi'
+                        'amount' => 'Saldo tidak mencukupi'
                     ]);
                 }
 
-                $saldoAwal  = $user->credit_limit;
-                $saldoAkhir = $saldoAwal - $request->amount;
+                $saldoAkhir = $user->saldo - $request->amount;
 
-                $user->update(['credit_limit' => $saldoAkhir]);
+                // ✅ update saldo user
+                $user->update([
+                    'saldo' => $saldoAkhir
+                ]);
 
+                // ✅ simpan transaksi SESUAI table
                 Transaction::create([
-                    'id_user'     => $user->id,
-                    'nip'         => $user->nip,
-                    'admin_name'  => auth()->user()->name,
-                    'amount'      => $request->amount,
-                    'saldo_awal'  => $saldoAwal,
-                    'saldo_akhir' => $saldoAkhir
+                    'id_user'        => $user->id,
+                    'invoice_code'   => 'QR-' . now()->format('YmdHis'),
+                    'grand_total'    => $request->amount,
+                    'balance_after'  => $saldoAkhir,
+                    'payment_type'   => 'credit', // atau 'cash'
+                    'tenure'         => 1,
+                    'status'         => 'completed'
                 ]);
 
                 $result = [
                     'status'      => 'success',
-                    'sisa_credit' => $saldoAkhir
+                    'sisa_saldo' => $saldoAkhir
                 ];
             });
 
             return response()->json($result);
         } catch (ValidationException $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => $e->errors()['amount'][0]
             ], 422);
         }
