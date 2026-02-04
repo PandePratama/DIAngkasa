@@ -21,7 +21,8 @@ use App\Http\Controllers\{
     UserController,
     WelcomeController,
     AdminOrderController,
-    CreditTransactionController // Transaksi Kredit
+    CreditTransactionController, // Transaksi Kredit, // Transaksi Kredit
+    TransactionReportController
 };
 
 /*
@@ -159,4 +160,8 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::post('/bulk-action', [DiamartController::class, 'bulkAction'])->name('bulk-action');
     });
     Route::resource('diamart', DiamartProductController::class)->parameters(['diamart' => 'product']);
+
+    // --- LAPORAN TRANSAKSI ---
+    Route::get('/reports/monthly', [TransactionReportController::class, 'monthlyReport'])->name('reports.monthly');
+    Route::get('/reports/pdf/{user}/{bulan}/{tahun}', [TransactionReportController::class, 'downloadPdf'])->name('report.pdf');
 });

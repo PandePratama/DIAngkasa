@@ -126,6 +126,14 @@
                     <span>Tanggungan Tenor</span>
                 </a>
             </li>
+
+            <li class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('reports.monthly') }}">
+                    <i class="fas fa-fw fa-chart-line"></i>
+                    <span>Laporan Transaksi</span>
+                </a>
+            </li>
+            
             {{-- <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.orders.index') }}">
                     <i class="fas fa-fw fa-shopping-cart"></i>
