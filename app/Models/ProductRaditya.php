@@ -16,6 +16,7 @@ class ProductRaditya extends Model
         'id_category',
         'id_brand',
         'name',
+        'hpp',
         'price',
         'stock',
         'desc',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BalanceMutation;
 use App\Models\CreditTransaction;
 use App\Models\ProductRaditya; // Pastikan Model ini di-use
 use App\Services\CreditCalculatorService;
@@ -10,14 +11,21 @@ use Illuminate\Support\Facades\DB;
 
 class CreditTransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Pastikan relasi 'product' di model CreditTransaction mengarah ke ProductRaditya
+        // 1. Data Tabel Atas (Kredit)
         $transactions = CreditTransaction::with(['user', 'product', 'installments'])
             ->latest()
-            ->paginate(10);
+            ->paginate(5, ['*'], 'credits_page'); // Pakai custom page name
 
-        return view('admin.credits.index', compact('transactions'));
+        // 2. Data Tabel Bawah (Mutasi Saldo - Khusus Debit/Potongan Kredit)
+        $mutations = BalanceMutation::with('user')
+            ->where('type', 'debit') // Hanya ambil yang keluar
+            ->where('description', 'like', '%Kredit%') // Opsional: Filter deskripsi
+            ->latest()
+            ->paginate(10, ['*'], 'mutations_page');
+
+        return view('admin.credits.index', compact('transactions', 'mutations'));
     }
 
     public function show(CreditTransaction $creditTransaction)

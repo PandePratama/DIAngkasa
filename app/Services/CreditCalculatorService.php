@@ -2,100 +2,83 @@
 
 namespace App\Services;
 
-// use App\Models\Product;
 use App\Models\ProductRaditya;
-use Carbon\Carbon;
 
 class CreditCalculatorService
 {
     const ADMIN_FEE_FIRST_MONTH = 20000;
 
-    /**
-     * 1. Fungsi Utama: Menghitung Angka-angka (Retail, Cicilan Murni)
-     */
     public function calculate(ProductRaditya $product, int $tenor, float $inputDp)
     {
-        // A. Validasi Min DP
-        $minDpPercent = $this->getMinDpPercent($product->selling_price);
-        $minDpNominal = $product->selling_price * ($minDpPercent / 100);
+        // 1. Tentukan HPP & Harga Jual
+        // Jika HPP 0, gunakan Harga Jual agar tidak error/margin 0
+        $hpp = ($product->hpp > 0) ? $product->hpp : $product->price;
+        $sellingPrice = $product->price;
 
-        if ($inputDp < $minDpNominal) {
-            throw new \Exception("DP kurang! Minimal Rp " . number_format($minDpNominal));
-        }
+        // 2. Hitung Sisa Pokok
+        $sisaPokok = $sellingPrice - $inputDp;
 
-        // B. Tentukan Variabel Rumus
-        $upPricePercent = $this->getUpPriceRange($product->hpp);
+        // 3. Tentukan Persentase Up Price (Dari HPP)
+        $upPricePercent = $this->getUpPricePercent($hpp);
+
+        // 4. Hitung Harga Retail (Sisa Pokok + Up Price)
+        // Rumus Tabel: 1.759.000 + 17.5% = 2.066.825
+        $hargaRetail = $sisaPokok * (1 + ($upPricePercent / 100));
+
+        // 5. Hitung Total Pinjaman dengan Bunga
+        // Rumus Tabel: 2.066.825 + 9% (3 bulan) = 2.252.839,25
         $interestPercent = $this->getInterestRate($tenor);
+        $totalLoan = $hargaRetail * (1 + ($interestPercent / 100));
 
-        // C. Hitung Harga Retail (Principal)
-        // Rumus: (Harga Jual - DP) + (Up Price %)
-        $sisaPokok = $product->selling_price - $inputDp;
-        if ($sisaPokok < 0) {
-            // Artinya DP lebih mahal dari harga barang (Aneh kan?)
-            $sisaPokok = 0;
-        }
-        $retailPrice = $sisaPokok * (1 + ($upPricePercent / 100));
+        // 6. Hitung Angsuran Bulanan
+        // 2.252.839,25 / 3 = 750.946
+        $rawMonthly = $totalLoan / $tenor;
 
-        // D. Hitung Cicilan Dasar (Sebelum Admin Fee)
-        // Rumus: (Retail * (1 + Bunga)) / Tenor
-        $grossInstallment = ($retailPrice * (1 + ($interestPercent / 100))) / $tenor;
-
-        // E. Pembulatan ke 1.000 ke atas
-        $monthlyInstallment = ceil($grossInstallment / 1000) * 1000;
+        // 7. Pembulatan ke Ribuan Terdekat (751.000)
+        $monthlyInstallment = ceil($rawMonthly / 1000) * 1000;
 
         return [
-            'product_hpp_snapshot' => $product->hpp,
-            'product_price_snapshot' => $product->selling_price,
+            'price' => $sellingPrice,
+            'hpp' => $hpp,
             'dp_amount' => $inputDp,
             'tenor' => $tenor,
+            'principal' => $sisaPokok,
             'up_price_percent' => $upPricePercent,
+            'retail_price' => $hargaRetail,
             'interest_percent' => $interestPercent,
-            'retail_price' => $retailPrice,
-            'monthly_installment' => $monthlyInstallment, // Cicilan murni
+            'monthly_installment' => $monthlyInstallment,
         ];
     }
 
-    /**
-     * 2. Fungsi Generate Jadwal (Array untuk insert ke table Installments)
-     * Disinilah Admin Fee 20rb ditambahkan khusus bulan ke-1
-     */
-    public function generateSchedule(array $calculationResult)
+    public function generateSchedule(array $calc)
     {
         $schedules = [];
-        $baseAmount = $calculationResult['monthly_installment'];
-        $startDate = now(); // Atau request input date
+        $monthly = $calc['monthly_installment'];
 
-        for ($i = 1; $i <= $calculationResult['tenor']; $i++) {
-
-            // LOGIC ADMIN FEE: Jika bulan 1, tambah 20rb
-            $amount = ($i === 1) ? ($baseAmount + self::ADMIN_FEE_FIRST_MONTH) : $baseAmount;
+        for ($i = 1; $i <= $calc['tenor']; $i++) {
+            // Tambah Admin Fee 20rb hanya di bulan pertama
+            $amount = ($i === 1) ? ($monthly + self::ADMIN_FEE_FIRST_MONTH) : $monthly;
 
             $schedules[] = [
                 'month_sequence' => $i,
-                'due_date' => $startDate->copy()->addMonths($i)->format('Y-m-d'),
                 'amount' => $amount,
-                'note' => ($i === 1) ? 'Include Admin Fee' : 'Regular'
             ];
         }
-
         return $schedules;
     }
 
-    // --- Private Helpers (Rumus Statis) ---
+    // --- LOGIC SESUAI TABEL MANUAL ---
 
-    private function getUpPriceRange($hpp)
+    private function getUpPricePercent($hpp)
     {
+        // 0 - 3.000.000 -> 17.5%
         if ($hpp <= 3000000) return 17.5;
-        if ($hpp <= 8000000) return 22.5;
-        return 27.5;
-    }
 
-    private function getMinDpPercent($price)
-    {
-        if ($price <= 2000000) return 0;
-        if ($price <= 3000000) return 20;
-        if ($price <= 8000000) return 25;
-        return 30;
+        // 3.000.001 - 8.000.000 -> 22.5%
+        if ($hpp <= 8000000) return 22.5;
+
+        // > 8.000.000 -> 27.5%
+        return 27.5;
     }
 
     private function getInterestRate($tenor)
@@ -107,5 +90,14 @@ class CreditCalculatorService
             12 => 24,
             default => 0
         };
+    }
+
+    // Helper untuk validasi DP (Opsional)
+    private function getMinDpPercent($price)
+    {
+        if ($price <= 2000000) return 0;
+        if ($price <= 3000000) return 20;
+        if ($price <= 8000000) return 25;
+        return 30;
     }
 }

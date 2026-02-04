@@ -10,9 +10,9 @@ class Installment extends Model
     use HasFactory;
     protected $guarded = ['id'];
 
-    protected $casts = [
-        'due_date' => 'date',
-    ];
+    // protected $casts = [
+    //     'due_date' => 'date',
+    // ];
 
     protected $fillable = [
         'id',

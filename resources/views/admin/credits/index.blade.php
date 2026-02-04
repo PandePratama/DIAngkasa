@@ -1,32 +1,23 @@
-{{-- 1. EXTENDS: Sesuaikan 'layouts.admin' dengan nama file layout utama Anda --}}
 @extends('admin.layouts.app')
 
-{{-- 2. SECTION: Sesuaikan 'content' dengan nama @yield di layout utama --}}
 @section('content')
+    <div class="container-fluid">
 
-    <div class="container-fluid"> {{-- Opsional: Agar ada padding kiri-kanan --}}
-
-        {{-- Paste Kode Anda Di Sini --}}
-        <div class="card shadow mb-4"> {{-- Tambah shadow mb-4 biar lebih cantik --}}
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Data Transaksi Kredit</h6>
-                <div>
-                    <a href="?status=active" class="btn btn-sm btn-primary shadow-sm"><i
-                            class="fas fa-check fa-sm text-white-50"></i> Sedang Jalan</a>
-                    <a href="?status=bad_debt" class="btn btn-sm btn-danger shadow-sm"><i
-                            class="fas fa-exclamation-triangle fa-sm text-white-50"></i> Macet</a>
-                </div>
+        {{-- TABEL 1: DATA TRANSAKSI KREDIT (YANG SUDAH ADA) --}}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-primary text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-file-contract mr-2"></i> Data Transaksi Kredit</h6>
             </div>
             <div class="card-body">
+                {{-- ... (Isi tabel kredit Anda yang sudah benar tadi) ... --}}
                 <div class="table-responsive">
-                    <table class="table table-bordered" width="100%" cellspacing="0">
-                        <thead> {{-- Hapus class thead-dark jika pakai style SB Admin default --}}
+                    <table class="table table-bordered">
+                        <thead>
                             <tr>
                                 <th>#ID / Tgl</th>
                                 <th>Nasabah & Barang</th>
-                                <th>Tenor</th>
+                                <th>DP Awal</th> {{-- KOLOM BARU --}}
                                 <th>Tagihan/Bln</th>
-                                <th>Progress Bayar</th>
                                 <th>Status</th>
                                 <th>Aksi</th>
                             </tr>
@@ -34,90 +25,88 @@
                         <tbody>
                             @forelse($transactions as $trx)
                                 <tr>
+                                    <td>#{{ $trx->id }} <br> <small>{{ $trx->created_at->format('d M Y') }}</small>
+                                    </td>
                                     <td>
-                                        <strong>#{{ $trx->id }}</strong><br>
-                                        <small class="text-muted">{{ $trx->created_at->format('d M Y') }}</small>
+                                        <strong>{{ $trx->user->name }}</strong><br>
+                                        {{ $trx->product->name }}
+                                    </td>
+                                    <td>
+                                        {{-- MENAMPILKAN DP --}}
+                                        <span class="text-success">Rp
+                                            {{ number_format($trx->dp_amount, 0, ',', '.') }}</span>
+                                    </td>
+                                    <td>
+                                        {{-- MENAMPILKAN TAGIHAN BULANAN --}}
+                                        Rp {{ number_format($trx->monthly_amount, 0, ',', '.') }}
                                     </td>
 
                                     <td>
-                                        <div class="font-weight-bold">{{ $trx->user->name ?? 'Guest' }}</div>
-                                        <small class="text-primary">{{ $trx->product->name }}</small>
+                                        <span class="badge badge-{{ $trx->status == 'paid_off' ? 'success' : 'warning' }}">
+                                            {{ $trx->status }}
+                                        </span>
                                     </td>
-
                                     <td>
-                                        <span class="badge badge-info">{{ $trx->tenor }} Bulan</span>
-                                    </td>
-
-                                    <td>
-                                        Rp {{ number_format($trx->monthly_installment_base, 0, ',', '.') }}
-                                    </td>
-
-                                    <td style="min-width: 150px;"> {{-- Kasih min-width biar progress bar tidak gepeng --}}
-                                        @php
-                                            $percent = ($trx->paid_months / $trx->tenor) * 100;
-                                        @endphp
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <small>Ke-{{ $trx->paid_months }} dari {{ $trx->tenor }}</small>
-                                            <small>{{ round($percent) }}%</small>
-                                        </div>
-                                        <div class="progress" style="height: 10px;">
-                                            <div class="progress-bar bg-success" role="progressbar"
-                                                style="width: {{ $percent }}%"></div>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        @if ($trx->status == 'paid_off')
-                                            <span class="badge badge-success">LUNAS</span>
-                                        @elseif($trx->status == 'bad_debt')
-                                            <span class="badge badge-dark">MACET (Bad Debt)</span>
-                                        @else
-                                            @if ($trx->is_overdue)
-                                                <span class="badge badge-danger blink">NUNGGAK!</span>
-                                                <div class="small text-danger mt-1">Telat Bayar</div>
-                                            @else
-                                                <span class="badge badge-success">Lancar</span>
-                                            @endif
-                                        @endif
-                                    </td>
-
-                                    <td>
-                                        {{-- Pastikan route ini sudah didefinisikan di web.php --}}
                                         <a href="{{ route('credits.show', $trx->id) }}"
-                                            class="btn btn-sm btn-info shadow-sm">
-                                            <i class="fas fa-eye"></i> Detail
-                                        </a>
+                                            class="btn btn-sm btn-info">Detail</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center p-5">Belum ada data transaksi kredit.</td>
+                                    <td colspan="6" class="text-center">Kosong</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                    {{ $transactions->appends(['mutations_page' => request('mutations_page')])->links() }}
+                </div>
+            </div>
+        </div>
+
+        {{-- TABEL 2: RIWAYAT PEMOTONGAN SALDO (BARU) --}}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-danger text-white d-flex justify-content-between">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-history mr-2"></i> Log Pemotongan Saldo (Autodebet & DP)
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Waktu</th>
+                                <th>User</th>
+                                <th>Deskripsi Pemotongan</th>
+                                <th>Jumlah Dipotong</th>
+                                <th>Sisa Saldo User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($mutations as $log)
+                                <tr>
+                                    <td>{{ $log->created_at->format('d M Y H:i') }}</td>
+                                    <td>{{ $log->user->name ?? '-' }}</td>
+                                    <td>{{ $log->description }}</td>
+                                    <td class="text-danger font-weight-bold">
+                                        - Rp {{ number_format($log->amount, 0, ',', '.') }}
+                                    </td>
+                                    <td>Rp {{ number_format($log->current_balance, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted">Belum ada aktivitas pemotongan
+                                        saldo.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-
-                <div class="mt-3">
-                    {{ $transactions->links() }}
+                {{-- Pagination Tabel Bawah --}}
+                <div class="mt-2">
+                    {{ $mutations->appends(['credits_page' => request('credits_page')])->links() }}
                 </div>
             </div>
         </div>
 
     </div>
-
-@endsection
-
-@section('styles')
-    <style>
-        .blink {
-            animation: blinker 1.5s linear infinite;
-        }
-
-        @keyframes blinker {
-            50% {
-                opacity: 0;
-            }
-        }
-    </style>
 @endsection

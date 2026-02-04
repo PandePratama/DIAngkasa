@@ -152,11 +152,14 @@
                                                     (DP)</label>
                                                 <div class="relative">
                                                     <span class="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
-                                                    <input type="number" name="dp_amount" placeholder="Contoh: 500000"
+                                                    {{-- Tambahkan min="0" dan ubah placeholder --}}
+                                                    <input type="number" name="dp_amount" placeholder="Isi 0 jika tanpa DP"
+                                                        min="0" value="0"
                                                         class="w-full pl-8 text-sm border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
                                                 </div>
-                                                <small class="text-[10px] text-teal-600 mt-1 block">*DP akan dipotong dari
-                                                    Saldo Anda</small>
+                                                {{-- Ubah teks keterangan --}}
+                                                <small class="text-[10px] text-teal-600 mt-1 block">*Jika ada DP, saldo akan
+                                                    terpotong.</small>
                                             </div>
                                         </div>
                                     </div>
@@ -295,21 +298,25 @@
             // VALIDASI 2: CEK DP (Jika pilih Kredit)
             // ===============================================
             else if (method === 'credit') {
-                const dpVal = dpInput ? dpInput.value : 0;
+                // Ambil value, jika kosong anggap 0
+                let dpVal = dpInput ? parseFloat(dpInput.value) : 0;
+                if (isNaN(dpVal)) dpVal = 0; // Jaga-jaga jika input bukan angka
 
-                if (!dpVal || dpVal <= 0) {
+                // LOGIKA BARU: Hanya tolak jika negatif (< 0)
+                // 0 boleh lewat
+                if (dpVal < 0) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'DP Kosong',
-                        text: 'Wajib isi nominal DP.',
+                        title: 'DP Tidak Valid',
+                        text: 'Nominal DP tidak boleh negatif.',
                         confirmButtonColor: '#d33'
                     });
                     dpInput.classList.add('border-red-500', 'ring-red-500');
                     return;
                 }
 
-                // Cek apakah Saldo cukup buat bayar DP?
-                if (userSaldo < dpVal) {
+                // Cek Saldo hanya jika DP > 0
+                if (dpVal > 0 && userSaldo < dpVal) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Saldo Kurang untuk DP',
@@ -319,9 +326,18 @@
                     return;
                 }
 
-                const fmtDP = new Intl.NumberFormat('id-ID').format(dpVal);
+                // Atur Pesan Konfirmasi (Dinamis)
                 title = 'Ajukan Kredit?';
-                text = `DP sebesar <b>Rp ${fmtDP}</b> akan dipotong dari Saldo.`;
+
+                if (dpVal > 0) {
+                    // Jika pakai DP
+                    const fmtDP = new Intl.NumberFormat('id-ID').format(dpVal);
+                    text = `DP sebesar <b>Rp ${fmtDP}</b> akan dipotong dari Saldo.<br>Sisa harga akan dicicil.`;
+                } else {
+                    // Jika DP 0
+                    text = `<b>Tanpa Uang Muka (DP 0).</b><br>Full harga barang akan dicicil sesuai tenor.`;
+                }
+
                 btnText = 'Ya, Ajukan!';
                 iconType = 'info';
             }
