@@ -16,92 +16,87 @@ class CartController extends Controller
     {
         $user = Auth::user();
 
+        // Load keranjang user beserta item dan gambar produknya
         $carts = Cart::with([
-            'items.productDiamart.primaryImage',   // Load data produk sembako + gambar
-            'items.productDiraditya.primaryImage'  // Load data produk elektronik + gambar
+            'items.productDiamart.primaryImage',
+            'items.productDiraditya.primaryImage'
         ])
             ->where('id_user', $user->id)
             ->get();
 
-        // 2. Hitung Grand Total (Opsional, tapi bagus disiapkan di sini)
+        // Hitung Grand Total
         $grandTotal = 0;
         foreach ($carts as $cart) {
             foreach ($cart->items as $item) {
-                // Ambil harga dari relasi produk
                 $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
-                $price = $product->price ?? 0;
-                $grandTotal += $price * $item->qty;
+                // Pastikan produk masih ada (tidak null) untuk menghindari error
+                if ($product) {
+                    $grandTotal += $product->price * $item->qty;
+                }
             }
         }
 
         return view('cart.index', compact('carts', 'grandTotal'));
     }
 
-    // --- 2. FUNGSI UTAMA: TAMBAH KE KERANJANG (HANDLES ALL) ---
-    // Menggantikan fungsi addDiamart dan addRaditya yang terpisah
+    // --- 2. FUNGSI UTAMA: TAMBAH KE KERANJANG ---
     public function addToCart(Request $request)
     {
         $user = Auth::user();
 
-
-        // A. Validasi Input Dasar
-        // Kita tidak tahu produk mana yang dikirim, jadi kita cek manual nanti
+        // 1. Tentukan Target Unit & Validasi Produk
         $targetUnit = null;
         $productId = null;
-        $maxStock = 0;
-        $cart = Cart::firstOrCreate([
-            'id_user' => $user->id,
-            'business_unit' => 'diamart'
-        ]);
+        $product = null;
 
         if ($request->has('id_product_diamart')) {
             $targetUnit = 'diamart';
             $productId = $request->id_product_diamart;
             $product = ProductDiamart::find($productId);
-        } elseif ($request->has('id_product_diraditya')) { // pastikan nama input sesuai form
+        } elseif ($request->has('id_product_diraditya')) {
             $targetUnit = 'raditya';
             $productId = $request->id_product_diraditya;
             $product = ProductRaditya::find($productId);
         } else {
-            return back()->with('error', 'Produk tidak valid.');
+            return back()->with('error', 'Data produk tidak valid.');
         }
 
-        // Cek apakah produk fisik ada di database?
         if (!$product) {
-            return back()->with('error', 'Produk tidak ditemukan.');
+            return back()->with('error', 'Produk tidak ditemukan di database.');
         }
 
-        // B. Cek Keranjang Existing User
+        // 2. Cek Keranjang User yang Sudah Ada
+        // Kita cari keranjang apapun milik user ini
         $existingCart = Cart::where('id_user', $user->id)->first();
 
-        // C. LOGIKA VALIDASI UNIT BISNIS (SATPAM)
+        // 3. Validasi Cross-Business Unit
         if ($existingCart) {
-            // Jika keranjang sudah ada, TAPI unit bisnisnya beda
+            // Jika user sudah punya keranjang, CEK UNITNYA
             if ($existingCart->business_unit != $targetUnit) {
-                $currentUnit = ucfirst($existingCart->business_unit);
-                $newUnit = ucfirst($targetUnit);
+                // Konversi nama unit biar enak dibaca user
+                $currentUnitName = ($existingCart->business_unit == 'diamart') ? 'Minimarket (Diamart)' : 'Gadget (Raditya)';
+                $targetUnitName = ($targetUnit == 'diamart') ? 'Minimarket (Diamart)' : 'Gadget (Raditya)';
 
-                // STOP PROSES & KIRIM ERROR
                 return redirect()->back()->withErrors([
-                    'error' => "Gagal! Keranjang Anda sedang aktif untuk <b>{$currentUnit}</b>.<br>
-                                Tidak bisa dicampur dengan produk <b>{$newUnit}</b>.<br>
-                                Selesaikan transaksi atau hapus keranjang dulu."
+                    'error' => "Gagal! Keranjang Anda saat ini berisi produk <b>{$currentUnitName}</b>.<br>
+                                Tidak bisa dicampur dengan produk <b>{$targetUnitName}</b>.<br>
+                                Silakan <b>selesaikan pembayaran</b> atau <b>kosongkan keranjang</b> terlebih dahulu."
                 ]);
             }
-            // Jika lolos (Unit sama), gunakan cart ID yang sudah ada
+
+            // Jika unit sama, gunakan ID keranjang lama
             $cartId = $existingCart->id;
         } else {
-            // Jika Belum Punya Keranjang -> BUAT BARU
+            // Jika belum punya keranjang sama sekali, BUAT BARU
+            // (Disinilah seharusnya create dilakukan, bukan di awal fungsi)
             $newCart = Cart::create([
                 'id_user' => $user->id,
-                'business_unit' => $targetUnit,
+                'business_unit' => $targetUnit
             ]);
             $cartId = $newCart->id;
         }
 
-        // D. PROSES SIMPAN ITEM (Cart Item)
-
-        // Cek apakah item produk yang sama sudah ada di cart ini?
+        // 4. Proses Insert/Update Item (CartItem)
         $existingItem = CartItem::where('id_cart', $cartId)
             ->when($targetUnit == 'diamart', function ($q) use ($productId) {
                 return $q->where('id_product_diamart', $productId);
@@ -114,15 +109,16 @@ class CartController extends Controller
         $qtyToAdd = $request->qty ?? 1;
 
         if ($existingItem) {
-            // Cek Stok Sebelum Update
+            // -- Update Qty Item Lama --
+            // Cek stok total nanti (qty lama + qty baru)
             if (($existingItem->qty + $qtyToAdd) > $product->stock) {
-                return back()->with('error', "Stok tidak cukup. Sisa stok: {$product->stock}");
+                return back()->with('error', "Stok tidak mencukupi. Maksimal tambahan: " . ($product->stock - $existingItem->qty));
             }
             $existingItem->increment('qty', $qtyToAdd);
         } else {
-            // Cek Stok Sebelum Create
+            // -- Buat Item Baru --
             if ($qtyToAdd > $product->stock) {
-                return back()->with('error', "Stok tidak cukup. Sisa stok: {$product->stock}");
+                return back()->with('error', "Stok barang tersisa {$product->stock}.");
             }
 
             CartItem::create([
@@ -133,130 +129,31 @@ class CartController extends Controller
             ]);
         }
 
-
-        return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan.');
+        return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 
-    // public function addToCart(Request $request)
-    // {
-    //     $user = auth()->user();
-
-    //     // 1. Tentukan produk ini milik unit mana
-    //     // Asumsi: form mengirim input hidden 'business_unit' ATAU kita cek dari ID produk
-    //     if ($request->has('id_product_diamart')) {
-    //         $targetUnit = 'diamart';
-    //     } elseif ($request->has('id_product_diraditya')) { // sesuaikan nama input gadget anda
-    //         $targetUnit = 'raditya';
-    //     } else {
-    //         return back()->with('error', 'Produk tidak valid.');
-    //     }
-
-    //     // 2. Cek Keranjang Existing User
-    //     $existingCart = \App\Models\Cart::where('id_user', $user->id)->first();
-
-    //     // 3. LOGIKA VALIDASI (SATPAM)
-    //     if ($existingCart) {
-    //         // Jika keranjang sudah ada, TAPI unit bisnisnya beda
-    //         if ($existingCart->business_unit != $targetUnit) {
-
-    //             $currentUnit = ucfirst($existingCart->business_unit);
-    //             $newUnit = ucfirst($targetUnit);
-
-    //             // STOP PROSES & KIRIM ERROR
-    //             return redirect()->back()->withErrors([
-    //                 'error' => "Gagal! Keranjang Anda sedang aktif untuk <b>{$currentUnit}</b>.<br>
-    //                         Tidak bisa dicampur dengan produk <b>{$newUnit}</b>.<br>
-    //                         Selesaikan transaksi atau hapus keranjang dulu."
-    //             ]);
-    //         }
-
-    //         // Jika lolos (Unit sama), gunakan cart ID yang sudah ada
-    //         $cartId = $existingCart->id;
-    //     } else {
-    //         // 4. Jika Belum Punya Keranjang -> BUAT BARU
-    //         $newCart = \App\Models\Cart::create([
-    //             'id_user' => $user->id,
-    //             'business_unit' => $targetUnit, // Kunci keranjang ini untuk unit tersebut
-    //         ]);
-    //         $cartId = $newCart->id;
-    //     }
-
-    //     // 5. PROSES SIMPAN ITEM (Cart Item)
-    //     // Gunakan $cartId yang didapat dari logika di atas
-
-    //     // Cek apakah item produk yang sama sudah ada di cart ini?
-    //     $existingItem = \App\Models\CartItem::where('cart_id', $cartId)
-    //         ->when($targetUnit == 'diamart', function ($q) use ($request) {
-    //             return $q->where('id_product_diamart', $request->id_product_diamart);
-    //         })
-    //         ->when($targetUnit == 'raditya', function ($q) use ($request) {
-    //             return $q->where('id_product_diraditya', $request->id_product_diraditya);
-    //         })
-    //         ->first();
-
-    //     if ($existingItem) {
-    //         // Update Qty jika barang sudah ada
-    //         $existingItem->increment('qty', $request->qty ?? 1);
-    //     } else {
-    //         // Create Item Baru
-    //         \App\Models\CartItem::create([
-    //             'cart_id' => $cartId,
-    //             'id_product_diamart' => $request->id_product_diamart ?? null,
-    //             'id_product_diraditya' => $request->id_product_diraditya ?? null,
-    //             'qty' => $request->qty ?? 1
-    //         ]);
-    //     }
-
-    //     return redirect()->route('cart.index')->with('success', 'Produk berhasil masuk keranjang');
-    // }
-    // --- 2. TAMBAH KERANJANG RADITYA (ELEKTRONIK) ---
-    public function addRaditya(Request $request, $id)
-    {
-        $user = Auth::user();
-        $product = ProductRaditya::findOrFail($id);
-
-        $cart = Cart::firstOrCreate(
-            ['id_user' => $user->id, 'business_unit' => 'raditya']
-        );
-
-        $item = CartItem::where('id_cart', $cart->id)
-            ->where('id_product_diraditya', $product->id)
-            ->first();
-
-        if ($item) {
-            // PERBAIKAN: Sama seperti Diamart, jangan gunakan increment()
-            return redirect()->route('cart.index')->with('info', 'Produk sudah ada di keranjang.');
-        } else {
-            CartItem::create([
-                'id_cart'              => $cart->id,
-                'id_product_diamart'   => null,
-                'id_product_diraditya' => $product->id,
-                'qty'                  => 1,
-            ]);
-        }
-
-        return redirect()->route('cart.index')->with('success', 'Gadget berhasil masuk keranjang!');
-    }
-
-    // --- 3. UPDATE QUANTITY (+/-) ---
+    // --- 3. UPDATE QUANTITY ---
     public function update(Request $request, $itemId)
     {
         $item = CartItem::findOrFail($itemId);
 
-        // Ambil produk terkait untuk cek stok
+        // Identifikasi produk
         $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
+
+        if (!$product) {
+            $item->delete(); // Hapus item hantu jika produk master hilang
+            return back()->with('error', 'Produk tidak ditemukan.');
+        }
+
         $maxStock = $product->stock;
 
-        // Validasi input manual dan batas stok
         $request->validate([
             'qty' => "required|integer|min:1|max:$maxStock"
         ], [
-            'qty.max' => "Maaf, stok hanya tersedia $maxStock unit."
+            'qty.max' => "Stok hanya tersedia $maxStock unit."
         ]);
 
-        $item->update([
-            'qty' => $request->qty
-        ]);
+        $item->update(['qty' => $request->qty]);
 
         return redirect()->back()->with('success', 'Keranjang diperbarui.');
     }
@@ -265,26 +162,33 @@ class CartController extends Controller
     public function remove($itemId)
     {
         $item = CartItem::findOrFail($itemId);
-
-        // Ambil cart ID sebelum dihapus untuk pengecekan nanti
         $cartId = $item->id_cart;
 
+        // Hapus Item
         $item->delete();
 
-        // Cek: Apakah keranjang jadi kosong melompong setelah item ini dihapus?
-        $remainingItems = CartItem::where('id_cart', $cartId)->count();
+        // Cek sisa item di keranjang ini
+        $count = CartItem::where('id_cart', $cartId)->count();
 
-        if ($remainingItems == 0) {
-            // Jika kosong, hapus Keranjang Utama (Header Cart) juga
-            // Agar user bisa belanja Unit lain tanpa terhalang "Kunci Unit"
-            Cart::find($cartId)->delete();
+        if ($count == 0) {
+            // Jika kosong, HAPUS HEADER CART agar status unit 'terkunci' hilang
+            Cart::where('id', $cartId)->delete();
         }
 
-        return redirect()->back()->with('success', 'Produk dihapus dari keranjang.');
+        return redirect()->back()->with('success', 'Item dihapus.');
     }
-    // --- 5. CHECKOUT (Menuju Halaman Payment) ---
+
+    // --- 5. CHECKOUT ---
     public function checkout()
     {
+        // Pastikan keranjang tidak kosong sebelum ke payment
+        $user = Auth::user();
+        $hasCart = Cart::where('id_user', $user->id)->exists();
+
+        if (!$hasCart) {
+            return redirect()->route('home')->with('error', 'Keranjang Anda kosong.');
+        }
+
         return redirect()->route('payment.index');
     }
 }

@@ -53,12 +53,16 @@ class User extends Authenticatable
 
     public function transactions()
     {
-
-
         return $this->hasMany(Transaction::class, 'id_user');
     }
     public function cart()
     {
         return $this->hasMany(Transaction::class, 'id_user');
+    }
+
+    // [TAMBAHKAN INI] Relasi ke Transaksi Kredit
+    public function creditTransactions()
+    {
+        return $this->hasMany(CreditTransaction::class, 'id_user');
     }
 }

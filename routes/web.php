@@ -5,85 +5,77 @@ use App\Http\Controllers\{
     AuthController,
     DashboardController,
     CategoryController,
-    ProductController,
+    ProductController, // Jika dipakai untuk parent class
     BrandController,
     CartController,
-    DiamartController,
-    DiamartProductController,
-    MinimarketController,
+    DiamartController,         // Public Controller Diamart
+    DiamartProductController,  // Admin Controller Diamart
+    MinimarketController,      // Alias lain untuk Diamart? (Sesuaikan jika perlu)
     PaymentController,
     ProfileController,
     QrController,
-    RadityaController,
-    RadityaProductController,
-    TransactionController,
+    RadityaController,         // Public Controller Raditya
+    RadityaProductController,  // Admin Controller Raditya
+    TransactionController,     // Transaksi Umum/Cash
     UnitKerjaController,
     UserController,
     WelcomeController,
-    AdminOrderController
+    AdminOrderController,
+    CreditTransactionController // Transaksi Kredit
 };
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Routes (Bisa Diakses Tanpa Login)
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
 
-// Gadget (Raditya) - Public
+// --- UNIT BISNIS: GADGET (Raditya) ---
 Route::get('/gadget', [RadityaController::class, 'index'])->name('gadget.index');
 Route::get('/gadget/{product}', [RadityaController::class, 'show'])->name('gadget.show');
 
-// Minimarket (Diamart) - Public
+// --- UNIT BISNIS: MINIMARKET (Diamart) ---
 Route::get('/minimarket', [MinimarketController::class, 'index'])->name('minimarket.index');
 Route::get('/minimarket/{id}', [MinimarketController::class, 'show'])->name('minimarket.show');
+// Front-end Diamart tambahan
+Route::prefix('diamart')->name('front.diamart.')->group(function () {
+    Route::get('/', [DiamartController::class, 'index'])->name('index');
+    Route::get('/product/{id}', [DiamartController::class, 'show'])->name('show');
+});
 
-
-// Auth
-Route::get('/login', fn() => view('auth.login'))->name('login');
-Route::post('/diamart/bulk-action', [DiamartController::class, 'bulkAction'])
-    ->name('diamart.bulk-action');
-
-Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])
-    ->name('transactions.print_invoice');
-// Auth Routes
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+// --- AUTHENTICATION ---
+Route::middleware('guest')->group(function () {
+    Route::get('/login', fn() => view('auth.login'))->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+});
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes (Semua User Login)
+| Authenticated User Routes (Harus Login)
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
 
-    // Profile Management
-    Route::controller(ProfileController::class)->group(function () {
-        Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-        Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
-        Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    // --- PROFILE MANAGEMENT ---
+    Route::controller(ProfileController::class)->prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/', 'updateProfile')->name('update');
+        Route::put('/password', 'updatePassword')->name('password');
     });
 
-    // Cart Management
-    // Cart Management
-    Route::prefix('cart')->name('cart.')->group(function () {
-        // Rute untuk melihat keranjang (Hanya GET)
-        Route::get('/', [CartController::class, 'index'])->name('index');
-
-        // TAMBAHKAN ATAU SESUAIKAN BARIS INI:
-        // Rute untuk memproses tambah barang (Harus POST)
-        Route::post('/add', [CartController::class, 'addToCart'])->name('add');
-        // Rute lainnya...
-        Route::post('/update/{itemId}', [CartController::class, 'update'])->name('update');
-        Route::delete('/remove/{itemId}', [CartController::class, 'remove'])->name('remove');
+    // --- CART SYSTEM ---
+    Route::prefix('cart')->name('cart.')->controller(CartController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/add', 'addToCart')->name('add'); // Penting untuk tombol "Beli"
+        Route::post('/update/{itemId}', 'update')->name('update');
+        Route::delete('/remove/{itemId}', 'remove')->name('remove');
     });
 
-    // Checkout & Payment
+    // --- CHECKOUT & PAYMENT ---
     Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout.index');
     Route::post('/checkout', [CartController::class, 'process'])->name('checkout.process');
 
@@ -92,7 +84,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/process', 'process')->name('process');
         Route::get('/download-csv', 'downloadCsv')->name('downloadCsv');
     });
+
     Route::get('/transaction/success', [TransactionController::class, 'success'])->name('transaction.success');
+    Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])->name('transactions.print_invoice');
+
+    // --- FITUR KREDIT (USER SIDE) ---
+    // 1. AJAX Simulasi (Hitung cicilan di halaman produk)
+    Route::post('/ajax/credit-simulation', [RadityaProductController::class, 'simulateCredit'])
+        ->name('ajax.credit.simulate');
+
+    // 2. Submit Pengajuan Kredit
+    Route::post('/credit-transactions', [CreditTransactionController::class, 'store'])
+        ->name('credit.store');
 });
 
 
@@ -105,40 +108,55 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Master Data
-    Route::resource('categories', CategoryController::class);
-    Route::resource('brands', BrandController::class);
-    Route::resource('unit-kerja', UnitKerjaController::class);
-    Route::resource('users', UserController::class);
+    // --- MASTER DATA ---
+    Route::resources([
+        'categories' => CategoryController::class,
+        'brands'     => BrandController::class,
+        'unit-kerja' => UnitKerjaController::class,
+        'users'      => UserController::class,
+    ]);
 
-    // QR Scan & Transactions
-    Route::get('/qr-scan', fn() => view('admin.qrscan.index'))->name('admin.qr.scan.view');
-    Route::post('/qr-scan/validate', [QrController::class, 'validateQr'])->name('qr.validate');
-    Route::post('/qr-scan/transaction', [QrController::class, 'processTransaction'])->name('qr.transaction');
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('/history', [TransactionController::class, 'history'])->name('history.index');
+    // --- 1. RIWAYAT TRANSAKSI UMUM (CASH) ---
+    // Menu: "Riwayat Transaksi"
+    Route::controller(TransactionController::class)->prefix('transactions')->name('transactions.')->group(function () {
+        Route::get('/', 'index')->name('index');     // List Transaksi Cash
+        Route::get('/history', 'history')->name('history'); // History Log
+    });
 
-    // Order Management
+    // --- 2. TANGGUNGAN TENOR (KREDIT) ---
+    // Menu: "Tanggungan Tenor"
+    // PERBAIKAN: Menggunakan prefix 'credits' agar nama route beda dengan transaksi umum
+    Route::resource('credits', CreditTransactionController::class)
+        ->parameters(['credits' => 'creditTransaction']) // Agar parameter di URL enak dibaca
+        ->names([
+            'index' => 'credits.index', // admin.credits.index
+            'show'  => 'credits.show',  // admin.credits.show
+            'store' => 'credits.store', // admin.credits.store
+        ]);
+
+    // --- ORDER MANAGEMENT ---
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/orders/{id}', [AdminOrderController::class, 'detailOrder'])->name('admin.orders.detail');
 
-    // --- UNIT BISNIS: RADITYA (Gadget/Elektronik) ---
+    // --- QR SCAN ---
+    Route::controller(QrController::class)->prefix('qr-scan')->name('admin.qr.')->group(function () {
+        Route::get('/', fn() => view('admin.qrscan.index'))->name('scan.view');
+        Route::post('/validate', 'validateQr')->name('validate');
+        Route::post('/transaction', 'processTransaction')->name('transaction');
+    });
+
+    // --- MANAJEMEN PRODUK RADITYA ---
     Route::prefix('raditya')->name('raditya.')->group(function () {
         Route::delete('images/{image}', [RadityaProductController::class, 'destroyImage'])->name('images.destroy');
         Route::patch('images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])->name('images.primary');
     });
     Route::resource('raditya', RadityaProductController::class)->parameters(['raditya' => 'product']);
 
-    // --- UNIT BISNIS: DIAMART (Sembako/Minimarket) ---
+    // --- MANAJEMEN PRODUK DIAMART ---
     Route::prefix('diamart')->name('diamart.')->group(function () {
         Route::delete('images/{image}', [DiamartProductController::class, 'destroyImage'])->name('images.destroy');
         Route::patch('images/{image}/primary', [DiamartProductController::class, 'setPrimaryImage'])->name('images.primary');
+        Route::post('/bulk-action', [DiamartController::class, 'bulkAction'])->name('bulk-action');
     });
     Route::resource('diamart', DiamartProductController::class)->parameters(['diamart' => 'product']);
-});
-
-// Front-end Diamart (Customer View)
-Route::prefix('diamart')->name('front.diamart.')->group(function () {
-    Route::get('/', [DiamartController::class, 'index'])->name('index');
-    Route::get('/product/{id}', [DiamartController::class, 'show'])->name('show');
 });

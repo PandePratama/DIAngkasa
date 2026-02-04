@@ -8,6 +8,7 @@ use App\Models\Category;
 // use App\Models\ProductDiraditya; // PERBAIKAN: Gunakan Model yang benar
 use App\Models\ProductImage;
 use App\Models\ProductRaditya;
+use App\Services\CreditCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -186,27 +187,30 @@ class RadityaProductController extends Controller
         return back()->with('success', 'Gambar berhasil dihapus');
     }
 
+    public function simulateCredit(Request $request, CreditCalculatorService $service)
+    {
+        $product = ProductRaditya::findOrFail($request->product_id);
+
+        try {
+            $result = $service->calculate($product, $request->tenor, $request->dp_amount);
+
+            // Format angka untuk dikirim balik ke JSON (Frontend)
+            return response()->json([
+                'status' => 'success',
+                'monthly_base' => number_format($result['monthly_installment']),
+                'first_payment' => number_format($result['monthly_installment'] + 20000), // Info ke user
+                'admin_fee' => 20000
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
     /**
      * Set gambar utama
      */
     public function setPrimaryImage($id)
     {
-        // Fitur ini opsional, tergantung apakah di tabel product_images ada kolom 'is_primary'
-        // Jika belum ada, Anda bisa menghapus fungsi ini.
-        /*
-        $image = ProductImage::findOrFail($id);
 
-        DB::transaction(function () use ($image) {
-            // Reset semua gambar produk ini jadi false
-            ProductImage::where('id_product_diraditya', $image->id_product_diraditya)
-                ->update(['is_primary' => false]);
-
-            // Set yang dipilih jadi true
-            $image->update(['is_primary' => true]);
-        });
-
-        return back()->with('success', 'Thumbnail berhasil diatur');
-        */
         return back();
     }
 }
