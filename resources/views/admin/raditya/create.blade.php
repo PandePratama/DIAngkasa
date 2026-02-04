@@ -23,13 +23,12 @@
                     </div>
                 @endif
 
-                {{-- PERBAIKAN 1: Route diganti jadi raditya.store --}}
                 <form action="{{ route('raditya.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
+                    {{-- BARIS 1: SKU & NAMA --}}
                     <div class="row">
                         <div class="col-md-6">
-                            {{-- SKU (Dulu Product Code) --}}
                             <div class="form-group">
                                 <label>SKU / Kode Produk</label>
                                 <input type="text" name="sku" value="{{ old('sku') }}"
@@ -37,7 +36,6 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            {{-- Nama Produk --}}
                             <div class="form-group">
                                 <label>Nama Produk</label>
                                 <input type="text" name="name" value="{{ old('name') }}"
@@ -46,9 +44,9 @@
                         </div>
                     </div>
 
+                    {{-- BARIS 2: KATEGORI & BRAND --}}
                     <div class="row">
                         <div class="col-md-6">
-                            {{-- Kategori (name: id_category) --}}
                             <div class="form-group">
                                 <label>Kategori</label>
                                 <select name="id_category" class="form-control @error('id_category') is-invalid @enderror"
@@ -64,7 +62,6 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            {{-- Brand (name: id_brand) --}}
                             <div class="form-group">
                                 <label>Brand</label>
                                 <select name="id_brand" class="form-control @error('id_brand') is-invalid @enderror"
@@ -81,9 +78,9 @@
                         </div>
                     </div>
 
+                    {{-- BARIS 3: STOK & GARANSI --}}
                     <div class="row">
                         <div class="col-md-6">
-                            {{-- Stok --}}
                             <div class="form-group">
                                 <label>Stok</label>
                                 <input type="number" name="stock" value="{{ old('stock', 0) }}"
@@ -92,37 +89,57 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Harga</label>
+                                <label>Info Garansi</label>
+                                <input type="text" name="warranty_info" value="{{ old('warranty_info') }}"
+                                    class="form-control @error('warranty_info') is-invalid @enderror"
+                                    placeholder="Contoh: 1 Tahun Resmi">
+                            </div>
+                        </div>
+                    </div>
 
+                    {{-- BARIS 4: HPP & HARGA JUAL (Dibuat Sejajar & Format Rupiah) --}}
+                    <div class="row bg-light p-3 rounded mb-3 border">
+                        <div class="col-md-6">
+                            {{-- HPP (Harga Modal) --}}
+                            <div class="form-group">
+                                <label class="text-danger font-weight-bold">HPP (Harga Modal)</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" id="price_display"
-                                        class="form-control @error('price') is-invalid @enderror" autocomplete="off">
+                                    <span class="input-group-text bg-danger text-white">Rp</span>
+                                    <input type="text" id="hpp_display"
+                                        class="form-control @error('hpp') is-invalid @enderror" autocomplete="off"
+                                        placeholder="0">
                                 </div>
-
-                                {{-- nilai asli untuk backend --}}
-                                <input type="hidden" name="price" id="price">
-
-                                @error('price')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                {{-- Input hidden untuk backend --}}
+                                <input type="hidden" name="hpp" id="hpp" value="{{ old('hpp') }}">
+                                @error('hpp')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
 
+                        <div class="col-md-6">
+                            {{-- Harga Jual --}}
+                            <div class="form-group">
+                                <label class="text-success font-weight-bold">Harga Jual</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white">Rp</span>
+                                    <input type="text" id="price_display"
+                                        class="form-control @error('price') is-invalid @enderror" autocomplete="off"
+                                        placeholder="0">
+                                </div>
+                                {{-- Input hidden untuk backend --}}
+                                <input type="hidden" name="price" id="price" value="{{ old('price') }}">
+                                @error('price')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- Deskripsi (Dulu Specification) --}}
+                    {{-- Deskripsi --}}
                     <div class="form-group">
                         <label>Deskripsi / Spesifikasi</label>
                         <textarea name="desc" class="form-control @error('desc') is-invalid @enderror" rows="3">{{ old('desc') }}</textarea>
-                    </div>
-
-                    {{-- Warranty Info (Khusus Raditya) --}}
-                    <div class="form-group">
-                        <label>Info Garansi</label>
-                        <input type="text" name="warranty_info" value="{{ old('warranty_info') }}"
-                            class="form-control @error('warranty_info') is-invalid @enderror"
-                            placeholder="Contoh: 1 Tahun Resmi">
                     </div>
 
                     {{-- Upload Gambar --}}
@@ -134,34 +151,51 @@
                     </div>
 
                     <hr>
-                    <button type="submit" class="btn btn-primary">Simpan Produk</button>
-                    <a href="{{ route('raditya.index') }}" class="btn btn-secondary">Batal</a>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">
+                        <i class="fas fa-save mr-2"></i> Simpan Produk
+                    </button>
+                    <a href="{{ route('raditya.index') }}" class="btn btn-secondary btn-block">Batal</a>
 
                 </form>
             </div>
         </div>
     </div>
-@endsection
 
+    {{-- SCRIPT FORMAT RUPIAH (Berlaku untuk HPP dan Harga Jual) --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const display = document.getElementById('price_display');
-        const hidden = document.getElementById('price');
+            function formatRupiah(angka) {
+                if (!angka) return '';
+                return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
 
-        function formatRupiah(angka) {
-            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
+            function setupCurrencyInput(displayId, hiddenId) {
+                const display = document.getElementById(displayId);
+                const hidden = document.getElementById(hiddenId);
 
-        display.addEventListener('input', function(e) {
-            // ambil hanya angka
-            let raw = this.value.replace(/\D/g, '');
+                // Jika ada old value (saat validasi gagal), format ulang saat page load
+                if (hidden.value) {
+                    display.value = formatRupiah(hidden.value);
+                }
 
-            // set ke hidden input (untuk backend)
-            hidden.value = raw;
+                display.addEventListener('input', function(e) {
+                    // Hanya ambil angka
+                    let raw = this.value.replace(/\D/g, '');
 
-            // format ke tampilan
-            this.value = raw ? formatRupiah(raw) : '';
+                    // Simpan ke hidden input
+                    hidden.value = raw;
+
+                    // Tampilkan format rupiah
+                    this.value = raw ? formatRupiah(raw) : '';
+                });
+            }
+
+            // Terapkan ke HPP
+            setupCurrencyInput('hpp_display', 'hpp');
+
+            // Terapkan ke Harga Jual
+            setupCurrencyInput('price_display', 'price');
         });
-    });
-</script>
+    </script>
+@endsection

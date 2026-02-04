@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
 use App\Models\Brands;
 use App\Models\Category;
-// use App\Models\ProductDiraditya; // PERBAIKAN: Gunakan Model yang benar
 use App\Models\ProductImage;
 use App\Models\ProductRaditya;
 use App\Services\CreditCalculatorService;
@@ -20,7 +18,6 @@ class RadityaProductController extends Controller
      */
     public function index()
     {
-        // Ambil data dari tabel product_diraditya
         $products = ProductRaditya::with(['category', 'brand', 'primaryImage'])
             ->latest()
             ->get();
@@ -52,28 +49,34 @@ class RadityaProductController extends Controller
             'id_category'   => 'required|exists:categories,id',
             'id_brand'      => 'required|exists:brands,id',
             'stock'         => 'required|integer|min:0',
+
+            // --- TAMBAHAN BARU: Validasi HPP ---
+            'hpp'           => 'required|numeric|min:0',
+            // -----------------------------------
+
             'price'         => 'required|numeric|min:0',
-
-            // PERBAIKAN: Input 'warranty_info' kita mapping ke kolom DB 'warranty'
-            'warranty_info' => 'nullable|string',
-
+            'warranty_info' => 'nullable|string', // Input dari form
             'images'        => 'required|array|min:1',
             'images.*'      => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         DB::transaction(function () use ($validated, $request) {
             // 2. Simpan Data Produk
-            // Kita harus mapping manual karena nama input beda dengan nama kolom DB
-            $product = \App\Models\ProductRaditya::create([
+            $product = ProductRaditya::create([
                 'sku'         => $validated['sku'],
                 'name'        => $validated['name'],
                 'desc'        => $validated['desc'],
                 'id_category' => $validated['id_category'],
                 'id_brand'    => $validated['id_brand'],
                 'stock'       => $validated['stock'],
+
+                // --- TAMBAHAN BARU: Simpan HPP ---
+                'hpp'         => $validated['hpp'],
+                // ---------------------------------
+
                 'price'       => $validated['price'],
 
-                // PENTING: Mapping dari input 'warranty_info' ke kolom DB 'warranty'
+                // Mapping manual: warranty_info (form) -> warranty (db)
                 'warranty'    => $validated['warranty_info'] ?? null,
             ]);
 
@@ -81,7 +84,7 @@ class RadityaProductController extends Controller
             foreach ($request->file('images') as $image) {
                 $path = $image->store('products/raditya', 'public');
 
-                \App\Models\ProductImage::create([
+                ProductImage::create([
                     'id_product_diraditya' => $product->id,
                     'image_path'           => $path,
                 ]);
@@ -92,6 +95,7 @@ class RadityaProductController extends Controller
             ->route('raditya.index')
             ->with('success', 'Produk Gadget berhasil ditambahkan');
     }
+
     /**
      * Menampilkan form edit
      */
@@ -118,14 +122,25 @@ class RadityaProductController extends Controller
             'id_category'   => 'required|exists:categories,id',
             'id_brand'      => 'required|exists:brands,id',
             'stock'         => 'required|integer|min:0',
+            'hpp'           => 'required|numeric|min:0',
             'price'         => 'required|numeric|min:0',
             'warranty_info' => 'nullable|string',
             'images.*'      => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         DB::transaction(function () use ($product, $validated, $request) {
-            // 1. Update Data Produk
-            $product->update($validated);
+            // 1. Update Data Produk (Mapping Manual agar aman)
+            $product->update([
+                'sku'         => $validated['sku'],
+                'name'        => $validated['name'],
+                'desc'        => $validated['desc'],
+                'id_category' => $validated['id_category'],
+                'id_brand'    => $validated['id_brand'],
+                'stock'       => $validated['stock'],
+                'hpp'         => $validated['hpp'],   // Pastikan HPP terupdate
+                'price'       => $validated['price'],
+                'warranty'    => $validated['warranty_info'] ?? $product->warranty, // Mapping warranty
+            ]);
 
             // 2. Tambah Gambar Baru (jika ada)
             if ($request->hasFile('images')) {
@@ -168,13 +183,12 @@ class RadityaProductController extends Controller
     }
 
     /**
-     * Menghapus satu gambar spesifik (Dipanggil via Route AJAX/Delete)
+     * Menghapus satu gambar spesifik
      */
     public function destroyImage($id)
     {
         $image = ProductImage::findOrFail($id);
 
-        // Pastikan hanya menghapus gambar milik Raditya (Security check)
         if (!$image->id_product_diraditya) {
             return back()->with('error', 'Gambar tidak ditemukan atau bukan milik Raditya');
         }
@@ -187,30 +201,23 @@ class RadityaProductController extends Controller
         return back()->with('success', 'Gambar berhasil dihapus');
     }
 
+    /**
+     * Simulasi Kredit (API)
+     */
     public function simulateCredit(Request $request, CreditCalculatorService $service)
     {
-        $product = ProductRaditya::findOrFail($request->product_id);
-
         try {
+            $product = ProductRaditya::findOrFail($request->product_id);
             $result = $service->calculate($product, $request->tenor, $request->dp_amount);
 
-            // Format angka untuk dikirim balik ke JSON (Frontend)
             return response()->json([
                 'status' => 'success',
                 'monthly_base' => number_format($result['monthly_installment']),
-                'first_payment' => number_format($result['monthly_installment'] + 20000), // Info ke user
+                'first_payment' => number_format($result['monthly_installment'] + 20000),
                 'admin_fee' => 20000
             ]);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
-    }
-    /**
-     * Set gambar utama
-     */
-    public function setPrimaryImage($id)
-    {
-
-        return back();
     }
 }

@@ -8,27 +8,39 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\PurchaseType;
 use App\Models\CreditTransaction;
+use App\Models\BalanceMutation;
 use App\Services\CreditCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon; // <--- PENTING: Untuk hitung tanggal
 
 class PaymentController extends Controller
 {
+    /**
+     * MENAMPILKAN HALAMAN CHECKOUT (INDEX)
+     */
     public function index()
     {
         $user = auth()->user();
+
+        // Load keranjang belanja
         $cart = Cart::with(['items.productDiamart.primaryImage', 'items.productDiraditya.primaryImage'])
             ->where('id_user', $user->id)
             ->first();
 
-        if (!$cart) return redirect()->route('cart.index')->with('error', 'Keranjang kosong.');
+        // Jika keranjang kosong
+        if (!$cart) {
+            return redirect()->route('cart.index')->with('error', 'Keranjang belanja kosong.');
+        }
 
+        // Hitung Subtotal
         $subtotal = $cart->items->sum(function ($item) {
             $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
             return $item->qty * ($product->price ?? 0);
         });
 
+        // Tentukan Admin Fee
         if ($cart->business_unit == 'diamart') {
             $adminFee = 0;
             $adminLabel = "Biaya Layanan";
@@ -42,21 +54,18 @@ class PaymentController extends Controller
         return view('payment.index', compact('cart', 'subtotal', 'adminFee', 'adminLabel', 'total'));
     }
 
-    // --- PERBAIKAN UTAMA DISINI ---
+    /**
+     * MEMPROSES PEMBAYARAN (ROUTER UTAMA)
+     */
     public function process(Request $request)
     {
         try {
-            // 1. Debugging: Cek data yang dikirim frontend
-            // dd($request->all());
-
             $user = auth()->user();
 
-            // 2. Validasi Basic
             $request->validate([
                 'payment_method' => 'required',
             ]);
 
-            // 3. Ambil Cart
             $cart = Cart::with(['items.productDiamart', 'items.productDiraditya'])
                 ->where('id_user', $user->id)->first();
 
@@ -64,33 +73,34 @@ class PaymentController extends Controller
                 return redirect()->back()->with('error', 'Keranjang belanja tidak ditemukan.');
             }
 
-            // 4. Router Logika Pembayaran
+            // Router ke logic masing-masing
             if ($request->payment_method === 'credit') {
-                // Panggil Service secara manual agar lebih aman
                 $creditService = app(CreditCalculatorService::class);
                 return $this->processCreditPayment($request, $cart, $user, $creditService);
             } else {
                 return $this->processRegularPayment($request, $cart, $user);
             }
         } catch (\Exception $e) {
-            // Tangkap SEMUA error agar aplikasi tidak crash layar putih
             Log::error("Payment Error: " . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi Kesalahan Sistem: ' . $e->getMessage())->withInput();
         }
     }
 
+    /**
+     * LOGIKA KREDIT (Dengan Due Date & Mutasi Saldo Akurat)
+     */
     private function processCreditPayment($request, $cart, $user, $creditService)
     {
-        // Validasi Input Kredit
+        // 1. Validasi Input
         $request->validate([
             'tenor' => 'required|in:3,6,9,12',
             'dp_amount' => 'required|numeric|min:0'
         ]);
 
+        // 2. Validasi Bisnis
         if ($cart->business_unit !== 'raditya') {
             throw new \Exception('Kredit hanya untuk produk Gadget.');
         }
-
         if ($cart->items->count() > 1) {
             throw new \Exception('Kredit hanya bisa 1 item per transaksi.');
         }
@@ -101,68 +111,74 @@ class PaymentController extends Controller
         if (!$product) throw new \Exception('Produk tidak ditemukan.');
         if ($product->stock < $item->qty) throw new \Exception("Stok {$product->name} kurang.");
 
-        // Hitung
+        // 3. Hitung Kalkulasi Kredit
         $calc = $creditService->calculate($product, $request->tenor, $request->dp_amount);
 
+        // 4. Cek Saldo Cukup Buat DP?
         if ($user->saldo < $calc['dp_amount']) {
             throw new \Exception('Saldo kurang untuk bayar DP.');
         }
 
         DB::beginTransaction();
         try {
+            // A. Simpan Header Kredit
             $creditTrx = CreditTransaction::create([
-                // [BENAR] Sesuai Database
                 'id_product' => $product->id,
                 'id_user' => $user->id,
                 'tenor' => $calc['tenor'],
                 'admin_fee' => 20000,
-
-                // [PERBAIKAN DISINI] Ubah nama key agar sesuai kolom database:
-
-                // Database: 'up_price' | Data: $calc['up_price_percent']
                 'up_price' => $calc['up_price_percent'],
-
-                // Database: 'monthly_amount' | Data: $calc['monthly_installment']
                 'monthly_amount' => $calc['monthly_installment'],
-
-                // Database: 'status' (Enum: progress, paid, complete)
                 'status' => 'progress',
-
-                // Database: 'total_paid_month' (Default 0)
                 'total_paid_month' => 0,
-
-                // [OPSIONAL] Jika kolom ini TIDAK ADA di database credit_transactions Anda, HAPUS baris ini:
-                // 'product_hpp_snapshot' => $calc['product_hpp_snapshot'],
-                // 'product_price_snapshot' => $calc['product_price_snapshot'],
-                // 'retail_price_value' => $calc['retail_price'],
-                // 'dp_amount' => $calc['dp_amount'],
+                'dp_amount' => $calc['dp_amount'], // Pastikan Model guarded=['id']
             ]);
 
+            // B. Simpan Jadwal Cicilan (Dengan Due Date)
             $schedules = $creditService->generateSchedule($calc);
-
             foreach ($schedules as $sch) {
 
-                // Pastikan Model yang dipanggil sesuai nama tabel di pesan error (credit_installment)
-                // Jika nama model Anda CreditInstallment, pastikan $table = 'credit_installment' di modelnya.
+                // Hitung Tanggal Jatuh Tempo (Tanggal 25 Bulan Berikutnya)
+                $jatuhTempo = Carbon::now()
+                    ->addMonths($sch['month_sequence'])
+                    ->setDay(25);
 
                 \App\Models\CreditInstallment::create([
                     'id_credit_transaction' => $creditTrx->id,
-
-                    // --- PERBAIKAN: TAMBAHKAN BARIS INI ---
                     'id_user'               => $user->id,
-                    // --------------------------------------
-
                     'installment_month'     => $sch['month_sequence'],
-                    'amount'                => abs($sch['amount']), // Pastikan nilai positif
+                    'amount'                => abs($sch['amount']),
+
+                    // --- UPDATE: Simpan Tanggal Jatuh Tempo ---
+                    'due_date'              => $jatuhTempo->format('Y-m-d'),
+                    // ------------------------------------------
+
                     'admin_fee'             => 0,
                     'balance_before'        => 0,
                     'balance_after'         => 0,
-                    // Hapus 'status' jika kolom tersebut tidak ada di tabel ini
                 ]);
             }
-            $user->decrement('saldo', $calc['dp_amount']);
-            $product->decrement('stock', $item->qty);
 
+            // C. POTONG SALDO & CATAT MUTASI
+            $saldoAwal = $user->saldo;
+            $potonganDP = $calc['dp_amount'];
+            $saldoAkhir = $saldoAwal - $potonganDP;
+
+            // 1. Eksekusi Potong Saldo di DB
+            $user->decrement('saldo', $potonganDP);
+
+            // 2. Catat Mutasi (Gunakan variabel $saldoAkhir yang kita hitung manual agar Realtime)
+            BalanceMutation::create([
+                'user_id' => $user->id,
+                'type'    => 'debit',
+                'amount'  => $potonganDP,
+                'current_balance' => $saldoAkhir,
+                'description' => "Pembayaran DP Kredit: {$product->name}",
+                'reference_id' => 'CREDIT-' . $creditTrx->id
+            ]);
+
+            // D. Update Stok & Hapus Cart
+            $product->decrement('stock', $item->qty);
             $cart->items()->delete();
             $cart->delete();
 
@@ -176,14 +192,13 @@ class PaymentController extends Controller
         }
     }
 
+    /**
+     * LOGIKA REGULER (CASH/SALDO)
+     */
     private function processRegularPayment($request, $cart, $user)
     {
-        // Cek Tabel Purchase Type
         $purchaseType = PurchaseType::where('code', $request->payment_method)->first();
-
-        if (!$purchaseType) {
-            throw new \Exception("Metode pembayaran '{$request->payment_method}' belum disetting di database (Tabel purchase_types kosong?).");
-        }
+        if (!$purchaseType) throw new \Exception("Metode pembayaran invalid.");
 
         $subtotal = $cart->items->sum(function ($item) {
             $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
@@ -197,10 +212,10 @@ class PaymentController extends Controller
         $status = 'ongoing';
         $paymentStatus = 'unpaid';
 
-        // Logic Saldo
+        // Cek Saldo
         if ($purchaseType->code == 'balance') {
             if ($user->saldo < $grandTotal) {
-                throw new \Exception("Saldo Anda (Rp " . number_format($user->saldo) . ") tidak cukup untuk membayar tagihan (Rp " . number_format($grandTotal) . ").");
+                throw new \Exception("Saldo tidak cukup.");
             }
             $balanceSnapshot -= $grandTotal;
             $status = 'completed';
@@ -209,6 +224,7 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
+            // 1. Buat Transaksi
             $trx = Transaction::create([
                 'id_user' => $user->id,
                 'invoice_code' => 'INV-' . time() . rand(100, 999),
@@ -220,9 +236,9 @@ class PaymentController extends Controller
                 'balance_after' => $balanceSnapshot,
             ]);
 
+            // 2. Simpan Item
             foreach ($cart->items as $item) {
                 $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
-
                 TransactionItem::create([
                     'transaction_id' => $trx->id,
                     'id_product_diamart' => $item->id_product_diamart,
@@ -233,21 +249,29 @@ class PaymentController extends Controller
                     'subtotal' => $product->price * $item->qty,
                 ]);
 
-                if ($product->stock < $item->qty) {
-                    throw new \Exception("Stok {$product->name} tidak cukup.");
-                }
+                if ($product->stock < $item->qty) throw new \Exception("Stok {$product->name} habis.");
                 $product->decrement('stock', $item->qty);
             }
 
+            // 3. POTONG SALDO & CATAT MUTASI (Jika pakai Saldo)
             if ($purchaseType->code == 'balance') {
                 $user->decrement('saldo', $grandTotal);
+
+                // Catat Mutasi
+                BalanceMutation::create([
+                    'user_id' => $user->id,
+                    'type'    => 'debit',
+                    'amount'  => $grandTotal,
+                    'current_balance' => $balanceSnapshot, // Sudah dihitung diatas
+                    'description' => "Pembayaran Belanja: {$trx->invoice_code}",
+                    'reference_id' => 'TRX-' . $trx->id
+                ]);
             }
 
             $cart->items()->delete();
             $cart->delete();
 
             DB::commit();
-
             return redirect()->route('transaction.success');
         } catch (\Exception $e) {
             DB::rollBack();
