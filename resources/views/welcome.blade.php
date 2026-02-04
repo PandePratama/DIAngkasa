@@ -1,131 +1,188 @@
 @extends('layouts.app')
 
 @section('content')
-    {{-- MAIN CONTENT --}}
-    <main class="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-50">
+<main class="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-50">
 
-        {{-- HERO BANNER --}}
-        <section class="relative pt-8 pb-16 overflow-hidden">
-            {{-- Decorative background elements --}}
-            <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div
-                    class="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse">
+    {{-- ================= HERO SECTION ================= --}}
+    <section class="relative pt-16 pb-28 overflow-hidden">
+
+        {{-- Background blur --}}
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-24 left-1/4 w-80 h-80 bg-blue-400 rounded-full blur-3xl opacity-20"></div>
+            <div class="absolute top-44 right-1/4 w-80 h-80 bg-cyan-400 rounded-full blur-3xl opacity-20"></div>
+        </div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            {{-- 👇 pusatkan isi hero --}}
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
+
+                {{-- IMAGE --}}
+                <div class="order-1 md:order-2 flex justify-center">
+                    <img src="{{ asset('sbadmin/img/hero1.webp') }}"
+                        alt="Hero Image"
+                        class="w-full max-w-md lg:max-w-lg drop-shadow-xl">
                 </div>
-                <div class="absolute top-40 right-10 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
-                    style="animation-delay: 1s;"></div>
-                <div
-                    class="absolute -bottom-20 left-1/2 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10">
+
+                {{-- TEXT --}}
+                <div class="order-2 md:order-1 text-center md:text-left">
+                    <h1
+                        class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight
+                           bg-gradient-to-r from-blue-600 to-cyan-600
+                           bg-clip-text text-transparent mb-6 pb-4">
+                        Belanja Mudah<br class="hidden md:block">
+                        Kebutuhan Karyawan
+                    </h1>
+
+                    <p class="text-gray-700 text-base md:text-lg max-w-xl mb-8">
+                        Gadget dan kebutuhan harian dengan sistem kredit internal
+                        yang aman, cepat, dan transparan.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                        <a href="#produk-gadget"
+                            class="px-7 py-3 rounded-xl
+                               bg-gradient-to-r from-blue-600 to-cyan-600
+                               text-white font-semibold shadow-lg
+                               hover:scale-105 transition">
+                            Lihat Produk
+                        </a>
+
+                        <a href="#cara-belanja"
+                            class="px-7 py-3 rounded-xl
+                               bg-white/80 text-blue-600 font-semibold border
+                               hover:bg-white transition">
+                            Cara Belanja
+                        </a>
+                    </div>
                 </div>
-            </div>
 
-            <div class="container mx-auto px-6 relative z-10">
-                {{-- Glass card for banner --}}
-                <div
-                    class="backdrop-blur-md bg-white/30 rounded-3xl shadow-2xl border border-white/50 p-8 max-w-6xl mx-auto hover:shadow-blue-200/50 transition-all duration-300 hover:scale-[1.02]">
-                    <img src="{{ asset('sbadmin/img/Hero_banner.png') }}" alt="Banner Gadget"
-                        class="rounded-2xl shadow-lg max-w-full h-auto max-h-[260px] sm:max-h-[320px] md:max-h-none object-contain mx-auto">
+            </div>
+        </div>
+    </section>
+
+
+    {{-- ================= PRODUK GADGET ================= --}}
+    <section id="produk-gadget" class="container mx-auto px-6 py-20">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-gray-800 mb-2">
+                Rekomendasi Gadget
+            </h2>
+            <p class="text-gray-600">
+                Produk pilihan terbaik untuk kebutuhan karyawan
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            @forelse ($productsGadget ?? [] as $product)
+            <div
+                class="group relative backdrop-blur-lg bg-white/50 rounded-2xl shadow-lg border border-white/60 p-5 text-center hover:bg-white transition-all duration-300 hover:scale-105">
+
+                {{-- BADGE --}}
+                <span
+                    class="absolute top-3 left-3 text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow">
+                    Gadget
+                </span>
+
+                {{-- IMAGE --}}
+                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 mb-4">
+                    <img src="{{ $product->primaryImage
+                            ? asset('storage/' . $product->primaryImage->image_path)
+                            : asset('images/placeholder.png') }}"
+                        class="mx-auto h-32 object-contain group-hover:scale-110 transition">
                 </div>
+
+                {{-- NAME --}}
+                <p class="font-semibold text-gray-800 mb-1 line-clamp-2">
+                    {{ $product->name }}
+                </p>
+
+                {{-- PRICE --}}
+                <p
+                    class="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4">
+                    Rp {{ number_format($product->price, 0, ',', '.') }}
+                </p>
+
+                {{-- ACTION --}}
+                <button
+                    class="opacity-0 group-hover:opacity-100 transition-all duration-300 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold shadow hover:scale-105">
+                    + Keranjang
+                </button>
             </div>
-        </section>
-
-        {{-- PRODUK BEST SELLER GADGET --}}
-        <section class="container mx-auto px-6 py-16 relative">
-            <div class="text-center mb-12">
-                <h1
-                    class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-3">
-                    PRODUK RADITYA
-                </h1>
-                <div class="w-24 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 mx-auto rounded-full"></div>
+            @empty
+            <div class="col-span-full text-center bg-white/60 rounded-2xl p-12">
+                <p class="text-gray-600">Produk gadget belum tersedia</p>
             </div>
+            @endforelse
+        </div>
+    </section>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                @forelse ($productsGadget ?? [] as $product)
-                    <div
-                        class="group relative backdrop-blur-lg bg-white/40 rounded-2xl shadow-lg border border-white/60 p-6 text-center hover:bg-white/60 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-200/50">
-                        {{-- Shine effect on hover --}}
-                        <div
-                            class="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12">
-                        </div>
+    {{-- ================= PRODUK MINIMARKET ================= --}}
+    <section class="container mx-auto px-6 py-20">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-gray-800 mb-2">
+                Produk Diamart
+            </h2>
+            <p class="text-gray-600">
+                Kebutuhan harian dengan harga terjangkau
+            </p>
+        </div>
 
-                        <div class="relative z-10">
-                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 mb-4">
-                                <img src="{{ $product->primaryImage
-                                    ? asset('storage/' . $product->primaryImage->image_path)
-                                    : asset('images/placeholder.png') }}"
-                                    alt="{{ $product->name }}"
-                                    class="mx-auto h-32 object-contain group-hover:scale-110 transition-transform duration-300">
-                            </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            @forelse ($productsMinimarket ?? [] as $product)
+            <div
+                class="group relative backdrop-blur-lg bg-white/50 rounded-2xl shadow-lg border border-white/60 p-5 text-center hover:bg-white transition-all duration-300 hover:scale-105">
 
-                            <p class="font-bold text-gray-800 mb-2 line-clamp-2">{{ $product->name }}</p>
-                            <p
-                                class="text-lg font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                                Rp {{ number_format($product->price, 0, ',', '.') }}
-                            </p>
-                        </div>
-                    </div>
-                @empty
-                    <div
-                        class="col-span-full backdrop-blur-lg bg-white/40 rounded-2xl shadow-lg border border-white/60 p-12 text-center">
-                        <p class="text-gray-600 text-lg">Produk belum tersedia</p>
-                    </div>
-                @endforelse
-            </div>
-        </section>
+                <span
+                    class="absolute top-3 left-3 text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow">
+                    Diamart
+                </span>
 
-        {{-- BANNER PROMO --}}
-        <section class="py-16 relative">
-            <div class="container mx-auto px-6">
-                <div
-                    class="backdrop-blur-md bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-3xl shadow-2xl border border-white/50 p-8 max-w-6xl mx-auto hover:shadow-blue-300/50 transition-all duration-300">
-                    <img src="{{ asset('sbadmin/img/december.png') }}" alt="Banner Promo"
-                        class="rounded-2xl shadow-lg max-w-full h-auto mx-auto">
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 mb-4">
+                    <img src="{{ $product->primaryImage
+                            ? asset('storage/' . $product->primaryImage->image_path)
+                            : asset('images/placeholder.png') }}"
+                        class="mx-auto h-32 object-contain group-hover:scale-110 transition">
                 </div>
+
+                <p class="font-semibold text-gray-800 mb-1 line-clamp-2">
+                    {{ $product->name }}
+                </p>
+
+                <p
+                    class="text-lg font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                    Rp {{ number_format($product->price, 0, ',', '.') }}
+                </p>
+
+                <button
+                    class="opacity-0 group-hover:opacity-100 transition-all duration-300 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold shadow hover:scale-105">
+                    + Keranjang
+                </button>
             </div>
-        </section>
-
-        {{-- PRODUK BEST SELLER MINIMARKET --}}
-        <section class="container mx-auto px-6 py-16 pb-24">
-            <div class="text-center mb-12">
-                <h2
-                    class="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-3">
-                    PRODUK DIAMART
-                </h2>
-                <div class="w-24 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 mx-auto rounded-full"></div>
+            @empty
+            <div class="col-span-full text-center bg-white/60 rounded-2xl p-12">
+                <p class="text-gray-600">Produk minimarket belum tersedia</p>
             </div>
+            @endforelse
+        </div>
+    </section>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                @forelse ($productsMinimarket ?? [] as $product)
-                    <div
-                        class="group relative backdrop-blur-lg bg-white/40 rounded-2xl shadow-lg border border-white/60 p-6 text-center hover:bg-white/60 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-200/50">
-                        {{-- Shine effect on hover --}}
-                        <div
-                            class="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12">
-                        </div>
-
-                        <div class="relative z-10">
-                            <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 mb-4">
-                                <img src="{{ $product->primaryImage
-                                    ? asset('storage/' . $product->primaryImage->image_path)
-                                    : asset('images/placeholder.png') }}"
-                                    alt="{{ $product->name }}"
-                                    class="mx-auto h-32 object-contain group-hover:scale-110 transition-transform duration-300">
-                            </div>
-
-                            <p class="font-bold text-gray-800 mb-2 line-clamp-2">{{ $product->name }}</p>
-                            <p
-                                class="text-lg font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                                Rp {{ number_format($product->price, 0, ',', '.') }}
-                            </p>
-                        </div>
-                    </div>
-                @empty
-                    <div
-                        class="col-span-full backdrop-blur-lg bg-white/40 rounded-2xl shadow-lg border border-white/60 p-12 text-center">
-                        <p class="text-gray-600 text-lg">Produk minimarket belum tersedia</p>
-                    </div>
-                @endforelse
+    {{-- ================= KEUNGGULAN ================= --}}
+    <section class="container mx-auto px-6 pb-24">
+        <div class="grid md:grid-cols-3 gap-6 text-center">
+            <div class="bg-white/60 backdrop-blur rounded-2xl p-6 shadow">
+                <h3 class="font-bold text-lg mb-2">💳 Kredit Internal</h3>
+                <p class="text-gray-600">Tanpa kartu kredit, aman & mudah</p>
             </div>
-        </section>
+            <div class="bg-white/60 backdrop-blur rounded-2xl p-6 shadow">
+                <h3 class="font-bold text-lg mb-2">⚡ Proses Cepat</h3>
+                <p class="text-gray-600">Transaksi real-time & transparan</p>
+            </div>
+            <div class="bg-white/60 backdrop-blur rounded-2xl p-6 shadow">
+                <h3 class="font-bold text-lg mb-2">🔒 Terpercaya</h3>
+                <p class="text-gray-600">Khusus untuk lingkungan internal</p>
+            </div>
+        </div>
+    </section>
 
-    </main>
+</main>
 @endsection
