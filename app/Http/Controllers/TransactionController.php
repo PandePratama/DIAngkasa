@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;         // Model Transaksi Tunai
 use App\Models\CreditTransaction;   // Model Transaksi Kredit
-use App\Models\BalanceMutation;     // <--- TAMBAHKAN INI (Model Mutasi)
+use App\Models\BalanceMutation;     // Model Mutasi
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,7 @@ class TransactionController extends Controller
      */
     public function index(Request $request)
     {
-        // Setup Filter Tanggal (Berlaku untuk SEMUA tab)
+        // 1. Setup Filter Tanggal (Berlaku untuk SEMUA tab)
         $dateRange = null;
         if ($request->filled('from') && $request->filled('to')) {
             $dateRange = [
@@ -26,55 +26,78 @@ class TransactionController extends Controller
         }
 
         // ==========================================
-        // 1. DATA TRANSAKSI REGULER (TUNAI/SALDO)
+        // 2. TAB 1: DATA TRANSAKSI TUNAI (CASH)
         // ==========================================
-        $query = Transaction::with(['user', 'purchaseType'])->latest();
+        $cashQuery = Transaction::with(['user', 'purchaseType'])->latest();
 
         if ($dateRange) {
-            $query->whereBetween('created_at', $dateRange);
+            $cashQuery->whereBetween('created_at', $dateRange);
         }
 
         // Hitung Total Omset (Khusus Tunai/Saldo)
-        $grandTotalSemua = $query->sum('grand_total');
+        $grandTotalSemua = $cashQuery->sum('grand_total');
 
-        // Pagination Transaksi Biasa (Page name: trx_page)
-        $transactions = $query->paginate(10, ['*'], 'trx_page');
+        // Pagination Transaksi Biasa (Page name: cash_page)
+        $transactions = $cashQuery->paginate(10, ['*'], 'cash_page');
 
 
         // ==========================================
-        // 2. DATA TRANSAKSI KREDIT
+        // 3. TAB 2: DATA KREDIT (DIPISAH DUA)
         // ==========================================
-        $creditQuery = CreditTransaction::with(['user', 'product'])->latest();
+
+        // A. Kredit Sedang Berjalan (Ongoing)
+        $ongoingQuery = CreditTransaction::with(['user', 'product'])
+            ->where('status', '!=', 'paid_off') // Filter Status Bukan Lunas
+            ->latest();
 
         if ($dateRange) {
-            $creditQuery->whereBetween('created_at', $dateRange);
+            $ongoingQuery->whereBetween('created_at', $dateRange);
         }
 
-        // Pagination Transaksi Kredit (Page name: credit_page)
-        $creditTransactions = $creditQuery->paginate(10, ['*'], 'credit_page');
+        $creditsOngoing = $ongoingQuery->paginate(10, ['*'], 'ongoing_page');
+
+
+        // B. Kredit Sudah Lunas (Completed)
+        $completedQuery = CreditTransaction::with(['user', 'product'])
+            ->where('status', 'paid_off') // Filter Status Lunas
+            ->latest();
+
+        if ($dateRange) {
+            $completedQuery->whereBetween('updated_at', $dateRange); // Gunakan updated_at untuk tgl pelunasan
+        }
+
+        $creditsCompleted = $completedQuery->paginate(10, ['*'], 'completed_page');
 
 
         // ==========================================
-        // 3. DATA LOG MUTASI SALDO (BARU)
+        // 4. TAB 3: DATA LOG MUTASI (AUTODEBET/DP)
         // ==========================================
-        $mutationQuery = BalanceMutation::with('user')->latest();
+        $mutationQuery = BalanceMutation::with('user')
+            ->where(function ($q) {
+                // Filter hanya yang relevan dengan sistem kredit/pembayaran
+                $q->where('description', 'like', '%Kredit%')
+                    ->orWhere('description', 'like', '%Autodebet%')
+                    ->orWhere('description', 'like', '%DP%');
+            })
+            ->latest();
 
         if ($dateRange) {
             $mutationQuery->whereBetween('created_at', $dateRange);
         }
 
-        // Pagination Mutasi (Page name: mutation_page)
-        $mutations = $mutationQuery->paginate(15, ['*'], 'mutation_page');
+        // Pagination Mutasi (Page name: mutations_page)
+        $mutations = $mutationQuery->paginate(15, ['*'], 'mutations_page');
 
 
         // ==========================================
-        // 4. RETURN KE VIEW
+        // 5. RETURN KE VIEW
         // ==========================================
         return view('admin.transactions.index', compact(
-            'transactions',
-            'creditTransactions',
-            'mutations', // <--- KIRIM DATA MUTASI KE VIEW
-            'grandTotalSemua'
+            'transactions',      // Data Tab 1
+            'grandTotalSemua',   // Data Alert
+            'creditsOngoing',    // Data Tab 2 (Sub A)
+            'creditsCompleted',  // Data Tab 2 (Sub B)
+            'mutations'          // Data Tab 3
         ));
     }
 
@@ -106,8 +129,10 @@ class TransactionController extends Controller
     /**
      * Cetak Invoice PDF (Khusus Transaksi Reguler)
      */
-    public function printInvoice($id)
+    public function printInvoice($id)  // <--- GANTI JADI INI (sebelumnya print_invoice)
     {
+        // Pastikan Anda sudah mengimport PDF di bagian atas: use Barryvdh\DomPDF\Facade\Pdf;
+
         $transaction = Transaction::with(['user.unitKerja', 'items', 'purchaseType'])
             ->findOrFail($id);
 

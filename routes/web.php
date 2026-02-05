@@ -87,7 +87,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/transaction/success', [TransactionController::class, 'success'])->name('transaction.success');
-    Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])->name('transactions.print_invoice');
+    Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])
+        ->name('transactions.print_invoice');
 
     // --- FITUR KREDIT (USER SIDE) ---
     // 1. AJAX Simulasi (Hitung cicilan di halaman produk)
@@ -145,6 +146,7 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::post('/validate', 'validateQr')->name('validate');
         Route::post('/transaction', 'processTransaction')->name('transaction');
     });
+    Route::post('/raditya/simulation-schemes', [App\Http\Controllers\RadityaProductController::class, 'getSimulationSchemes'])->name('raditya.simulation_schemes');
 
     // --- MANAJEMEN PRODUK RADITYA ---
     Route::prefix('raditya')->name('raditya.')->group(function () {

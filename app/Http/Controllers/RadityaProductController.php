@@ -220,4 +220,39 @@ class RadityaProductController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }
+
+    public function getSimulationSchemes(Request $request, CreditCalculatorService $service)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:product_diraditya,id',
+            'dp_amount' => 'nullable|numeric|min:0'
+        ]);
+
+        $product = ProductRaditya::findOrFail($request->product_id);
+        $dp = $request->dp_amount ?? 0;
+
+        $tenors = [3, 6, 9, 12];
+        $schemes = [];
+
+        foreach ($tenors as $tenor) {
+            try {
+                // Panggil Service kalkulator yang sudah Anda buat sebelumnya
+                $calc = $service->calculate($product, $tenor, $dp);
+
+                $schemes[] = [
+                    'tenor' => $tenor,
+                    'monthly' => number_format($calc['monthly_installment'], 0, ',', '.'),
+                    // Total bayar pertama (Angsuran + Admin Fee)
+                    'first_payment' => number_format($calc['monthly_installment'] + 20000, 0, ',', '.')
+                ];
+            } catch (\Exception $e) {
+                continue; // Skip jika error (misal DP ketinggian)
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'schemes' => $schemes
+        ]);
+    }
 }

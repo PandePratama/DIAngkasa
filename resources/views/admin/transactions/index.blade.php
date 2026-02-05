@@ -22,29 +22,30 @@
             </div>
         </form>
 
-        {{-- NAVIGASI TAB (SAYA AKTIFKAN KEMBALI & TAMBAH TAB MUTASI) --}}
+        {{-- ALERT RINGKASAN --}}
+        <div class="alert alert-info py-2 mb-4">
+            <i class="fas fa-money-bill-wave mr-2"></i>
+            <b>Total Omset Tunai:</b> Rp {{ number_format($grandTotalSemua ?? 0, 0, ',', '.') }}
+        </div>
+
+        {{-- NAVIGASI TAB UTAMA --}}
         <ul class="nav nav-tabs mb-3" id="trxTabs" role="tablist">
-            {{-- Tab 1: Penjualan Tunai --}}
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="cash-tab" data-bs-toggle="tab" data-bs-target="#cash" type="button"
                     role="tab">
                     <i class="fas fa-shopping-cart text-success me-1"></i> Penjualan (Tunai)
                 </button>
             </li>
-
-            {{-- Tab 2: Data Kredit (Untuk lihat progres tenor) --}}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="credit-tab" data-bs-toggle="tab" data-bs-target="#credit" type="button"
                     role="tab">
-                    <i class="fas fa-file-contract text-primary me-1"></i> Data Kredit (Kontrak)
+                    <i class="fas fa-file-contract text-primary me-1"></i> Data Kredit
                 </button>
             </li>
-
-            {{-- Tab 3: Mutasi Saldo (Untuk lihat autodebet bulanan) --}}
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="mutation-tab" data-bs-toggle="tab" data-bs-target="#mutation" type="button"
                     role="tab">
-                    <i class="fas fa-history text-danger me-1"></i> Log Keuangan (Autodebet)
+                    <i class="fas fa-history text-danger me-1"></i> Log Keuangan
                 </button>
             </li>
         </ul>
@@ -52,13 +53,9 @@
         <div class="tab-content" id="trxTabsContent">
 
             {{-- ==================================================== --}}
-            {{-- TAB 1: TRANSAKSI BELANJA (INVOICE) --}}
+            {{-- TAB 1: TRANSAKSI TUNAI (CASH) --}}
             {{-- ==================================================== --}}
             <div class="tab-pane fade show active" id="cash" role="tabpanel">
-                <div class="alert alert-info py-2">
-                    <b>Total Omset Tunai:</b> Rp {{ number_format($grandTotalSemua, 0, ',', '.') }}
-                </div>
-
                 <div class="card shadow border-0">
                     <div class="card-body table-responsive p-0">
                         <table class="table table-hover table-striped mb-0">
@@ -81,15 +78,11 @@
                                             <div class="fw-bold">{{ $trx->user->name ?? '-' }}</div>
                                             <small class="text-muted">{{ $trx->user->nip ?? '' }}</small>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-success">Tunai / Saldo</span>
-                                        </td>
+                                        <td><span class="badge bg-success">Tunai / Saldo</span></td>
                                         <td>Rp {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
                                         <td>
-                                            <a href="{{ route('transactions.print_invoice', $trx->id) }}" target="_blank"
-                                                class="btn btn-sm btn-outline-info">
-                                                <i class="fas fa-print"></i>
-                                            </a>
+                                            {{-- Tambahkan route print invoice jika ada --}}
+                                            {{-- <a href="#" class="btn btn-sm btn-outline-info"><i class="fas fa-print"></i></a> --}}
                                         </td>
                                     </tr>
                                 @empty
@@ -107,90 +100,158 @@
             </div>
 
             {{-- ==================================================== --}}
-            {{-- TAB 2: DATA KREDIT (LIHAT PROGRES TENOR DISINI) --}}
+            {{-- TAB 2: DATA KREDIT (DENGAN SUB-TAB STATUS) --}}
             {{-- ==================================================== --}}
             <div class="tab-pane fade" id="credit" role="tabpanel">
-                <div class="card shadow border-0">
-                    <div class="card-body table-responsive p-0">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>#ID</th>
-                                    <th>Nasabah</th>
-                                    <th>Barang</th>
-                                    <th>Tenor</th>
-                                    <th>Progres Bayar</th> {{-- KOLOM PENTING --}}
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($creditTransactions as $credit)
-                                    {{-- HITUNG PROGRES (Sudah bayar berapa bulan?) --}}
-                                    @php
-                                        // Menghitung jumlah cicilan yang statusnya 'paid'
-                                        $sudahBayar = $credit->installments->where('status', 'paid')->count();
-                                        $persen = ($sudahBayar / $credit->tenor) * 100;
-                                    @endphp
 
-                                    <tr>
-                                        <td>#{{ $credit->id }}</td>
-                                        <td>
-                                            <div class="fw-bold">{{ $credit->user->name ?? '-' }}</div>
-                                        </td>
-                                        <td>{{ $credit->product->name ?? 'Produk Dihapus' }}</td>
-                                        <td>
-                                            <span class="badge bg-info text-dark">{{ $credit->tenor }} Bulan</span>
-                                        </td>
+                {{-- SUB NAVIGASI (Pills) --}}
+                <ul class="nav nav-pills mb-3" id="creditStatusTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold" id="ongoing-tab" data-toggle="pill" href="#ongoing"
+                            role="tab">
+                            <i class="fas fa-clock mr-1"></i> Sedang Berjalan
+                            <span class="badge bg-dark text-white ms-1">{{ $creditsOngoing->total() }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold" id="completed-tab" data-toggle="pill" href="#completed"
+                            role="tab">
+                            <i class="fas fa-check-circle mr-1"></i> Sudah Lunas
+                            <span class="badge bg-dark text-white ms-1">{{ $creditsCompleted->total() }}</span>
+                        </a>
+                    </li>
+                </ul>
 
-                                        {{-- LOGIC TAMPILAN PROGRES --}}
-                                        <td style="min-width: 150px;">
-                                            <div class="d-flex justify-content-between small mb-1">
-                                                <span>Bulan ke-{{ $sudahBayar }}</span>
-                                                <span>dari {{ $credit->tenor }}</span>
-                                            </div>
-                                            <div class="progress" style="height: 10px;">
-                                                <div class="progress-bar bg-success" role="progressbar"
-                                                    style="width: {{ $persen }}%"
-                                                    aria-valuenow="{{ $persen }}" aria-valuemin="0"
-                                                    aria-valuemax="100">
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td>
+                <div class="tab-content">
+                    {{-- SUB-TAB: BERJALAN --}}
+                    <div class="tab-pane fade show active" id="ongoing" role="tabpanel">
+                        <div class="card shadow border-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>#ID</th>
+                                            <th>Nasabah & Barang</th>
+                                            <th>Tenor</th>
+                                            <th>Progres Bayar</th>
+                                            <th>Sisa Tagihan</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($creditsOngoing as $trx)
                                             @php
-                                                $statusClass = match ($credit->status) {
-                                                    'progress' => 'bg-warning text-dark',
-                                                    'paid_off' => 'bg-success',
-                                                    default => 'bg-secondary',
-                                                };
+                                                $sudahBayar = $trx->total_paid_month;
+                                                $persen = $trx->tenor > 0 ? ($sudahBayar / $trx->tenor) * 100 : 0;
+                                                $sisaBulan = $trx->tenor - $sudahBayar;
+                                                $sisaRupiah = $sisaBulan * $trx->monthly_amount;
                                             @endphp
-                                            <span class="badge {{ $statusClass }}">
-                                                {{ ucfirst($credit->status) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4">Tidak ada data kredit.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                            <tr>
+                                                <td>#{{ $trx->id }}</td>
+                                                <td>
+                                                    <strong>{{ $trx->user->name }}</strong><br>
+                                                    <small class="text-muted">{{ $trx->product->name }}</small>
+                                                </td>
+                                                <td><span class="badge bg-info text-dark">{{ $trx->tenor }} Bulan</span>
+                                                </td>
+                                                <td style="min-width: 160px">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span>Bulan ke-{{ $sudahBayar }}</span>
+                                                        <span>{{ number_format($persen, 0) }}%</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 10px;">
+                                                        <div class="progress-bar bg-warning"
+                                                            style="width: {{ $persen }}%"></div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <small>Sisa {{ $sisaBulan }}x</small><br>
+                                                    <strong class="text-danger">Rp
+                                                        {{ number_format($sisaRupiah, 0, ',', '.') }}</strong>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ route('credits.show', $trx->id) }}"
+                                                        class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-eye"></i> Detail
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">Tidak ada kredit
+                                                    berjalan.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white">
+                                {{ $creditsOngoing->appends(['ongoing_page' => request('ongoing_page')])->links() }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-footer bg-white">
-                        {{ $creditTransactions->appends(request()->query())->links() }}
+
+                    {{-- SUB-TAB: LUNAS --}}
+                    <div class="tab-pane fade" id="completed" role="tabpanel">
+                        <div class="card shadow border-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>#ID / Tgl Lunas</th>
+                                            <th>Nasabah & Barang</th>
+                                            <th>Total Nilai</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($creditsCompleted as $trx)
+                                            <tr>
+                                                <td>
+                                                    #{{ $trx->id }}<br>
+                                                    <small
+                                                        class="text-success fw-bold">{{ $trx->updated_at->format('d M Y') }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ $trx->user->name }}</strong><br>
+                                                    {{ $trx->product->name }}
+                                                </td>
+                                                <td>
+                                                    @php $totalMasuk = $trx->dp_amount + ($trx->monthly_amount * $trx->tenor); @endphp
+                                                    <span class="text-success fw-bold">Rp
+                                                        {{ number_format($totalMasuk, 0, ',', '.') }}</span>
+                                                </td>
+                                                <td><span class="badge bg-success px-3">LUNAS</span></td>
+                                                <td>
+                                                    <a href="{{ route('credits.show', $trx->id) }}"
+                                                        class="btn btn-sm btn-outline-success">Detail</a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4 text-muted">Belum ada kredit
+                                                    lunas.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer bg-white">
+                                {{ $creditsCompleted->appends(['completed_page' => request('completed_page')])->links() }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {{-- ==================================================== --}}
-            {{-- TAB 3: MUTASI SALDO (LIHAT BUKTI POTONG DISINI) --}}
+            {{-- TAB 3: LOG KEUANGAN (MUTASI) --}}
             {{-- ==================================================== --}}
             <div class="tab-pane fade" id="mutation" role="tabpanel">
                 <div class="alert alert-warning py-2 small">
                     <i class="fas fa-info-circle me-1"></i>
-                    Tab ini menampilkan setiap uang yang keluar dari saldo user (Termasuk Autodebet Bulan ke-2, ke-3, dst).
+                    Tab ini menampilkan uang keluar dari saldo user (Autodebet, DP, dll).
                 </div>
 
                 <div class="card shadow border-0">
@@ -200,53 +261,43 @@
                                 <tr>
                                     <th>Waktu</th>
                                     <th>User</th>
-                                    <th>Keterangan Transaksi</th>
-                                    <th>Nominal</th>
+                                    <th>Deskripsi Pemotongan</th>
+                                    <th>Jumlah</th>
                                     <th>Sisa Saldo</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {{-- PASTIKAN CONTROLLER MENGIRIM $mutations --}}
-                                @forelse ($mutations as $log)
+                                @forelse($mutations as $log)
                                     <tr>
-                                        <td>{{ $log->created_at->format('d/m/Y H:i') }}</td>
+                                        <td>{{ $log->created_at->format('d M Y H:i') }}</td>
                                         <td>{{ $log->user->name ?? '-' }}</td>
                                         <td>
-                                            {{-- LOGIC TAMPILAN DESKRIPSI (YANG ANDA MAKSUD) --}}
-                                            @if (str_contains($log->description, 'Autodebet'))
-                                                {{-- Jika Autodebet Cicilan --}}
-                                                <span class="badge bg-primary mb-1">
-                                                    <i class="fas fa-sync-alt me-1"></i> Cicilan Otomatis
-                                                </span>
-                                                <div class="fw-bold text-dark">{{ $log->description }}</div>
-                                            @elseif(str_contains($log->description, 'DP'))
-                                                {{-- Jika Pembayaran DP --}}
+                                            @if (str_contains($log->description, 'DP 0'))
+                                                <span class="badge bg-info text-dark mb-1">Angsuran Awal (Tanpa DP)</span>
+                                            @elseif(str_contains($log->description, 'DP') || str_contains($log->description, 'Uang Muka'))
                                                 <span class="badge bg-success mb-1">Uang Muka (DP)</span>
-                                                <div class="fw-bold text-dark">{{ $log->description }}</div>
+                                            @elseif(str_contains($log->description, 'Autodebet'))
+                                                <span class="badge bg-primary mb-1">Autodebet</span>
                                             @else
-                                                {{-- Transaksi Lain --}}
-                                                {{ $log->description }}
+                                                <span class="badge bg-secondary mb-1">Lainnya</span>
                                             @endif
-
-                                            <div class="small text-muted mt-1">Ref: {{ $log->reference_id }}</div>
+                                            <div class="small">{{ $log->description }}</div>
+                                            <div class="small text-muted">Ref: {{ $log->reference_id }}</div>
                                         </td>
-                                        <td class="text-danger fw-bold">
-                                            - Rp {{ number_format($log->amount, 0, ',', '.') }}
-                                        </td>
-                                        <td>
-                                            Rp {{ number_format($log->current_balance, 0, ',', '.') }}
-                                        </td>
+                                        <td class="text-danger fw-bold">- Rp
+                                            {{ number_format($log->amount, 0, ',', '.') }}</td>
+                                        <td>Rp {{ number_format($log->current_balance, 0, ',', '.') }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-4">Belum ada riwayat mutasi saldo.</td>
+                                        <td colspan="5" class="text-center py-4">Belum ada riwayat mutasi.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                     <div class="card-footer bg-white">
-                        {{ $mutations->appends(request()->query())->links() }}
+                        {{ $mutations->appends(['mutations_page' => request('mutations_page')])->links() }}
                     </div>
                 </div>
             </div>
@@ -256,33 +307,47 @@
 @endsection
 
 @push('scripts')
+    {{-- SCRIPT MANUAL UNTUK TAB NAVIGASI (VANILLA JS) --}}
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Ambil semua tombol tab
-            const tabButtons = document.querySelectorAll('#trxTabs button');
+            // Fungsi helper untuk handle tab click
+            function handleTabClick(containerId) {
+                const buttons = document.querySelectorAll(containerId + ' a[data-toggle="pill"], ' + containerId +
+                    ' button[data-bs-toggle="tab"]');
 
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // 1. Hapus class 'active' dari semua tombol tab
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                buttons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
 
-                    // 2. Tambahkan class 'active' ke tombol yang diklik
-                    this.classList.add('active');
+                        // 1. Remove active class from buttons
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        // 2. Add active class to clicked button
+                        this.classList.add('active');
 
-                    // 3. Sembunyikan semua konten tab
-                    const tabContents = document.querySelectorAll('.tab-pane');
-                    tabContents.forEach(content => {
-                        content.classList.remove('show', 'active');
+                        // 3. Hide all tab panes in this context
+                        const targetId = this.getAttribute('data-bs-target') || this.getAttribute(
+                            'href');
+                        const parentContent = document.querySelector(targetId).parentElement;
+                        const panes = parentContent.children;
+
+                        for (let pane of panes) {
+                            pane.classList.remove('show', 'active');
+                        }
+
+                        // 4. Show target pane
+                        const targetPane = document.querySelector(targetId);
+                        if (targetPane) {
+                            targetPane.classList.add('show', 'active');
+                        }
                     });
-
-                    // 4. Munculkan konten tab yang sesuai target
-                    const targetId = this.getAttribute('data-bs-target');
-                    const targetContent = document.querySelector(targetId);
-                    if (targetContent) {
-                        targetContent.classList.add('show', 'active');
-                    }
                 });
-            });
+            }
+
+            // Inisialisasi Tab Utama
+            handleTabClick('#trxTabs');
+
+            // Inisialisasi Sub-Tab Kredit (Pills)
+            handleTabClick('#creditStatusTab');
         });
     </script>
 @endpush

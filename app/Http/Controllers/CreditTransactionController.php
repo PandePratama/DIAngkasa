@@ -4,89 +4,49 @@ namespace App\Http\Controllers;
 
 use App\Models\BalanceMutation;
 use App\Models\CreditTransaction;
-use App\Models\ProductRaditya; // Pastikan Model ini di-use
-use App\Services\CreditCalculatorService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CreditTransactionController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Data Tabel Atas (Kredit)
-        $transactions = CreditTransaction::with(['user', 'product', 'installments'])
+        // -----------------------------------------------------------
+        // 1. DATA KREDIT: SEDANG BERJALAN
+        // Filter: Ambil yang statusnya murni 'progress'
+        // -----------------------------------------------------------
+        $creditsOngoing = CreditTransaction::with(['user', 'product', 'installments'])
+            ->where('status', 'progress')
             ->latest()
-            ->paginate(5, ['*'], 'credits_page'); // Pakai custom page name
+            ->paginate(10, ['*'], 'ongoing_page');
 
-        // 2. Data Tabel Bawah (Mutasi Saldo - Khusus Debit/Potongan Kredit)
+        // -----------------------------------------------------------
+        // 2. DATA KREDIT: SUDAH LUNAS
+        // Filter: Ambil yang statusnya 'paid' atau 'complete'
+        // -----------------------------------------------------------
+        $creditsCompleted = CreditTransaction::with(['user', 'product'])
+            ->whereIn('status', ['paid', 'complete'])
+            ->latest()
+            ->paginate(10, ['*'], 'completed_page');
+
+        // -----------------------------------------------------------
+        // 3. DATA MUTASI (LOG)
+        // -----------------------------------------------------------
         $mutations = BalanceMutation::with('user')
-            ->where('type', 'debit') // Hanya ambil yang keluar
-            ->where('description', 'like', '%Kredit%') // Opsional: Filter deskripsi
+            ->where(function ($query) {
+                $query->where('description', 'like', '%Kredit%')
+                    ->orWhere('description', 'like', '%Autodebet%')
+                    ->orWhere('description', 'like', '%DP%')
+                    ->orWhere('description', 'like', '%Angsuran%');
+            })
             ->latest()
-            ->paginate(10, ['*'], 'mutations_page');
+            ->paginate(15, ['*'], 'mutations_page');
 
-        return view('admin.credits.index', compact('transactions', 'mutations'));
+        return view('admin.credits.index', compact(
+            'creditsOngoing',
+            'creditsCompleted',
+            'mutations'
+        ));
     }
 
-    public function show(CreditTransaction $creditTransaction)
-    {
-        // Load relasi installments agar bisa ditampilkan di detail
-        $creditTransaction->load(['product', 'installments']);
-        return view('admin.credits.show', compact('creditTransaction'));
-    }
-
-    public function store(Request $request, CreditCalculatorService $service)
-    {
-        // 1. Validasi Input Khusus ProductRaditya
-        $request->validate([
-            // PENTING: Ganti 'products' dengan nama tabel asli dari ProductRaditya
-            // Biasanya Laravel menamai tabelnya 'product_radityas' (jamak + snake_case)
-            'product_id' => 'required|exists:product_radityas,id',
-            'dp_amount' => 'required|numeric',
-            'tenor' => 'required|in:3,6,9,12',
-        ]);
-
-        // Mengambil data spesifik dari Model ProductRaditya
-        $product = ProductRaditya::findOrFail($request->product_id);
-
-        return DB::transaction(function () use ($product, $request, $service) {
-
-            // 2. Hitung (Service harus support object ProductRaditya)
-            $calc = $service->calculate($product, $request->tenor, $request->dp_amount);
-
-            // 3. Simpan Header Transaksi
-            $trx = CreditTransaction::create([
-                // Pastikan kolom ini foreign key ke tabel product_radityas
-                'product_id' => $product->id,
-                'user_id' => auth()->id(),
-
-                // Snapshot Data
-                'product_hpp_snapshot' => $calc['product_hpp_snapshot'],
-                'product_price_snapshot' => $calc['product_price_snapshot'],
-                'dp_amount' => $calc['dp_amount'],
-                'tenor' => $calc['tenor'],
-                'up_price_percent' => $calc['up_price_percent'],
-                'interest_percent' => $calc['interest_percent'],
-                'retail_price_value' => $calc['retail_price'],
-                'monthly_installment_base' => $calc['monthly_installment'],
-                'admin_fee' => 20000,
-                'status' => 'active'
-            ]);
-
-            // 4. Generate & Simpan Jadwal Cicilan
-            $schedules = $service->generateSchedule($calc);
-
-            foreach ($schedules as $sch) {
-                $trx->installments()->create([
-                    'month_sequence' => $sch['month_sequence'],
-                    'due_date' => $sch['due_date'],
-                    'amount' => $sch['amount'],
-                    'status' => 'unpaid'
-                ]);
-            }
-
-            return redirect()->route('transactions.show', $trx->id)
-                ->with('success', 'Pengajuan Kredit Product Raditya Berhasil!');
-        });
-    }
+    // ... method show dan store biarkan tetap sama
 }

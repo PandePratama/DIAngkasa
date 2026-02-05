@@ -16,7 +16,8 @@ class CreditTransaction extends Model
         'monthly_amount',
         'admin_fee',
         'total_paid_month',
-        'dp_amount'
+        'dp_amount',
+        'status'
     ];
     protected $casts = [
         'status'

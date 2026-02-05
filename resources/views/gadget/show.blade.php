@@ -66,6 +66,40 @@
                     {!! nl2br(e($product->desc)) !!}
                 </div>
 
+                {{-- ========================================== --}}
+                {{-- FITUR BARU: SIMULASI KREDIT --}}
+                {{-- ========================================== --}}
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
+                    <h3 class="font-bold text-blue-800 mb-3 flex items-center">
+                        <i class="fa-solid fa-calculator mr-2"></i> Simulasi Cicilan
+                    </h3>
+
+                    {{-- Input DP --}}
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">
+                            Rencana Uang Muka (DP)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                            <input type="number" id="input_dp" value="0" min="0"
+                                class="w-full pl-8 pr-4 py-2 border rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Isi 0 jika tanpa DP">
+                        </div>
+                        <small class="text-xs text-gray-500 mt-1">*DP akan mengurangi cicilan bulanan</small>
+                    </div>
+
+                    {{-- Loading State --}}
+                    <div id="loading_sim" class="text-center py-4 hidden">
+                        <i class="fas fa-spinner fa-spin text-blue-600"></i> Menghitung...
+                    </div>
+
+                    {{-- Hasil Simulasi (Grid) --}}
+                    <div id="result_sim" class="grid grid-cols-2 gap-3">
+                        {{-- Data akan diisi oleh Javascript --}}
+                    </div>
+                </div>
+                {{-- ========================================== --}}
+
                 {{-- FORM ADD TO CART --}}
                 <form method="POST" action="{{ route('cart.add') }}">
                     @csrf
@@ -104,4 +138,67 @@
             </div>
         </div>
     </div>
+
+    {{-- SCRIPT KHUSUS HALAMAN INI --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputDp = document.getElementById('input_dp');
+            const resultContainer = document.getElementById('result_sim');
+            const loading = document.getElementById('loading_sim');
+            const productId = "{{ $product->id }}"; // Ambil ID Produk dari Blade
+
+            // Fungsi ambil data ke server
+            function fetchSimulation() {
+                const dpVal = inputDp.value || 0;
+
+                // Tampilkan loading, sembunyikan hasil
+                loading.classList.remove('hidden');
+                resultContainer.innerHTML = '';
+
+                fetch("{{ route('raditya.simulation_schemes') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            product_id: productId,
+                            dp_amount: dpVal
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.classList.add('hidden');
+
+                        if (data.status === 'success') {
+                            // Loop hasil skema
+                            data.schemes.forEach(scheme => {
+                                const html = `
+                                <div class="bg-white p-3 rounded-lg border border-blue-100 shadow-sm text-center">
+                                    <p class="text-xs font-bold text-gray-500 uppercase">${scheme.tenor} Bulan</p>
+                                    <p class="text-blue-700 font-bold text-lg">Rp ${scheme.monthly}</p>
+                                    <p class="text-[10px] text-gray-400">/bulan</p>
+                                </div>
+                            `;
+                                resultContainer.insertAdjacentHTML('beforeend', html);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        loading.classList.add('hidden');
+                        console.error(err);
+                    });
+            }
+
+            // Hitung otomatis saat halaman dimuat (DP 0)
+            fetchSimulation();
+
+            // Hitung ulang saat user mengetik DP (Debounce sedikit biar ga spam)
+            let timeoutId;
+            inputDp.addEventListener('input', function() {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(fetchSimulation, 500); // Tunggu 0.5 detik setelah ngetik
+            });
+        });
+    </script>
 @endsection

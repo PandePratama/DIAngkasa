@@ -24,7 +24,6 @@ class User extends Authenticatable
         'role',
         'saldo',
         'no_telp',
-        'nik',
         'address',
 
     ];

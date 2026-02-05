@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -21,7 +22,10 @@ class UpdateUserRequest extends FormRequest
             'password'       => 'nullable|min:6|confirmed',
             'saldo'     => 'nullable|numeric|min:0',
             'no_telp'       => 'nullable|string|max:20',
-            'nik'           => 'nullable|string|max:20|unique:users,nik,'
+            'nik' => [
+                'nullable',
+                Rule::unique('users', 'nik')->ignore($this->user->id),
+            ],
         ];
     }
 
