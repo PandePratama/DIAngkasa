@@ -10,90 +10,138 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
         body {
-            background-color: #097782;
-            font-family: 'Nunito', sans-serif;
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
+            background: linear-gradient(135deg, #0f766e, #06b6d4);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .login-box {
+        .login-wrapper {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            padding: 16px;
         }
 
-        .brand-title {
-            text-align: center;
-            color: #fff;
-            font-size: 32px;
-            font-weight: 700;
+        .login-card {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .2);
+            overflow: hidden;
         }
 
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, .25);
-        }
-
-        .btn-login {
-            background-color: #097782;
-            border: none;
-            border-radius: 25px;
-            font-weight: 600;
-        }
-
-        .btn-login:hover {
-            background-color: #075f66;
-        }
-
-        .forgot-link {
-            font-size: 14px;
-            text-decoration: none;
-        }
-
-        .forgot-link:hover {
-            text-decoration: underline;
+        .brand-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            padding: 28px 20px 16px;
         }
 
         .brand-logo {
-            height: 80px;
-            width: auto;
+            height: 56px;
+            object-fit: contain;
+        }
+
+        .login-body {
+            padding: 28px;
+        }
+
+        .login-title {
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-control {
+            border-radius: 14px;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .form-control:focus {
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+        }
+
+        .input-group .btn {
+            border-radius: 0 14px 14px 0;
+            border-color: #e5e7eb;
+        }
+
+        .forgot-link {
+            font-size: 13px;
+            text-decoration: none;
+            color: #6b7280;
+        }
+
+        .forgot-link:hover {
+            color: #0f766e;
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            margin-top: 8px;
+            border-radius: 999px;
+            padding: 12px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #0f766e, #06b6d4);
+            border: none;
+            transition: all .3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .alert {
+            border-radius: 12px;
+            font-size: 14px;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="login-box px-3">
-        <div class="card">
-            <div class="brand-title">
-                <img src="{{ asset('sbadmin/img/Raditya logo R.webp') }}" alt="Raditya Logo" class="brand-logo mt-2">
-                <img src="{{ asset('sbadmin/img/Logo Dia_Green.webp') }}" alt="Diamar Logo" class="brand-logo mt-2">
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <!-- LOGO -->
+            <div class="brand-area">
+                <img src="{{ asset('sbadmin/img/Raditya logo R.webp') }}" class="brand-logo">
+                <img src="{{ asset('sbadmin/img/Logo Dia_Green.webp') }}" class="brand-logo">
             </div>
-            <div class="card-body px-4 pt-1">
-                <h5 class="text-center mb-4 fw-bold">Login</h5>
+
+            <div class="login-body">
+                <h4 class="login-title">Welcome Back</h4>
 
                 <form action="{{ route('login') }}" method="POST">
                     @csrf
 
-                    <!-- Username / Email / NIP -->
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
+                        <label class="form-label">NIP atau Email</label>
                         <input type="text"
                             name="login"
                             class="form-control"
-                            placeholder="Email atau NIP"
+                            placeholder="NIP atau Email"
                             required>
                     </div>
 
-                    <!-- Password -->
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <div class="input-group">
@@ -101,7 +149,7 @@
                                 name="password"
                                 id="password"
                                 class="form-control"
-                                placeholder="Password"
+                                placeholder="••••••••"
                                 required>
                             <button class="btn btn-outline-secondary"
                                 type="button"
@@ -111,21 +159,16 @@
                         </div>
                     </div>
 
-                    <!-- Forgot password -->
                     <div class="text-end mb-3">
-                        <a href="#" class="forgot-link text-muted">
-                            Forgot Password?
-                        </a>
+                        <a href="#" class="forgot-link">Forgot password?</a>
                     </div>
 
-                    <!-- Button -->
                     <button type="submit" class="btn btn-login text-white w-100">
-                        Login
+                        Sign In
                     </button>
 
-                    <!-- Error -->
                     @if(session('failed'))
-                    <div class="alert alert-danger mt-3 text-center">
+                    <div class="alert alert-danger text-center mt-3">
                         {{ session('failed') }}
                     </div>
                     @endif
@@ -134,7 +177,6 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -144,12 +186,10 @@
 
             if (password.type === 'password') {
                 password.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
             } else {
                 password.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         }
     </script>

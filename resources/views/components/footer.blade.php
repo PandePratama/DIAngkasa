@@ -80,10 +80,4 @@
     {{-- DIVIDER --}}
     <div class="border-t border-white/20"></div>
 
-    {{-- COPYRIGHT --}}
-    <div class="py-6 text-center text-sm text-white/70">
-        &copy; {{ date('Y') }} <span class="font-semibold">DiRaditya</span>.
-        Semua hak cipta dilindungi.
-    </div>
-
 </footer>
