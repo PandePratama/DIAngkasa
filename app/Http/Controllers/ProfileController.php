@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -38,10 +39,21 @@ class ProfileController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $credits = CreditTransaction::with(['product', 'installments'])
+            ->where('id_user', $user->id)
+            ->latest()
+            ->get();
+
+        // --- BAGIAN INI YANG HILANG SEBELUMNYA ---
+        // Hitung total nominal DARI HASIL FILTER di atas
+        $grandTotalSemua = $query->sum('grand_total');
+
         return view('profile.index', compact(
             'user',
             'transactions',
-            'total'
+            'total',
+            'credits',
+            'grandTotalSemua'
         ));
     }
 

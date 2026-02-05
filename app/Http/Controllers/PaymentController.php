@@ -10,37 +10,29 @@ use App\Models\PurchaseType;
 use App\Models\CreditTransaction;
 use App\Models\BalanceMutation;
 use App\Services\CreditCalculatorService;
+use App\Enums\InstallmentStatus; // Pastikan pakai Enum atau string 'paid'/'unpaid'
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon; // <--- PENTING: Untuk hitung tanggal
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
-    /**
-     * MENAMPILKAN HALAMAN CHECKOUT (INDEX)
-     */
     public function index()
     {
         $user = auth()->user();
-
-        // Load keranjang belanja
         $cart = Cart::with(['items.productDiamart.primaryImage', 'items.productDiraditya.primaryImage'])
-            ->where('id_user', $user->id)
-            ->first();
+            ->where('id_user', $user->id)->first();
 
-        // Jika keranjang kosong
         if (!$cart) {
             return redirect()->route('cart.index')->with('error', 'Keranjang belanja kosong.');
         }
 
-        // Hitung Subtotal
         $subtotal = $cart->items->sum(function ($item) {
             $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
             return $item->qty * ($product->price ?? 0);
         });
 
-        // Tentukan Admin Fee
         if ($cart->business_unit == 'diamart') {
             $adminFee = 0;
             $adminLabel = "Biaya Layanan";
@@ -54,26 +46,17 @@ class PaymentController extends Controller
         return view('payment.index', compact('cart', 'subtotal', 'adminFee', 'adminLabel', 'total'));
     }
 
-    /**
-     * MEMPROSES PEMBAYARAN (ROUTER UTAMA)
-     */
     public function process(Request $request)
     {
         try {
             $user = auth()->user();
-
-            $request->validate([
-                'payment_method' => 'required',
-            ]);
+            $request->validate(['payment_method' => 'required']);
 
             $cart = Cart::with(['items.productDiamart', 'items.productDiraditya'])
                 ->where('id_user', $user->id)->first();
 
-            if (!$cart) {
-                return redirect()->back()->with('error', 'Keranjang belanja tidak ditemukan.');
-            }
+            if (!$cart) return redirect()->back()->with('error', 'Keranjang tidak ditemukan.');
 
-            // Router ke logic masing-masing
             if ($request->payment_method === 'credit') {
                 $creditService = app(CreditCalculatorService::class);
                 return $this->processCreditPayment($request, $cart, $user, $creditService);
@@ -86,24 +69,18 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * LOGIKA KREDIT (Dengan Due Date & Mutasi Saldo Akurat)
-     */
+    // ==========================================
+    // LOGIKA KREDIT BARU (DP 0 = Bayar Angsuran 1)
+    // ==========================================
     private function processCreditPayment($request, $cart, $user, $creditService)
     {
-        // 1. Validasi Input
         $request->validate([
             'tenor' => 'required|in:3,6,9,12',
             'dp_amount' => 'required|numeric|min:0'
         ]);
 
-        // 2. Validasi Bisnis
-        if ($cart->business_unit !== 'raditya') {
-            throw new \Exception('Kredit hanya untuk produk Gadget.');
-        }
-        if ($cart->items->count() > 1) {
-            throw new \Exception('Kredit hanya bisa 1 item per transaksi.');
-        }
+        if ($cart->business_unit !== 'raditya') throw new \Exception('Kredit hanya untuk produk Gadget.');
+        if ($cart->items->count() > 1) throw new \Exception('Kredit hanya bisa 1 item per transaksi.');
 
         $item = $cart->items->first();
         $product = $item->productDiraditya;
@@ -111,12 +88,35 @@ class PaymentController extends Controller
         if (!$product) throw new \Exception('Produk tidak ditemukan.');
         if ($product->stock < $item->qty) throw new \Exception("Stok {$product->name} kurang.");
 
-        // 3. Hitung Kalkulasi Kredit
+        // 1. Kalkulasi Kredit
         $calc = $creditService->calculate($product, $request->tenor, $request->dp_amount);
 
-        // 4. Cek Saldo Cukup Buat DP?
-        if ($user->saldo < $calc['dp_amount']) {
-            throw new \Exception('Saldo kurang untuk bayar DP.');
+        // 2. VALIDASI LIMIT KREDIT (Total Pinjaman vs Saldo)
+        if ($calc['retail_price'] > $user->saldo) { // Menggunakan Retail Price sebagai acuan limit
+            $kurang = $calc['retail_price'] - $user->saldo;
+            throw new \Exception("Limit kredit tidak cukup! (Kurang: Rp " . number_format($kurang) . ")");
+        }
+
+        // =========================================================
+        // 3. TENTUKAN APA YANG HARUS DIBAYAR SEKARANG (NOMINAL AWAL)
+        // =========================================================
+        $schedules = $creditService->generateSchedule($calc);
+        $isNoDp = ($calc['dp_amount'] == 0); // Cek apakah DP 0
+
+        if ($isNoDp) {
+            // SKEMA DP 0: Bayar (Cicilan Bulan 1 + Admin Fee 20rb) SEKARANG
+            // Ambil nominal bulan ke-1 dari schedule
+            $nominalBayarAwal = $schedules[0]['amount'];
+            $keteranganMutasi = "Pembayaran Angsuran Pertama (DP 0): {$product->name}";
+        } else {
+            // SKEMA NORMAL: Bayar DP SEKARANG
+            $nominalBayarAwal = $calc['dp_amount'];
+            $keteranganMutasi = "Pembayaran DP Kredit: {$product->name}";
+        }
+
+        // 4. Cek Saldo Cukup untuk Bayar Awal?
+        if ($user->saldo < $nominalBayarAwal) {
+            throw new \Exception('Saldo kurang untuk pembayaran awal (Rp ' . number_format($nominalBayarAwal) . ').');
         }
 
         DB::beginTransaction();
@@ -130,50 +130,67 @@ class PaymentController extends Controller
                 'up_price' => $calc['up_price_percent'],
                 'monthly_amount' => $calc['monthly_installment'],
                 'status' => 'progress',
-                'total_paid_month' => 0,
-                'dp_amount' => $calc['dp_amount'], // Pastikan Model guarded=['id']
+                'total_paid_month' => $isNoDp ? 1 : 0, // Jika DP 0, berarti bulan 1 sudah lunas
+                'dp_amount' => $calc['dp_amount'],
             ]);
 
-            // B. Simpan Jadwal Cicilan (Dengan Due Date)
-            $schedules = $creditService->generateSchedule($calc);
+            // B. Simpan Jadwal Cicilan (Looping)
             foreach ($schedules as $sch) {
+                $bulanKe = $sch['month_sequence'];
+                $statusCicilan = 'unpaid';
+                $jatuhTempo = null;
 
-                // Hitung Tanggal Jatuh Tempo (Tanggal 25 Bulan Berikutnya)
-                $jatuhTempo = Carbon::now()
-                    ->addMonths($sch['month_sequence'])
-                    ->setDay(25);
+                // --- LOGIC JATUH TEMPO & STATUS ---
+                if ($isNoDp) {
+                    // KASUS DP 0
+                    if ($bulanKe == 1) {
+                        // Bulan 1: LUNAS SEKARANG
+                        $statusCicilan = 'paid';
+                        $jatuhTempo = Carbon::now(); // Jatuh tempo hari ini (sudah dibayar)
+                    } else {
+                        // Bulan 2 dst: Jatuh tempo maju 1 langkah
+                        // Contoh: Beli Feb. Bulan 1 (Feb) Lunas. Bulan 2 Jatuh Tempo Maret.
+                        // addMonths($bulanKe - 1) -> Jika bulan 2, maka addMonths(1) = Bulan Depan.
+                        $jatuhTempo = Carbon::now()
+                            ->addMonths($bulanKe - 1)
+                            ->setDay(25);
+                    }
+                } else {
+                    // KASUS NORMAL (ADA DP)
+                    // Bulan 1: Jatuh tempo Bulan Depan (addMonths 1)
+                    $jatuhTempo = Carbon::now()
+                        ->addMonths($bulanKe)
+                        ->setDay(25);
+                }
 
                 \App\Models\CreditInstallment::create([
                     'id_credit_transaction' => $creditTrx->id,
                     'id_user'               => $user->id,
-                    'installment_month'     => $sch['month_sequence'],
+                    'installment_month'     => $bulanKe,
                     'amount'                => abs($sch['amount']),
-
-                    // --- UPDATE: Simpan Tanggal Jatuh Tempo ---
                     'due_date'              => $jatuhTempo->format('Y-m-d'),
-                    // ------------------------------------------
-
+                    'status'                => $statusCicilan, // paid atau unpaid
                     'admin_fee'             => 0,
                     'balance_before'        => 0,
                     'balance_after'         => 0,
+                    'updated_at'            => ($statusCicilan == 'paid') ? now() : null, // Tandai waktu bayar jika paid
                 ]);
             }
 
             // C. POTONG SALDO & CATAT MUTASI
             $saldoAwal = $user->saldo;
-            $potonganDP = $calc['dp_amount'];
-            $saldoAkhir = $saldoAwal - $potonganDP;
+            $saldoAkhir = $saldoAwal - $nominalBayarAwal;
 
-            // 1. Eksekusi Potong Saldo di DB
-            $user->decrement('saldo', $potonganDP);
+            // 1. Eksekusi Potong Saldo
+            $user->decrement('saldo', $nominalBayarAwal);
 
-            // 2. Catat Mutasi (Gunakan variabel $saldoAkhir yang kita hitung manual agar Realtime)
+            // 2. Catat Mutasi
             BalanceMutation::create([
                 'user_id' => $user->id,
                 'type'    => 'debit',
-                'amount'  => $potonganDP,
+                'amount'  => $nominalBayarAwal,
                 'current_balance' => $saldoAkhir,
-                'description' => "Pembayaran DP Kredit: {$product->name}",
+                'description' => $keteranganMutasi,
                 'reference_id' => 'CREDIT-' . $creditTrx->id
             ]);
 
@@ -192,9 +209,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * LOGIKA REGULER (CASH/SALDO)
-     */
     private function processRegularPayment($request, $cart, $user)
     {
         $purchaseType = PurchaseType::where('code', $request->payment_method)->first();
@@ -207,16 +221,12 @@ class PaymentController extends Controller
 
         $adminFee = ($cart->business_unit == 'diamart') ? 0 : 20000;
         $grandTotal = $subtotal + $adminFee;
-
         $balanceSnapshot = $user->saldo;
         $status = 'ongoing';
         $paymentStatus = 'unpaid';
 
-        // Cek Saldo
         if ($purchaseType->code == 'balance') {
-            if ($user->saldo < $grandTotal) {
-                throw new \Exception("Saldo tidak cukup.");
-            }
+            if ($user->saldo < $grandTotal) throw new \Exception("Saldo tidak cukup.");
             $balanceSnapshot -= $grandTotal;
             $status = 'completed';
             $paymentStatus = 'paid';
@@ -224,7 +234,6 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
-            // 1. Buat Transaksi
             $trx = Transaction::create([
                 'id_user' => $user->id,
                 'invoice_code' => 'INV-' . time() . rand(100, 999),
@@ -236,7 +245,6 @@ class PaymentController extends Controller
                 'balance_after' => $balanceSnapshot,
             ]);
 
-            // 2. Simpan Item
             foreach ($cart->items as $item) {
                 $product = $item->id_product_diamart ? $item->productDiamart : $item->productDiraditya;
                 TransactionItem::create([
@@ -253,16 +261,13 @@ class PaymentController extends Controller
                 $product->decrement('stock', $item->qty);
             }
 
-            // 3. POTONG SALDO & CATAT MUTASI (Jika pakai Saldo)
             if ($purchaseType->code == 'balance') {
                 $user->decrement('saldo', $grandTotal);
-
-                // Catat Mutasi
                 BalanceMutation::create([
                     'user_id' => $user->id,
                     'type'    => 'debit',
                     'amount'  => $grandTotal,
-                    'current_balance' => $balanceSnapshot, // Sudah dihitung diatas
+                    'current_balance' => $balanceSnapshot,
                     'description' => "Pembayaran Belanja: {$trx->invoice_code}",
                     'reference_id' => 'TRX-' . $trx->id
                 ]);
