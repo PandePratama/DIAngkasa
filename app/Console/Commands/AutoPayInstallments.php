@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\CreditInstallment;
+use App\Models\CreditTransaction; // Pastikan Model Parent di-import
 use App\Models\BalanceMutation;
-use App\Enums\InstallmentStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -21,8 +21,10 @@ class AutoPayInstallments extends Command
 
         $today = Carbon::now()->format('Y-m-d');
 
+        // 1. Ambil Cicilan yang Jatuh Tempo & Belum Bayar
+        // Status cicilan 'unpaid'
         $installments = CreditInstallment::with(['creditTransaction.user', 'creditTransaction.product'])
-            ->where('status', InstallmentStatus::UNPAID)
+            ->where('status', 'unpaid')
             ->whereDate('due_date', '<=', $today)
             ->get();
 
@@ -30,14 +32,13 @@ class AutoPayInstallments extends Command
         $this->info("Ditemukan {$count} tagihan yang harus diproses.");
 
         foreach ($installments as $item) {
-            $trx = $item->creditTransaction;
+            $trx = $item->creditTransaction; // Ini adalah Parent (CreditTransaction)
             $user = $trx->user ?? null;
             $productName = $trx->product->name ?? 'Barang';
 
-            // --- TAMBAHAN: AMBIL INFO TENOR ---
+            // Info Tenor & Bulan Ke
             $tenorTotal = $trx->tenor;
             $bulanKe = $item->installment_month;
-            // ----------------------------------
 
             if (!$user) {
                 Log::error("AUTODEBET ERROR: Cicilan ID {$item->id} tidak memiliki user valid.");
@@ -48,15 +49,16 @@ class AutoPayInstallments extends Command
 
             DB::beginTransaction();
             try {
+                // 2. Cek Saldo User
                 if ($user->saldo >= $tagihan) {
 
                     $saldoAwal = $user->saldo;
                     $saldoAkhir = $saldoAwal - $tagihan;
 
+                    // Potong Saldo
                     $user->decrement('saldo', $tagihan);
 
-                    // --- UPDATE: DESKRIPSI LEBIH LENGKAP ---
-                    // Format: "Autodebet Cicilan (1/3): OPPO A5X"
+                    // 3. Catat Mutasi
                     $deskripsiLengkap = "Autodebet Cicilan ({$bulanKe}/{$tenorTotal}): {$productName}";
 
                     BalanceMutation::create([
@@ -64,32 +66,50 @@ class AutoPayInstallments extends Command
                         'type'    => 'debit',
                         'amount'  => $tagihan,
                         'current_balance' => $saldoAkhir,
-                        'description' => $deskripsiLengkap, // <--- Pakai deskripsi baru
+                        'description' => $deskripsiLengkap,
                         'reference_id' => 'INST-' . $item->id
                     ]);
 
+                    // 4. Update Status Cicilan -> 'paid'
                     $item->update([
-                        'status' => InstallmentStatus::PAID,
+                        'status' => 'paid',
                         'updated_at' => now()
                     ]);
 
-                    // Cek Lunas
-                    $sisaCicilan = CreditInstallment::where('id_credit_transaction', $trx->id)
-                        ->where('status', InstallmentStatus::UNPAID)
+                    // ==========================================================
+                    // 2. CEK STATUS LUNAS (UPDATE TABEL PARENT)
+                    // ==========================================================
+
+                    // Hitung sisa cicilan yang masih 'unpaid' untuk ID Transaksi ini
+                    $sisaTagihan = CreditInstallment::where('id_credit_transaction', $trx->id)
+                        ->where('status', 'unpaid') // Sesuai enum tabel credit_installment
                         ->count();
 
-                    if ($sisaCicilan == 0) {
-                        $trx->update(['status' => 'paid_off']);
-                        Log::info("KREDIT LUNAS: Transaksi ID {$trx->id} selesai.");
+                    // Jika sisa 0, berarti LUNAS
+                    if ($sisaTagihan == 0) {
+                        // UPDATE STATUS PARENT SESUAI ENUM DATABASE ANDA
+                        // Enum Anda: 'progress', 'paid', 'complete'
+
+                        $trx->update([
+                            'status' => 'paid', // Kita pakai 'paid' untuk menandakan Lunas
+                            'updated_at' => now()
+                        ]);
+
+                        Log::info("KREDIT LUNAS: Transaksi #{$trx->id} status berubah menjadi 'paid'.");
+                        $this->info("   >>> KREDIT #{$trx->id} LUNAS! Status updated to 'paid'.");
+                        // ==========================================================
+                    } else {
+                        // Jika belum lunas, pastikan statusnya 'progress'
+                        // (Opsional, untuk menjaga konsistensi)
+                        CreditTransaction::where('id', $trx->id)->update(['status' => 'progress']);
                     }
+                    // ==========================================================
 
                     Log::info("AUTODEBET SUKSES: {$user->name} - {$deskripsiLengkap}");
-
-                    // --- UPDATE: INFO DI TERMINAL ---
-                    $this->info("✓ Sukses: {$user->name} | Cicilan {$bulanKe} dari {$tenorTotal} | Sisa Saldo: Rp " . number_format($saldoAkhir));
+                    $this->info("✓ Sukses: {$user->name} | Cicilan {$bulanKe}/{$tenorTotal} | Sisa Saldo: Rp " . number_format($saldoAkhir));
                 } else {
                     Log::warning("AUTODEBET GAGAL: Saldo {$user->name} kurang.");
-                    $this->error("✗ Gagal: {$user->name} (Saldo Kurang)");
+                    $this->error("✗ Gagal: {$user->name} (Saldo Kurang: Rp " . number_format($user->saldo) . ")");
                 }
 
                 DB::commit();

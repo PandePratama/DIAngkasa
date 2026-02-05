@@ -124,7 +124,7 @@
                 {{-- Arahkan ke route baru: credits.index --}}
                 <a class="nav-link" href="{{ route('credits.index') }}">
                     <i class="fas fa-fw fa-file-invoice-dollar"></i> {{-- Saya ganti icon biar beda --}}
-                    <span>Tanggungan Tenor</span>
+                    <span>Tanggungan Kredit</span>
                 </a>
             </li>
 
@@ -134,7 +134,7 @@
                     <span>Laporan Transaksi</span>
                 </a>
             </li>
-            
+
             {{-- <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.orders.index') }}">
                     <i class="fas fa-fw fa-shopping-cart"></i>
