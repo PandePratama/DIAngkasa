@@ -71,7 +71,7 @@
                                             </p>
                                             <span
                                                 class="text-[10px] px-2 py-0.5 rounded-full {{ $item->id_product_diamart ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600' }}">
-                                                {{ $item->id_product_diamart ? 'Minimarket' : 'Gadget' }}
+                                                {{ $item->id_product_diamart ? 'Diamart' : 'Raditya' }}
                                             </span>
                                         </div>
                                     </div>

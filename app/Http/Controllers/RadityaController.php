@@ -58,7 +58,17 @@ class RadityaController extends Controller
             }
         }
 
+        // 3. RELATED PRODUCTS (RADITYA)
+        $product = ProductRaditya::with('primaryImage')->findOrFail($id);
+
+        $relatedProducts = ProductRaditya::with('primaryImage')
+            ->where('id', '!=', $product->id)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+
         // 3. Kirim ke View
-        return view('gadget.show', compact('product', 'cartLock'));
+        return view('gadget.show', compact('product', 'cartLock', 'relatedProducts'));
     }
 }

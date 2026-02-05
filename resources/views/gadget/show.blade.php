@@ -1,69 +1,97 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6 max-w-6xl">
 
-        {{-- 1. ALERT ERROR / SUKSES --}}
-        @if (session('success'))
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
-                <p class="font-bold">Berhasil</p>
-                <p>{{ session('success') }}</p>
+    {{-- ================= ALERT ================= --}}
+    @if (session('success'))
+    <div class="mb-5 rounded-xl bg-green-50 border border-green-200 p-4 text-green-700">
+        <p class="font-semibold">✅ Berhasil</p>
+        <p class="text-sm">{{ session('success') }}</p>
+    </div>
+    @endif
+
+    @if (session('error'))
+    <div class="mb-5 rounded-xl bg-red-50 border border-red-200 p-4 text-red-700">
+        <p class="font-semibold">❌ Gagal</p>
+        <p class="text-sm">{!! session('error') !!}</p>
+    </div>
+    @endif
+
+    {{-- ================= LOCK ALERT ================= --}}
+    @if (isset($cartLock) && $cartLock == 'diamart')
+    <div class="mb-6 rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-yellow-800">
+        <div class="flex gap-3">
+            <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+            <div class="text-sm">
+                <p>
+                    <b>Mode Terbatas:</b> Keranjang Anda berisi produk
+                    <b class="uppercase">Sembako (Diamart)</b>.
+                </p>
+                <p class="mt-1">
+                    Selesaikan transaksi atau kosongkan keranjang terlebih dahulu.
+                </p>
+                <a href="{{ route('cart.index') }}"
+                    class="inline-block mt-2 font-semibold underline">
+                    Lihat Keranjang
+                </a>
             </div>
-        @endif
+        </div>
+    </div>
+    @endif
 
-        @if (session('error'))
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-                <p class="font-bold">Gagal</p>
-                <p>{!! session('error') !!}</p>
-            </div>
-        @endif
+    {{-- ================= PRODUCT DETAIL ================= --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {{-- 2. ALERT LOCK (Jika keranjang terkunci oleh Diamart) --}}
-        @if (isset($cartLock) && $cartLock == 'diamart')
-            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-r shadow-sm">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        {{-- Icon Peringatan --}}
-                        <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-yellow-700">
-                            <span class="font-bold">Mode Terbatas:</span>
-                            Keranjang Anda saat ini berisi produk <span class="font-bold uppercase">SEMBAKO
-                                (DIAMART)</span>.
-                            <br>
-                            Anda tidak dapat membeli Gadget sebelum menyelesaikan transaksi Sembako atau mengosongkan
-                            keranjang.
-                        </p>
-                        <a href="{{ route('cart.index') }}" class="text-sm font-bold text-yellow-700 underline mt-2 block">
-                            Lihat Keranjang Sembako
-                        </a>
-                    </div>
+        {{-- IMAGE --}}
+        <div class="bg-white rounded-2xl shadow p-4 flex items-center justify-center">
+            <img src="{{ $product->primaryImage
+                ? asset('storage/' . $product->primaryImage->image_path)
+                : asset('images/placeholder.png') }}"
+                class="h-64 md:h-96 object-contain"
+                alt="{{ $product->name }}">
+        </div>
+
+        {{-- INFO --}}
+        <div class="flex flex-col">
+
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2">
+                {{ $product->name }}
+            </h1>
+
+            <p class="text-2xl font-bold text-teal-600 mb-1">
+                Rp {{ number_format($product->price, 0, ',', '.') }}
+            </p>
+
+            <p class="text-sm text-gray-500 mb-4">
+                Stok tersedia:
+                <span class="font-semibold">{{ $product->stock }}</span>
+            </p>
+
+            {{-- DESKRIPSI --}}
+            <div class="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 mb-6">
+                <p class="font-semibold mb-2">📋 Deskripsi Produk</p>
+                <div class="whitespace-pre-line leading-relaxed">
+                    {{ $product->desc }}
                 </div>
             </div>
-        @endif
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {{-- IMAGE PRODUCT --}}
-            <div class="border rounded-lg p-2 bg-white">
-                <img src="{{ $product->primaryImage
-                    ? asset('storage/' . $product->primaryImage->image_path)
-                    : asset('images/placeholder.png') }}"
-                    class="mx-auto h-64 md:h-80 object-contain" alt="{{ $product->name }}">
-            </div>
+            {{-- FORM ADD TO CART --}}
+            <form method="POST" action="{{ route('cart.add') }}" class="mt-auto">
+                @csrf
 
-            {{-- INFO PRODUCT --}}
-            <div>
-                <h1 class="text-2xl font-bold mb-2">{{ $product->name }}</h1>
+                {{-- ID PRODUCT DIRADITYA --}}
+                <input type="hidden" name="id_product_diraditya" value="{{ $product->id }}">
 
-                <p class="text-2xl font-bold text-blue-700 mb-4">
-                    Rp {{ number_format($product->price, 0, ',', '.') }}
-                </p>
-
-                <p class="text-gray-600 mb-6">Stok: <b>{{ $product->stock }}</b></p>
-
-                <div class="prose max-w-none text-gray-700 mb-6">
-                    {!! nl2br(e($product->desc)) !!}
+                {{-- QTY --}}
+                <div class="flex items-center gap-3 mb-4">
+                    <label class="text-sm font-semibold">Jumlah</label>
+                    <input type="number"
+                        name="qty"
+                        value="1"
+                        min="1"
+                        max="{{ $product->stock }}"
+                        class="w-24 text-center border rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 {{-- ========================================== --}}
@@ -128,14 +156,15 @@
                             Stok Habis
                         </button>
                     @else
-                        {{-- STATE 3: AMAN (BISA BELI) --}}
-                        <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fa-solid fa-cart-plus mr-2"></i> Tambah ke Keranjang
-                        </button>
+                    <button type="submit"
+                        class="w-full bg-gradient-to-r from-teal-600 to-cyan-600
+                               text-white py-3 rounded-xl font-semibold
+                               hover:scale-[1.02] transition shadow-lg">
+                        <i class="fa-solid fa-cart-plus mr-2"></i>
+                        Tambah ke Keranjang
+                    </button>
                     @endif
-                </form>
-            </div>
+            </form>
         </div>
     </div>
 
