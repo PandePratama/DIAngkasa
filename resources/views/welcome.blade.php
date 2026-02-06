@@ -4,7 +4,7 @@
 <main class="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-50">
 
     {{-- ================= HERO SECTION ================= --}}
-    <section class="relative pt-14 md:pt-20 pb-24 overflow-hidden">
+    <section class="relative pt-10 md:pt-20 pb-16 md:pb-24 overflow-hidden">
 
         {{-- Background blur --}}
         <div class="absolute inset-0 pointer-events-none">
@@ -87,38 +87,39 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 max-w-7xl mx-auto">
             @forelse ($productsGadget ?? [] as $product)
             <a href="{{ route('gadget.show', $product->id) }}"
-                class="relative block bg-white/70 rounded-2xl shadow border border-white/60
-          p-4 text-center hover:scale-105 transition">
+                class="bg-white/70 rounded-xl shadow-sm border border-white/60
+          p-3 md:p-4 transition hover:scale-105 flex flex-col">
 
-                <img src="{{ $product->primaryImage 
-        ? asset('storage/' . $product->primaryImage->image_path) 
+                {{-- IMAGE --}}
+                <img src="{{ $product->primaryImage
+        ? asset('storage/' . $product->primaryImage->image_path)
         : asset('images/placeholder.png') }}"
-                    class="mx-auto h-28 my-4 object-contain">
+                    class="mx-auto h-20 md:h-28 object-contain mb-2">
 
-                <p class="font-semibold text-gray-800 line-clamp-2">
+                {{-- NAME --}}
+                <p class="text-sm md:text-base font-semibold text-gray-800 line-clamp-2 mb-1 min-h-[2.5rem]">
                     {{ $product->name }}
                 </p>
 
-                <p class="text-blue-600 font-bold mt-2">
+                {{-- PRICE --}}
+                <p class="text-cyan-600 font-bold text-sm md:text-base mb-2">
                     Rp {{ number_format($product->price, 0, ',', '.') }}
                 </p>
 
-                {{-- BUTTON CART --}}
-                <button
-                    onclick="event.preventDefault(); event.stopPropagation();"
-                    class="absolute bottom-3 right-3
-               w-10 h-10 rounded-full
-               bg-gradient-to-r from-blue-600 to-cyan-600
-               text-white
-               flex items-center justify-center
-               shadow-lg
-               hover:scale-110 hover:shadow-xl
-               transition"
-                    title="Tambah ke Keranjang">
-                    <i class="fa-solid fa-cart-plus text-sm"></i>
-                </button>
-
+                {{-- FOOTER ACTION --}}
+                <div class="mt-auto flex justify-end">
+                    <button
+                        onclick="event.preventDefault(); event.stopPropagation();"
+                        class="w-9 h-9 md:w-10 md:h-10 rounded-full
+                   bg-gradient-to-r from-blue-600 to-cyan-600
+                   text-white flex items-center justify-center
+                   shadow hover:scale-110 transition"
+                        title="Tambah ke Keranjang">
+                        <i class="fa-solid fa-cart-plus text-xs md:text-sm"></i>
+                    </button>
+                </div>
             </a>
+
             @empty
             <p class="col-span-full text-center text-gray-500">
                 Produk gadget belum tersedia
@@ -151,38 +152,36 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5 max-w-7xl mx-auto">
             @forelse ($productsMinimarket ?? [] as $product)
             <a href="{{ route('minimarket.show', $product->id) }}"
-                class="relative block bg-white/70 rounded-2xl shadow border border-white/60
-          p-4 text-center hover:scale-105 transition">
+                class="bg-white/70 rounded-xl shadow-sm border border-white/60
+          p-3 md:p-4 transition hover:scale-105 flex flex-col">
 
                 <img src="{{ $product->primaryImage 
         ? asset('storage/' . $product->primaryImage->image_path) 
         : asset('images/placeholder.png') }}"
-                    class="mx-auto h-28 my-4 object-contain">
+                    class="mx-auto h-20 md:h-28 object-contain mb-2">
 
-                <p class="font-semibold text-gray-800 line-clamp-2">
+                <p class="text-sm md:text-base font-semibold text-gray-800 line-clamp-2 mb-1 min-h-[2.5rem]">
                     {{ $product->name }}
                 </p>
 
-                <p class="text-cyan-600 font-bold mt-2">
+                <p class="text-cyan-600 font-bold text-sm md:text-base mb-2">
                     Rp {{ number_format($product->price, 0, ',', '.') }}
                 </p>
 
                 {{-- BUTTON CART --}}
-                <button
-                    onclick="event.preventDefault(); event.stopPropagation();"
-                    class="absolute bottom-3 right-3
-               w-10 h-10 rounded-full
-               bg-gradient-to-r from-blue-600 to-cyan-600
-               text-white
-               flex items-center justify-center
-               shadow-lg
-               hover:scale-110 hover:shadow-xl
-               transition"
-                    title="Tambah ke Keranjang">
-                    <i class="fa-solid fa-cart-plus text-sm"></i>
-                </button>
-
+                <div class="mt-auto flex justify-end">
+                    <button
+                        onclick="event.preventDefault(); event.stopPropagation();"
+                        class="w-9 h-9 md:w-10 md:h-10 rounded-full
+                   bg-gradient-to-r from-blue-600 to-cyan-600
+                   text-white flex items-center justify-center
+                   shadow hover:scale-110 transition"
+                        title="Tambah ke Keranjang">
+                        <i class="fa-solid fa-cart-plus text-xs md:text-sm"></i>
+                    </button>
+                </div>
             </a>
+
             @empty
             <p class="col-span-full text-center text-gray-500">
                 Produk minimarket belum tersedia

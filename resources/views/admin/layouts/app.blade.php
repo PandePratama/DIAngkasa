@@ -57,7 +57,7 @@
             <hr class="sidebar-divider">
 
             <div class="sidebar-heading">
-                Unit Bisnis
+                MANAJEMEN TOKO
             </div>
 
             <li class="nav-item {{ request()->routeIs('raditya.*') ? 'active' : '' }}">
@@ -97,7 +97,7 @@
             <hr class="sidebar-divider">
 
             <div class="sidebar-heading">
-                Manajemen Toko
+                Manajemen Users
             </div>
 
             <!-- Nav Item - Unit Kerja -->
@@ -112,6 +112,12 @@
                     <i class="fas fa-fw fa-users"></i>
                     <span>Users</span></a>
             </li>
+
+            <hr class="sidebar-divider">
+
+            <div class="sidebar-heading">
+                Manajemen Transaksi
+            </div>
 
             <li class="nav-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('transactions.index') }}">
@@ -136,9 +142,9 @@
             </li>
 
             {{-- <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('admin.orders.index') }}">
-                    <i class="fas fa-fw fa-shopping-cart"></i>
-                    <span>Order Masuk</span></a>
+            <a class="nav-link" href="{{ route('admin.orders.index') }}">
+                <i class="fas fa-fw fa-shopping-cart"></i>
+                <span>Order Masuk</span></a>
             </li> --}}
 
             <hr class="sidebar-divider d-none d-md-block">
@@ -248,33 +254,33 @@
 
     <script>
         // Cek apakah ada session 'success' dari Controller
-        @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                showConfirmButton: false,
-                timer: 2000 // Otomatis tutup setelah 2 detik
-            });
+        @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: "{{ session('success') }}",
+            showConfirmButton: false,
+            timer: 2000 // Otomatis tutup setelah 2 detik
+        });
         @endif
 
         // Cek apakah ada session 'error' atau 'failed' dari Controller
-        @if (session('error') || session('failed'))
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: "{{ session('error') ?? session('failed') }}",
-                confirmButtonText: 'OK'
-            });
+        @if(session('error') || session('failed'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: "{{ session('error') ?? session('failed') }}",
+            confirmButtonText: 'OK'
+        });
         @endif
 
         // (Opsional) Cek Error Validasi Form
-        @if ($errors->any())
-            Swal.fire({
-                icon: 'warning',
-                title: 'Perhatian!',
-                html: '<ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>',
-            });
+        @if($errors->any())
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian!',
+            html: '<ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>',
+        });
         @endif
     </script>
 
