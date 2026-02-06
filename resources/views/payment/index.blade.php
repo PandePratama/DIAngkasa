@@ -120,47 +120,70 @@
                             </label>
 
                             {{-- OPSI C: KREDIT (HANYA UNTUK RADITYA) --}}
+                            {{-- OPSI C: KREDIT (HANYA UNTUK RADITYA) --}}
+                            {{-- OPSI C: KREDIT (HANYA UNTUK RADITYA) --}}
                             @if ($cart->business_unit == 'raditya')
                                 <label
-                                    class="relative flex flex-col p-4 border rounded-xl cursor-pointer hover:border-teal-500 transition shadow-sm bg-gray-50 has-[:checked]:border-teal-50 has-[:checked]:bg-teal-50">
-                                    <div class="flex items-center w-full mb-2">
+                                    class="group relative flex flex-col p-6 border rounded-3xl cursor-pointer transition bg-white shadow-sm hover:shadow-md hover:border-teal-400 has-[:checked]:border-teal-600 has-[:checked]:shadow-lg">
+
+                                    {{-- HEADER RADIO --}}
+                                    <div class="flex items-center gap-4 mb-4">
                                         <input type="radio" name="payment_method" value="credit"
-                                            class="payment-radio h-4 w-4 text-teal-600 focus:ring-teal-500">
-                                        <div class="ml-3 block">
-                                            <span class="font-bold text-sm text-gray-800 block">Ajukan Kredit /
-                                                Cicilan</span>
-                                            <span class="text-xs text-gray-500">Tersedia Tenor 3, 6, 9, 12 Bulan</span>
+                                            class="payment-radio h-5 w-5 text-teal-600 focus:ring-teal-600">
+
+                                        <div>
+                                            <span class="font-semibold text-base text-gray-900 block">
+                                                Ajukan Kredit / Cicilan
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                Tenor 3, 6, 9, hingga 12 bulan
+                                            </span>
                                         </div>
                                     </div>
 
-                                    {{-- FORM INPUT KREDIT (Hidden by default) --}}
-                                    <div id="credit-options" class="hidden mt-3 pl-7 border-t pt-3 w-full animate-fade-in">
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {{-- FORM INPUT KREDIT --}}
+                                    <div id="credit-options"
+                                        class="hidden mt-5 pt-5 border-t border-gray-200 animate-fade-in">
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                                            {{-- Tenor --}}
                                             <div>
-                                                <label class="text-xs font-bold text-gray-600 mb-1 block">Pilih
-                                                    Tenor</label>
-                                                <select name="tenor"
-                                                    class="w-full text-sm border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 bg-white">
-                                                    <option value="3">3 Bulan</option>
-                                                    <option value="6">6 Bulan</option>
-                                                    <option value="9">9 Bulan</option>
-                                                    <option value="12">12 Bulan</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="text-xs font-bold text-gray-600 mb-1 block">Uang Muka
-                                                    (DP)</label>
-                                                <div class="relative">
-                                                    <span class="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
-                                                    {{-- Tambahkan min="0" dan ubah placeholder --}}
-                                                    <input type="number" name="dp_amount" placeholder="Isi 0 jika tanpa DP"
-                                                        min="0" value="0"
-                                                        class="w-full pl-8 text-sm border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                                                <label class="text-xs font-semibold text-gray-700 mb-2 block">
+                                                    Pilih Tenor
+                                                </label>
+
+                                                <div
+                                                    class="relative bg-gray-50 border border-gray-200 rounded-2xl shadow-inner transition focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-400">
+                                                    <select name="tenor"
+                                                        class="w-full text-sm bg-transparent px-4 py-3 rounded-2xl focus:outline-none">
+                                                        <option value="3">3 Bulan</option>
+                                                        <option value="6">6 Bulan</option>
+                                                        <option value="9">9 Bulan</option>
+                                                        <option value="12">12 Bulan</option>
+                                                    </select>
                                                 </div>
-                                                {{-- Ubah teks keterangan --}}
-                                                <small class="text-[10px] text-teal-600 mt-1 block">*Jika ada DP, saldo akan
-                                                    terpotong.</small>
                                             </div>
+
+                                            {{-- DP --}}
+                                            <div>
+                                                <label class="text-xs font-semibold text-gray-700 mb-2 block">
+                                                    Uang Muka (DP)
+                                                </label>
+
+                                                <div
+                                                    class="relative bg-gray-50 border border-gray-200 rounded-2xl shadow-inner transition focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-400">
+                                                    <span class="absolute left-4 top-3 text-gray-400 text-sm">Rp</span>
+                                                    <input type="text" id="dp_amount" name="dp_amount"
+                                                        placeholder="Isi 0 jika tanpa DP" min="0" value="0"
+                                                        class="w-full bg-transparent pl-9 pr-4 py-3 text-sm rounded-2xl focus:outline-none">
+                                                </div>
+
+                                                <small class="text-[11px] text-teal-600 mt-1 block">
+                                                    *Jika ada DP, saldo akan terpotong otomatis.
+                                                </small>
+                                            </div>
+
                                         </div>
                                     </div>
                                 </label>
@@ -227,7 +250,21 @@
         const radios = document.querySelectorAll('.payment-radio');
         const creditOptions = document.getElementById('credit-options');
         const dpInput = document.querySelector('input[name="dp_amount"]');
+        // const dpInput = document.getElementById("dp_amount");
 
+        dpInput.addEventListener("input", function() {
+            // Ambil angka saja
+            let raw = this.value.replace(/\D/g, "");
+
+            // Jika kosong → tampilkan kosong
+            if (!raw) {
+                this.value = "";
+                return;
+            }
+
+            // Format ke ribuan
+            this.value = new Intl.NumberFormat("id-ID").format(raw);
+        });
         radios.forEach(radio => {
             radio.addEventListener('change', function() {
                 if (this.value === 'credit') {
@@ -298,12 +335,18 @@
             // VALIDASI 2: CEK DP (Jika pilih Kredit)
             // ===============================================
             else if (method === 'credit') {
-                // Ambil value, jika kosong anggap 0
-                let dpVal = dpInput ? parseFloat(dpInput.value) : 0;
-                if (isNaN(dpVal)) dpVal = 0; // Jaga-jaga jika input bukan angka
 
-                // LOGIKA BARU: Hanya tolak jika negatif (< 0)
-                // 0 boleh lewat
+                // Ambil value mentah (misalnya "440.000")
+                let rawDP = dpInput ? dpInput.value : "0";
+
+                // Hapus titik ribuan → "440000"
+                rawDP = rawDP.replace(/\./g, "");
+
+                // Convert ke number
+                let dpVal = parseFloat(rawDP);
+                if (isNaN(dpVal)) dpVal = 0;
+
+                // ‼️ VALIDASI: DP tidak boleh negatif
                 if (dpVal < 0) {
                     Swal.fire({
                         icon: 'error',
@@ -315,7 +358,7 @@
                     return;
                 }
 
-                // Cek Saldo hanya jika DP > 0
+                // ‼️ CEK SALDO (jika DP > 0)
                 if (dpVal > 0 && userSaldo < dpVal) {
                     Swal.fire({
                         icon: 'error',
@@ -326,21 +369,20 @@
                     return;
                 }
 
-                // Atur Pesan Konfirmasi (Dinamis)
+                // 🔔 KONFIRMASI
                 title = 'Ajukan Kredit?';
 
                 if (dpVal > 0) {
-                    // Jika pakai DP
                     const fmtDP = new Intl.NumberFormat('id-ID').format(dpVal);
                     text = `DP sebesar <b>Rp ${fmtDP}</b> akan dipotong dari Saldo.<br>Sisa harga akan dicicil.`;
                 } else {
-                    // Jika DP 0
                     text = `<b>Tanpa Uang Muka (DP 0).</b><br>Full harga barang akan dicicil sesuai tenor.`;
                 }
 
                 btnText = 'Ya, Ajukan!';
                 iconType = 'info';
             }
+
 
             // ===============================================
             // METODE CASH
