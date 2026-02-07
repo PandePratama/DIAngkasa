@@ -12,12 +12,14 @@ class Transaction extends Model
 
     protected $fillable = [
         'id_user',
+        'purchase_type_id',
         'invoice_code',
         'grand_total',
-        'purchase_type_id',
+        'balance_after',
+        'payment_type',
         'tenure',
         'status',
-        'balance_after'
+
 
     ];
 
@@ -36,7 +38,6 @@ class Transaction extends Model
     }
     public function purchaseType()
     {
-        // Pastikan namespace PurchaseType benar
         return $this->belongsTo(PurchaseType::class, 'purchase_type_id');
     }
 
