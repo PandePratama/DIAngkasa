@@ -117,7 +117,7 @@
                         </form>
                     </div>
 
-                    {{-- ================= TAB CONTENT : CREDIT (BARU) ================= --}}
+                    {{-- ================= TAB CONTENT : CREDIT (REFINED) ================= --}}
                     <div id="tab-credit" class="tab-content hidden space-y-6">
                         @forelse ($credits as $credit)
                             @php
@@ -130,107 +130,210 @@
                                 // Hitung Sisa Tagihan
                                 $remainingMonths = $totalInstallments - $paidInstallments;
                                 $remainingAmount = $remainingMonths * $credit->monthly_amount;
+
+                                // =================================================================
+                                // REVISI LOGIC TOTAL BAYAR AWAL
+                                // =================================================================
+                                // Jika DP > 0  -> User bayar: DP + Admin
+                                // Jika DP == 0 -> User bayar: Cicilan Bulan 1 + Admin (Karena bulan 1 langsung lunas)
+
+                                if ($credit->dp_amount > 0) {
+                                    $totalInitialPay = $credit->dp_amount + $credit->admin_fee;
+                                } else {
+                                    $totalInitialPay = $credit->monthly_amount + $credit->admin_fee;
+                                }
                             @endphp
 
-                            <div class="border rounded-xl p-5 hover:shadow-md transition bg-white">
-                                {{-- Header Kartu --}}
-                                <div class="flex justify-between items-start mb-4">
-                                    <div class="flex gap-4">
-                                        <div
-                                            class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                                            <i class="fa-solid fa-mobile-screen text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-bold text-gray-800">
-                                                {{ $credit->product->name ?? 'Produk Dihapus' }}</h4>
-                                            <p class="text-xs text-gray-500">
-                                                Diajukan: {{ $credit->created_at->format('d M Y') }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        @if ($credit->status == 'paid_off' || $credit->status == 'paid')
-                                            <span
-                                                class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">LUNAS</span>
-                                        @else
-                                            <span
-                                                class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">BERJALAN</span>
-                                        @endif
-                                    </div>
+                            {{-- KARTU KREDIT (ALL-IN-ONE) --}}
+                            <div
+                                class="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-300 bg-white relative overflow-hidden">
+
+                                {{-- Dekorasi Latar Belakang (Opsional, agar manis) --}}
+                                <div
+                                    class="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-bl-full -mr-4 -mt-4 opacity-50 pointer-events-none">
                                 </div>
 
-                                {{-- Progress Bar --}}
-                                <div class="mb-4">
-                                    <div class="flex justify-between text-xs mb-1">
-                                        <span class="font-semibold text-gray-600">Progres Pembayaran</span>
-                                        <span class="font-bold text-teal-600">{{ round($progressPercent) }}%
-                                            ({{ $paidInstallments }}/{{ $totalInstallments }} Bulan)</span>
+                                {{-- 1. HEADER: Nama Barang & Status --}}
+                                <div
+                                    class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 relative z-10">
+                                    <div class="flex gap-4 items-center">
+                                        {{-- Icon Gadget --}}
+                                        <div
+                                            class="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 shrink-0">
+                                            <i class="fa-solid fa-mobile-screen text-2xl"></i>
+                                        </div>
+                                        {{-- Info Utama --}}
+                                        <div>
+                                            <h4 class="font-bold text-gray-800 text-lg leading-tight">
+                                                {{ $credit->product->name ?? 'Produk Dihapus' }}</h4>
+                                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-1.5">
+                                                <span class="flex items-center"><i
+                                                        class="fa-regular fa-calendar mr-1.5"></i>
+                                                    {{ $credit->created_at->format('d M Y') }}</span>
+                                                <span class="text-gray-300">|</span>
+                                                <span>Tenor <b>{{ $credit->tenor }} Bulan</b></span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div class="bg-teal-600 h-2.5 rounded-full transition-all duration-500"
+
+                                    {{-- Badge Status --}}
+                                    @if ($credit->status == 'paid_off' || $credit->status == 'paid')
+                                        <span
+                                            class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-bold border border-green-200 shadow-sm flex items-center gap-1">
+                                            <i class="fa-solid fa-circle-check"></i> LUNAS
+                                        </span>
+                                    @else
+                                        <span
+                                            class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-200 shadow-sm flex items-center gap-1">
+                                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div> BERJALAN
+                                        </span>
+                                    @endif
+                                </div>
+
+                                {{-- 2. PROGRESS BAR --}}
+                                <div class="mb-6 relative z-10">
+                                    <div class="flex justify-between text-xs mb-2 font-medium text-gray-600">
+                                        <span>Progres: <b class="text-gray-900">{{ $paidInstallments }}</b> dari
+                                            {{ $totalInstallments }} Bulan</span>
+                                        <span class="text-teal-600 font-bold">{{ round($progressPercent) }}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                                        <div class="bg-teal-500 h-2.5 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                                             style="width: {{ $progressPercent }}%"></div>
                                     </div>
                                 </div>
 
-                                {{-- Info Grid --}}
-                                <div class="grid grid-cols-2 gap-4 mb-4 text-sm bg-gray-50 p-3 rounded-lg">
-                                    <div>
-                                        <p class="text-xs text-gray-500">Cicilan per Bulan</p>
-                                        <p class="font-bold text-gray-700">Rp
+                                {{-- 3. GRID UTAMA (PORSI INFO) --}}
+                                <div
+                                    class="grid grid-cols-2 md:grid-cols-5 gap-y-6 gap-x-4 bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5 relative z-10">
+
+                                    {{-- Blok 1: Cicilan --}}
+                                    <div class="border-r border-gray-200 pr-2 border-r-none-mobile">
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Cicilan
+                                            / Bulan</p>
+                                        <p class="font-bold text-gray-800 text-base">Rp
                                             {{ number_format($credit->monthly_amount, 0, ',', '.') }}</p>
                                     </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Sisa Tagihan</p>
-                                        <p class="font-bold text-red-600">Rp
-                                            {{ number_format($remainingAmount, 0, ',', '.') }}</p>
+                                    {{-- Blok 2: Uang Muka --}}
+                                    <div
+                                        class="border-r border-gray-200 pr-2 border-r-none-mobile md:px-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200">
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Uang
+                                            Muka (DP)</p>
+                                        <p class="font-medium text-gray-600 text-sm">
+                                            @if ($credit->dp_amount > 0)
+                                                Rp {{ number_format($credit->dp_amount, 0, ',', '.') }}
+                                            @else
+                                                -
+                                            @endif
+                                        </p>
+                                    </div>
+
+                                    {{-- Blok 3: Admin Fee --}}
+                                    <div
+                                        class="md:border-r border-gray-200 pl-0 md:pl-2 md:pr-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200">
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Biaya
+                                            Admin</p>
+                                        <p class="font-medium text-gray-600 text-sm">Rp
+                                            {{ number_format($credit->admin_fee, 0, ',', '.') }}</p>
+                                    </div>
+
+                                    {{-- Blok 4: TOTAL BAYAR AWAL (BARU) --}}
+                                    {{-- Di mobile dia akan col-span-2 (melebar penuh) agar menonjol --}}
+                                    <div
+                                        class="col-span-2 md:col-span-1 pl-0 md:pl-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 bg-teal-50 md:bg-transparent -mx-5 md:mx-0 px-5 md:px-0 py-2 md:py-0 rounded-b-xl md:rounded-none mt-2 md:mt-0">
+                                        <p
+                                            class="text-[10px] uppercase tracking-wider text-teal-600 md:text-gray-500 font-bold mb-1">
+                                            <i class="fa-solid fa-wallet mr-1 md:hidden"></i> Total Bayar Awal
+                                        </p>
+                                        <p class="font-bold text-teal-700 text-base">
+                                            Rp {{ number_format($totalInitialPay, 0, ',', '.') }}
+                                        </p>
+                                    </div>
+                                    {{-- Blok 5: Sisa Tagihan --}}
+                                    <div class="md:border-r border-gray-200 px-0 md:px-2">
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Sisa
+                                            Tagihan</p>
+                                        @if ($remainingAmount > 0)
+                                            <p class="font-bold text-red-600 text-base">Rp
+                                                {{ number_format($remainingAmount, 0, ',', '.') }}</p>
+                                        @else
+                                            <p class="font-bold text-green-600 text-base">Rp 0</p>
+                                        @endif
                                     </div>
                                 </div>
-
-                                {{-- Accordion Detail Cicilan Bulanan --}}
-                                <details class="group">
+                                {{-- 4. ACCORDION DETAIL --}}
+                                <details class="group relative z-10">
                                     <summary
-                                        class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-teal-600 hover:text-teal-800">
-                                        <span>Lihat Rincian Pemotongan Bulanan</span>
-                                        <span class="transition group-open:rotate-180">
-                                            <svg fill="none" height="24" shape-rendering="geometricPrecision"
-                                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                                stroke-width="1.5" viewBox="0 0 24 24" width="24">
-                                                <path d="M6 9l6 6 6-6"></path>
-                                            </svg>
+                                        class="flex justify-between items-center font-semibold cursor-pointer list-none text-sm text-teal-600 hover:text-teal-800 transition py-2 select-none">
+                                        <span class="flex items-center gap-2">
+                                            <i class="fa-solid fa-list-check"></i> Lihat Jadwal & Status Pembayaran
+                                        </span>
+                                        <span class="transition transform group-open:rotate-180 duration-300">
+                                            <i class="fa-solid fa-chevron-down"></i>
                                         </span>
                                     </summary>
-                                    <div class="text-neutral-600 mt-3 group-open:animate-fadeIn">
-                                        <div class="overflow-x-auto">
+
+                                    <div class="mt-4 border-t border-gray-100 pt-4 animate-fadeIn">
+                                        <div class="overflow-hidden rounded-lg border border-gray-200">
                                             <table class="w-full text-xs text-left">
-                                                <thead class="bg-gray-100 text-gray-600 font-bold">
+                                                <thead class="bg-gray-50 text-gray-600 font-bold uppercase tracking-wide">
                                                     <tr>
-                                                        <th class="p-2 rounded-l-lg">Bulan Ke</th>
-                                                        <th class="p-2">Jatuh Tempo</th>
-                                                        <th class="p-2">Nominal</th>
-                                                        <th class="p-2 rounded-r-lg text-center">Status</th>
+                                                        <th class="p-3">Bulan</th>
+                                                        <th class="p-3">Jatuh Tempo</th>
+                                                        <th class="p-3">Nominal</th>
+                                                        <th class="p-3 text-center">Status</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody class="divide-y divide-gray-100">
+                                                <tbody class="divide-y divide-gray-100 bg-white">
                                                     @foreach ($credit->installments as $ins)
-                                                        <tr>
-                                                            <td class="p-2">Bulan {{ $ins->installment_month }}</td>
-                                                            <td class="p-2">
+                                                        @php
+                                                            // LOGIC VISUALISASI NOMINAL
+                                                            // Default: Ambil dari database (murni cicilan)
+                                                            $nominalShow = $ins->amount;
+
+                                                            // KECUALI: Jika DP 0 DAN ini adalah Cicilan Pertama
+                                                            // Maka tampilkan (Cicilan + Admin) agar user tidak bingung kemana larinya admin fee
+                                                            if (
+                                                                $credit->dp_amount == 0 &&
+                                                                $ins->installment_month == 1
+                                                            ) {
+                                                                $nominalShow += $credit->admin_fee;
+                                                            }
+                                                        @endphp
+
+                                                        <tr class="hover:bg-gray-50 transition">
+                                                            <td class="p-3 font-medium text-gray-700">
+                                                                Ke-{{ $ins->installment_month }}
+                                                            </td>
+                                                            <td class="p-3 text-gray-500">
                                                                 {{ \Carbon\Carbon::parse($ins->due_date)->format('d M Y') }}
                                                             </td>
-                                                            <td class="p-2">Rp
-                                                                {{ number_format($ins->amount, 0, ',', '.') }}</td>
-                                                            <td class="p-2 text-center">
-                                                                @if ($ins->status == 'paid')
+                                                            <td class="p-3 font-mono text-gray-600">
+                                                                Rp {{ number_format($nominalShow, 0, ',', '.') }}
+
+                                                                {{-- Opsional: Beri penanda kecil --}}
+                                                                @if ($credit->dp_amount == 0 && $ins->installment_month == 1)
                                                                     <span
-                                                                        class="text-green-600 font-bold flex items-center justify-center gap-1">
-                                                                        <i class="fa-solid fa-check-circle"></i> Lunas
-                                                                    </span>
-                                                                    @if ($ins->updated_at)
+                                                                        class="text-[9px] text-gray-400 block leading-tight">(Termasuk
+                                                                        Admin)</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="p-3 text-center">
+                                                                @if ($ins->status == 'paid')
+                                                                    <div class="inline-flex flex-col items-center">
                                                                         <span
-                                                                            class="text-[10px] text-gray-400 block">{{ $ins->updated_at->format('d/m/y') }}</span>
-                                                                    @endif
+                                                                            class="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                                                                            <i class="fa-solid fa-check text-[10px]"></i>
+                                                                            Lunas
+                                                                        </span>
+                                                                        @if ($ins->updated_at)
+                                                                            <span
+                                                                                class="text-[9px] text-gray-400 mt-0.5">{{ $ins->updated_at->format('d/m/y') }}</span>
+                                                                        @endif
+                                                                    </div>
                                                                 @else
-                                                                    <span class="text-gray-400 font-semibold">Belum</span>
+                                                                    <span
+                                                                        class="text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">Belum</span>
                                                                 @endif
                                                             </td>
                                                         </tr>
@@ -242,9 +345,15 @@
                                 </details>
                             </div>
                         @empty
-                            <div class="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl">
-                                <i class="fa-solid fa-file-invoice text-4xl mb-3 text-gray-300"></i>
-                                <p>Anda belum memiliki riwayat pengajuan kredit.</p>
+                            <div
+                                class="flex flex-col items-center justify-center py-16 px-4 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+                                <div
+                                    class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                                    <i class="fa-solid fa-file-invoice text-3xl text-gray-300"></i>
+                                </div>
+                                <h3 class="text-gray-900 font-bold text-lg">Belum Ada Cicilan</h3>
+                                <p class="text-gray-500 text-sm max-w-xs mt-1">Anda belum memiliki riwayat pengajuan kredit
+                                    gadget saat ini.</p>
                             </div>
                         @endforelse
                     </div>
@@ -307,21 +416,81 @@
                                 <tbody class="divide-y divide-gray-100">
                                     @forelse ($transactions as $trx)
                                         <tr class="hover:bg-gray-50 transition">
+                                            {{-- TANGGAL --}}
                                             <td class="p-3 whitespace-nowrap text-gray-600">
-                                                {{ $trx->created_at->format('d M Y H:i') }}</td>
+                                                {{ $trx->created_at->format('d M Y H:i') }}
+                                            </td>
+
+                                            {{-- INVOICE --}}
                                             <td class="p-3 font-mono text-xs text-teal-600">
-                                                {{ $trx->invoice_code ?? '#TRX-' . $trx->id }}</td>
-                                            <td class="p-3 font-bold text-gray-700">Rp
-                                                {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
+                                                {{ $trx->invoice_code ?? '#TRX-' . $trx->id }}
+                                            </td>
+
+                                            {{-- TOTAL --}}
+                                            <td class="p-3 font-bold text-gray-700">
+                                                Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
+                                            </td>
+
+                                            {{-- STATUS --}}
                                             <td class="p-3 text-center">
-                                                <span
-                                                    class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 ring-1 ring-green-200">Success</span>
+                                                @php
+                                                    // 1. Ambil Payment Method
+                                                    $methodRaw = $trx->payment_method;
+
+                                                    // 2. FALLBACK: Jika kosong (data lama), coba ambil dari relasi purchaseType
+                                                    if (empty($methodRaw) && $trx->purchaseType) {
+                                                        $methodRaw = $trx->purchaseType->code;
+                                                    }
+
+                                                    // 3. Normalisasi huruf kecil
+                                                    $method = strtolower($methodRaw ?? '');
+                                                    $payStatus = strtolower($trx->payment_status ?? 'unpaid');
+                                                @endphp
+
+                                                {{-- LOGIC TAMPILAN --}}
+
+                                                @if ($method == 'balance')
+                                                    {{-- POTONG SALDO --}}
+                                                    <span
+                                                        class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                                                        <i class="fa-solid fa-check-circle"></i> Lunas (Saldo)
+                                                    </span>
+                                                @elseif ($method == 'cash')
+                                                    {{-- CASH --}}
+                                                    @if ($payStatus == 'paid')
+                                                        <span
+                                                            class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 border border-green-200 inline-flex items-center gap-1">
+                                                            <i class="fa-solid fa-money-bill-wave"></i> Lunas (Cash)
+                                                        </span>
+                                                    @else
+                                                        <span
+                                                            class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-orange-100 text-orange-700 border border-orange-200 inline-flex items-center gap-1">
+                                                            <i class="fa-solid fa-cash-register"></i> Bayar di Kasir
+                                                        </span>
+                                                    @endif
+                                                @elseif ($method == 'credit')
+                                                    {{-- KREDIT --}}
+                                                    <span
+                                                        class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                                                        <i class="fa-solid fa-clock-rotate-left"></i> Cicilan
+                                                    </span>
+                                                @else
+                                                    {{-- LAINNYA / UNKNOWN --}}
+                                                    <span
+                                                        class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-100 text-gray-600 border border-gray-200">
+                                                        {{ $method ?: '-' }}
+                                                    </span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="p-8 text-center text-gray-400">Tidak ada riwayat
-                                                belanja.</td>
+                                            <td colspan="4" class="p-8 text-center text-gray-400">
+                                                <div class="flex flex-col items-center justify-center gap-2">
+                                                    <i class="fa-solid fa-basket-shopping text-2xl text-gray-300"></i>
+                                                    <span>Tidak ada riwayat belanja.</span>
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -404,6 +573,12 @@
     </script>
 
     <style>
+        @media (max-width: 768px) {
+            .border-r-none-mobile {
+                border-right: none;
+            }
+        }
+
         /* Animasi sederhana untuk Accordion */
         details>summary {
             list-style: none;

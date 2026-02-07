@@ -123,12 +123,26 @@
                             {{-- OPSI C: KREDIT (HANYA UNTUK RADITYA) --}}
                             {{-- OPSI C: KREDIT (HANYA UNTUK RADITYA) --}}
                             @if ($cart->business_unit == 'raditya')
+                                @php
+                                    // Ambil harga produk untuk acuan kalkulasi di JS
+                                    // Asumsi: Credit hanya 1 item, ambil item pertama
+                                    $creditItem = $cart->items->first();
+                                    $productPrice = $creditItem->productDiraditya->price ?? 0;
+                                    // HPP dibutuhkan untuk logic margin (UpPrice), jika tidak ada pakai price
+                                    $productHpp =
+                                        $creditItem->productDiraditya->hpp > 0
+                                            ? $creditItem->productDiraditya->hpp
+                                            : $productPrice;
+                                @endphp
+
                                 <label
                                     class="group relative flex flex-col p-6 border rounded-3xl cursor-pointer transition bg-white shadow-sm hover:shadow-md hover:border-teal-400 has-[:checked]:border-teal-600 has-[:checked]:shadow-lg">
 
                                     {{-- HEADER RADIO --}}
                                     <div class="flex items-center gap-4 mb-4">
+                                        {{-- PENTING: Saya tambahkan data-price dan data-hpp disini --}}
                                         <input type="radio" name="payment_method" value="credit"
+                                            data-price="{{ $productPrice }}" data-hpp="{{ $productHpp }}"
                                             class="payment-radio h-5 w-5 text-teal-600 focus:ring-teal-600">
 
                                         <div>
@@ -145,17 +159,15 @@
                                     <div id="credit-options"
                                         class="hidden mt-5 pt-5 border-t border-gray-200 animate-fade-in">
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                                             {{-- Tenor --}}
                                             <div>
                                                 <label class="text-xs font-semibold text-gray-700 mb-2 block">
                                                     Pilih Tenor
                                                 </label>
-
                                                 <div
                                                     class="relative bg-gray-50 border border-gray-200 rounded-2xl shadow-inner transition focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-400">
-                                                    <select name="tenor"
+                                                    <select name="tenor" id="input-tenor"
                                                         class="w-full text-sm bg-transparent px-4 py-3 rounded-2xl focus:outline-none">
                                                         <option value="3">3 Bulan</option>
                                                         <option value="6">6 Bulan</option>
@@ -170,21 +182,34 @@
                                                 <label class="text-xs font-semibold text-gray-700 mb-2 block">
                                                     Uang Muka (DP)
                                                 </label>
-
                                                 <div
                                                     class="relative bg-gray-50 border border-gray-200 rounded-2xl shadow-inner transition focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-400">
                                                     <span class="absolute left-4 top-3 text-gray-400 text-sm">Rp</span>
-                                                    <input type="text" id="dp_amount" name="dp_amount"
-                                                        placeholder="Isi 0 jika tanpa DP" min="0" value="0"
-                                                        class="w-full bg-transparent pl-9 pr-4 py-3 text-sm rounded-2xl focus:outline-none">
+                                                    <input type="text" id="dp_amount" name="dp_amount" placeholder="0"
+                                                        min="0" value="0"
+                                                        class="w-full bg-transparent pl-9 pr-4 py-3 text-sm rounded-2xl focus:outline-none font-semibold text-gray-800">
                                                 </div>
-
-                                                <small class="text-[11px] text-teal-600 mt-1 block">
-                                                    *Jika ada DP, saldo akan terpotong otomatis.
-                                                </small>
                                             </div>
-
                                         </div>
+
+                                        {{-- HASIL ESTIMASI (UI BARU) --}}
+                                        <div id="estimation-box"
+                                            class="bg-teal-50 border border-teal-200 rounded-xl p-4 flex justify-between items-center hidden">
+                                            <div>
+                                                <p
+                                                    class="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-1">
+                                                    Estimasi Cicilan
+                                                </p>
+                                                {{-- <p class="text-xs text-teal-700">
+                                                    Sudah termasuk bunga & margin
+                                                </p> --}}
+                                            </div>
+                                            <div class="text-right">
+                                                <p id="est-monthly" class="text-xl font-black text-teal-800">Rp 0</p>
+                                                <p class="text-[10px] text-teal-600 font-bold">/ bulan</p>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </label>
                             @endif
@@ -240,197 +265,273 @@
     {{-- SCRIPT AREA --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
-        // --- 1. AMBIL DATA DARI PHP KE JS (PENTING) ---
-        // Kita ambil data saldo dan total tagihan agar bisa dihitung di browser
-        const userSaldo = {{ auth()->user()->saldo ?? 0 }};
-        const grandTotal = {{ $total ?? 0 }}; // Total tagihan (termasuk admin fee)
+        document.addEventListener('DOMContentLoaded', function() {
 
-        // --- 2. LOGIC TAMPILAN KREDIT ---
-        const radios = document.querySelectorAll('.payment-radio');
-        const creditOptions = document.getElementById('credit-options');
-        const dpInput = document.querySelector('input[name="dp_amount"]');
-        // const dpInput = document.getElementById("dp_amount");
+            // --- 1. DATA & SELECTORS ---
+            const userSaldo = {{ auth()->user()->saldo ?? 0 }};
+            const grandTotal = {{ $total ?? 0 }};
 
-        dpInput.addEventListener("input", function() {
-            // Ambil angka saja
-            let raw = this.value.replace(/\D/g, "");
+            // Elements
+            const radios = document.querySelectorAll('.payment-radio');
+            const creditRadio = document.querySelector('input[value="credit"]');
+            const creditOptions = document.getElementById('credit-options');
 
-            // Jika kosong → tampilkan kosong
-            if (!raw) {
-                this.value = "";
-                return;
+            // Input Form Kredit
+            const dpInput = document.getElementById('dp_amount');
+            const inputTenor = document.getElementById('input-tenor');
+
+            // Box Estimasi
+            const estBox = document.getElementById('estimation-box');
+            const estText = document.getElementById('est-monthly');
+
+            // --- 2. FUNGSI KALKULATOR ESTIMASI (LOGIC DARI SERVICE PHP) ---
+            function calculateInstallment() {
+                // Cek apakah radio credit ada (berarti produk Raditya) & sedang dipilih
+                if (!creditRadio || !creditRadio.checked) return;
+
+                // Ambil Data Price & HPP dari atribut data- di radio button
+                let price = parseFloat(creditRadio.dataset.price);
+                let hpp = parseFloat(creditRadio.dataset.hpp);
+
+                // Ambil DP (Bersihkan titik ribuan)
+                let rawDp = dpInput.value.replace(/\./g, "") || "0";
+                let dp = parseFloat(rawDp);
+                let tenor = parseInt(inputTenor.value);
+
+                // Safety Logic: DP tidak boleh minus
+                if (dp < 0) dp = 0;
+                // DP tidak boleh melebihi harga barang (dikurangi 1000 perak)
+                if (dp >= price) dp = price - 1000;
+
+                // --- MULAI HITUNGAN ---
+
+                // A. Sisa Pokok
+                let sisaPokok = price - dp;
+
+                // B. Margin / Up Price (Sesuai Logic PHP)
+                let upPricePercent = 17.5;
+                if (hpp <= 3000000) {
+                    upPricePercent = 17.5;
+                } else if (hpp <= 8000000) {
+                    upPricePercent = 22.5;
+                } else {
+                    upPricePercent = 27.5;
+                }
+
+                // C. Harga Retail
+                let hargaRetail = sisaPokok * (1 + (upPricePercent / 100));
+
+                // D. Bunga / Interest (Sesuai Logic PHP)
+                let interestPercent = 0;
+                switch (tenor) {
+                    case 3:
+                        interestPercent = 9;
+                        break;
+                    case 6:
+                        interestPercent = 15;
+                        break;
+                    case 9:
+                        interestPercent = 23;
+                        break;
+                    case 12:
+                        interestPercent = 24;
+                        break;
+                }
+
+                // E. Total Pinjaman
+                let totalLoan = hargaRetail * (1 + (interestPercent / 100));
+
+                // F. Angsuran Bulanan (Bulatkan ke atas kelipatan 1000)
+                let rawMonthly = totalLoan / tenor;
+                let monthlyInstallment = Math.ceil(rawMonthly / 1000) * 1000;
+
+                // --- UPDATE TAMPILAN ---
+                if (estText) {
+                    estText.innerText = "Rp " + new Intl.NumberFormat('id-ID').format(monthlyInstallment);
+                }
             }
 
-            // Format ke ribuan
-            this.value = new Intl.NumberFormat("id-ID").format(raw);
-        });
-        radios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'credit') {
-                    if (creditOptions) {
-                        creditOptions.classList.remove('hidden');
-                        creditOptions.classList.add('animate-fade-in');
-                        if (dpInput) setTimeout(() => dpInput.focus(), 200);
+            // --- 3. EVENT LISTENERS ---
+
+            // A. Input DP (Format Rupiah + Trigger Hitung)
+            if (dpInput) {
+                dpInput.addEventListener("input", function(e) {
+                    let cursorPos = this.selectionStart;
+                    let raw = this.value.replace(/\D/g, ""); // Hapus non-angka
+
+                    if (!raw) {
+                        this.value = "";
+                        calculateInstallment(); // Recalculate saat kosong
+                        return;
                     }
-                } else {
-                    if (creditOptions) creditOptions.classList.add('hidden');
-                    if (dpInput) dpInput.value = '';
-                }
-            });
-        });
 
-        // --- 3. LOGIC KONFIRMASI PEMBAYARAN ---
-        function confirmPayment() {
-            const form = document.getElementById('payment-form');
-            const methodElement = document.querySelector('input[name="payment_method"]:checked');
+                    // Format Ribuan
+                    let formatted = new Intl.NumberFormat("id-ID").format(raw);
+                    this.value = formatted;
 
-            if (!methodElement) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Pilih Metode',
-                    text: 'Pilih metode pembayaran dulu.'
+                    // Kembalikan posisi cursor
+                    let diff = this.value.length - raw.length;
+                    this.selectionStart = this.selectionEnd = cursorPos +
+                        diff; // Logic cursor kasar tapi cukup
+
+                    // PANGGIL KALKULATOR
+                    calculateInstallment();
                 });
-                return;
             }
 
-            const method = methodElement.value;
-            let title = 'Konfirmasi Pembayaran';
-            let text = "";
-            let btnText = 'Ya, Bayar!';
-            let iconType = 'question';
-
-            // ===============================================
-            // VALIDASI 1: CEK SALDO (Jika pilih Potong Saldo)
-            // ===============================================
-            if (method === 'balance') {
-                // Cek apakah Saldo < Total Tagihan?
-                if (userSaldo < grandTotal) {
-                    // Hitung kurangnya berapa
-                    const kekurangan = grandTotal - userSaldo;
-                    const fmtKurang = new Intl.NumberFormat('id-ID').format(kekurangan);
-                    const fmtSaldo = new Intl.NumberFormat('id-ID').format(userSaldo);
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Saldo Tidak Cukup!',
-                        html: `
-                        Saldo Anda: <b>Rp ${fmtSaldo}</b><br>
-                        Total Tagihan: <b>Rp ${new Intl.NumberFormat('id-ID').format(grandTotal)}</b><br><br>
-                        <span class="text-red-600 font-bold">Kurang: Rp ${fmtKurang}</span>
-                    `,
-                        footer: '<a href="#" class="text-teal-600 font-bold">Isi Saldo (Top Up) Sekarang?</a>', // Ganti href dengan route topup jika ada
-                        confirmButtonText: 'Oke, Saya Paham',
-                        confirmButtonColor: '#d33'
-                    });
-                    return; // STOP! JANGAN SUBMIT FORM
-                }
-
-                title = 'Potong Saldo?';
-                text = "Saldo Anda akan dipotong otomatis sebesar total tagihan.";
-                btnText = 'Ya, Bayar!';
+            // B. Ubah Tenor (Trigger Hitung)
+            if (inputTenor) {
+                inputTenor.addEventListener('change', calculateInstallment);
             }
 
-            // ===============================================
-            // VALIDASI 2: CEK DP (Jika pilih Kredit)
-            // ===============================================
-            else if (method === 'credit') {
-
-                // Ambil value mentah (misalnya "440.000")
-                let rawDP = dpInput ? dpInput.value : "0";
-
-                // Hapus titik ribuan → "440000"
-                rawDP = rawDP.replace(/\./g, "");
-
-                // Convert ke number
-                let dpVal = parseFloat(rawDP);
-                if (isNaN(dpVal)) dpVal = 0;
-
-                // ‼️ VALIDASI: DP tidak boleh negatif
-                if (dpVal < 0) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'DP Tidak Valid',
-                        text: 'Nominal DP tidak boleh negatif.',
-                        confirmButtonColor: '#d33'
-                    });
-                    dpInput.classList.add('border-red-500', 'ring-red-500');
-                    return;
-                }
-
-                // ‼️ CEK SALDO (jika DP > 0)
-                if (dpVal > 0 && userSaldo < dpVal) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Saldo Kurang untuk DP',
-                        text: 'Saldo Anda tidak cukup untuk membayar Uang Muka ini.',
-                        confirmButtonColor: '#d33'
-                    });
-                    return;
-                }
-
-                // 🔔 KONFIRMASI
-                title = 'Ajukan Kredit?';
-
-                if (dpVal > 0) {
-                    const fmtDP = new Intl.NumberFormat('id-ID').format(dpVal);
-                    text = `DP sebesar <b>Rp ${fmtDP}</b> akan dipotong dari Saldo.<br>Sisa harga akan dicicil.`;
-                } else {
-                    text = `<b>Tanpa Uang Muka (DP 0).</b><br>Full harga barang akan dicicil sesuai tenor.`;
-                }
-
-                btnText = 'Ya, Ajukan!';
-                iconType = 'info';
-            }
-
-
-            // ===============================================
-            // METODE CASH
-            // ===============================================
-            else if (method === 'cash') {
-                title = 'Buat Pesanan Cash?';
-                text = "Silakan bayar tunai di kasir.";
-                btnText = 'Ya, Pesan!';
-            }
-
-            // --- EKSEKUSI FINAL ---
-            Swal.fire({
-                title: title,
-                html: text,
-                icon: iconType,
-                showCancelButton: true,
-                confirmButtonColor: '#0d9488',
-                cancelButtonColor: '#d33',
-                confirmButtonText: btnText,
-                cancelButtonText: 'Batal',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Tampilkan Loading
-                    Swal.fire({
-                        title: 'Memproses...',
-                        html: 'Mohon tunggu sebentar',
-                        allowOutsideClick: false,
-                        showConfirmButton: false,
-                        didOpen: () => {
-                            Swal.showLoading();
+            // C. Ganti Metode Pembayaran (Radio)
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'credit') {
+                        // Tampilkan Form Kredit
+                        if (creditOptions) {
+                            creditOptions.classList.remove('hidden');
+                            creditOptions.classList.add('animate-fade-in');
                         }
-                    });
-                    // Submit Form
-                    form.submit();
-                }
-            });
-        }
+                        // Tampilkan Box Estimasi
+                        if (estBox) estBox.classList.remove('hidden');
 
-        // --- PENANGKAP ERROR DARI CONTROLLER (BACKUP) ---
-        @if (session('error'))
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal',
-                text: "{!! session('error') !!}",
-                confirmButtonColor: '#d33'
+                        // Hitung Awal
+                        calculateInstallment();
+
+                        if (dpInput) setTimeout(() => dpInput.focus(), 200);
+
+                    } else {
+                        // Sembunyikan Form Kredit
+                        if (creditOptions) creditOptions.classList.add('hidden');
+                        // Sembunyikan Box Estimasi
+                        if (estBox) estBox.classList.add('hidden');
+
+                        // Reset DP
+                        if (dpInput) dpInput.value = '0';
+                    }
+                });
             });
-        @endif
+
+            // --- 4. LOGIC SUBMIT / KONFIRMASI (Global Function) ---
+            window.confirmPayment = function() {
+                const form = document.getElementById('payment-form');
+                const methodElement = document.querySelector('input[name="payment_method"]:checked');
+
+                if (!methodElement) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Pilih Metode',
+                        text: 'Pilih metode pembayaran dulu.'
+                    });
+                    return;
+                }
+
+                const method = methodElement.value;
+                let title = 'Konfirmasi Pembayaran';
+                let text = "";
+                let btnText = 'Ya, Bayar!';
+                let iconType = 'question';
+
+                // VALIDASI SALDO (UNTUK BAYAR FULL)
+                if (method === 'balance') {
+                    if (userSaldo < grandTotal) {
+                        const kekurangan = grandTotal - userSaldo;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Saldo Tidak Cukup!',
+                            html: `Saldo: <b>Rp ${new Intl.NumberFormat('id-ID').format(userSaldo)}</b><br>Tagihan: <b>Rp ${new Intl.NumberFormat('id-ID').format(grandTotal)}</b><br><span class="text-red-600 font-bold">Kurang: Rp ${new Intl.NumberFormat('id-ID').format(kekurangan)}</span>`,
+                            confirmButtonColor: '#d33'
+                        });
+                        return;
+                    }
+                    title = 'Potong Saldo?';
+                    text = "Saldo akan dipotong otomatis.";
+                }
+
+                // VALIDASI KREDIT
+                else if (method === 'credit') {
+                    let rawDP = dpInput ? dpInput.value.replace(/\./g, "") : "0";
+                    let dpVal = parseFloat(rawDP) || 0;
+
+                    // Cek Saldo untuk DP
+                    if (dpVal > 0 && userSaldo < dpVal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Saldo Kurang untuk DP',
+                            text: 'Saldo tidak cukup untuk membayar Uang Muka.'
+                        });
+                        return;
+                    }
+
+                    // Cek Saldo untuk Cicilan Pertama (Jika DP 0)
+                    // Logic ini agak tricky di JS karena harus hitung ulang, tapi backend akan validasi juga.
+                    // Untuk UX, kita beri peringatan umum saja.
+
+                    title = 'Ajukan Kredit?';
+                    if (dpVal > 0) {
+                        text =
+                            `DP <b>Rp ${new Intl.NumberFormat('id-ID').format(dpVal)}</b> dipotong dari Saldo.`;
+                    } else {
+                        text =
+                            `<b>Tanpa DP.</b><br>Pembayaran angsuran pertama + Admin akan dipotong saldo sekarang.`;
+                    }
+                    btnText = 'Ya, Ajukan!';
+                    iconType = 'info';
+                }
+
+                // CASH
+                else if (method === 'cash') {
+                    title = 'Pesanan Cash';
+                    text = "Bayar tunai di kasir.";
+                    btnText = 'Ya, Pesan!';
+                }
+
+                // EKSEKUSI
+                Swal.fire({
+                    title: title,
+                    html: text,
+                    icon: iconType,
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d9488',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: btnText,
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // BERSIHKAN FORMAT RUPIAH SEBELUM SUBMIT
+                        if (method === 'credit' && dpInput) {
+                            dpInput.value = dpInput.value.replace(/\./g, "");
+                        }
+
+                        Swal.fire({
+                            title: 'Memproses...',
+                            html: 'Mohon tunggu sebentar',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        form.submit();
+                    }
+                });
+            };
+
+            // --- 5. ERROR HANDLING ---
+            @if (session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: "{!! session('error') !!}",
+                    confirmButtonColor: '#d33'
+                });
+            @endif
+        });
     </script>
 
     <style>

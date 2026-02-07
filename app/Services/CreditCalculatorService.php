@@ -6,12 +6,11 @@ use App\Models\ProductRaditya;
 
 class CreditCalculatorService
 {
-    const ADMIN_FEE_FIRST_MONTH = 20000;
+    // const ADMIN_FEE_FIRST_MONTH = 20000; // <--- HAPUS INI (Agar tidak membingungkan)
 
     public function calculate(ProductRaditya $product, int $tenor, float $inputDp)
     {
         // 1. Tentukan HPP & Harga Jual
-        // Jika HPP 0, gunakan Harga Jual agar tidak error/margin 0
         $hpp = ($product->hpp > 0) ? $product->hpp : $product->price;
         $sellingPrice = $product->price;
 
@@ -22,11 +21,11 @@ class CreditCalculatorService
         $upPricePercent = $this->getUpPricePercent($hpp);
 
         // 4. Hitung Harga Retail (Sisa Pokok + Up Price)
-        // Rumus Tabel: 1.759.000 + 17.5% = 2.066.825
+        // Rumus: 1.759.000 + 17.5% = 2.066.825
         $hargaRetail = $sisaPokok * (1 + ($upPricePercent / 100));
 
         // 5. Hitung Total Pinjaman dengan Bunga
-        // Rumus Tabel: 2.066.825 + 9% (3 bulan) = 2.252.839,25
+        // Rumus: 2.066.825 + 9% (3 bulan) = 2.252.839,25
         $interestPercent = $this->getInterestRate($tenor);
         $totalLoan = $hargaRetail * (1 + ($interestPercent / 100));
 
@@ -46,22 +45,27 @@ class CreditCalculatorService
             'up_price_percent' => $upPricePercent,
             'retail_price' => $hargaRetail,
             'interest_percent' => $interestPercent,
-            'monthly_installment' => $monthlyInstallment,
+            'monthly_installment' => $monthlyInstallment, // Murni (751.000)
         ];
     }
 
+    /**
+     * GENERATE JADWAL (REVISI: MURNI CICILAN, TANPA ADMIN FEE)
+     */
     public function generateSchedule(array $calc)
     {
         $schedules = [];
         $monthly = $calc['monthly_installment'];
 
         for ($i = 1; $i <= $calc['tenor']; $i++) {
-            // Tambah Admin Fee 20rb hanya di bulan pertama
-            $amount = ($i === 1) ? ($monthly + self::ADMIN_FEE_FIRST_MONTH) : $monthly;
+
+            // PERBAIKAN DI SINI:
+            // Jangan menambahkan admin fee ke dalam cicilan bulanan.
+            // Admin Fee sudah ditangani terpisah di PaymentController (masuk ke Saldo Awal / DP).
 
             $schedules[] = [
                 'month_sequence' => $i,
-                'amount' => $amount,
+                'amount' => $monthly, // <--- TETAP FLAT (Contoh: 751.000)
             ];
         }
         return $schedules;

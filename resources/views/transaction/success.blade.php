@@ -66,14 +66,9 @@
             {{-- TOMBOL NAVIGASI --}}
             <div class="space-y-3">
                 @if (isset($type) && $type == 'credit')
-                    {{-- Jika Kredit, arahkan ke detail kredit --}}
-<<<<<<< HEAD
                     <a href="{{ route('profile.index', ['tab' => 'credit']) }}#credit-{{ $transaction->id }}"
                         class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-center">
-=======
-                    <a href="{{ route('profile.index', $transaction->id) }}"
-                        class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">
->>>>>>> 0dd38da2352b7b11bcfd1d82f41049eec3377401
+
                         Lihat Jadwal Cicilan
                     </a>
                 @else

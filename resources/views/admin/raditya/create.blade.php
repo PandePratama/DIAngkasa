@@ -146,7 +146,7 @@
                     <div class="form-group">
                         <label>Gambar Produk (Bisa lebih dari satu)</label>
                         <input type="file" name="images[]"
-                            class="form-control-file @error('images') is-invalid @enderror" multiple required>
+                            class="form-control-file @error('images') is-invalid @enderror">
                         <small class="text-muted">Format: jpg, jpeg, png, webp. Max: 2MB</small>
                     </div>
 

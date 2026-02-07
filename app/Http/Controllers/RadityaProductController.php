@@ -56,7 +56,7 @@ class RadityaProductController extends Controller
 
             'price'         => 'required|numeric|min:0',
             'warranty_info' => 'nullable|string', // Input dari form
-            'images'        => 'required|array|min:1',
+            // 'images'        => 'required|array|min:1',
             'images.*'      => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -80,14 +80,16 @@ class RadityaProductController extends Controller
                 'warranty'    => $validated['warranty_info'] ?? null,
             ]);
 
-            // 3. Simpan Gambar
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('products/raditya', 'public');
+            if ($request->hasFile('images')) {
+                // 3. Simpan Gambar
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('products/raditya', 'public');
 
-                ProductImage::create([
-                    'id_product_diraditya' => $product->id,
-                    'image_path'           => $path,
-                ]);
+                    ProductImage::create([
+                        'id_product_diraditya' => $product->id,
+                        'image_path'           => $path,
+                    ]);
+                }
             }
         });
 

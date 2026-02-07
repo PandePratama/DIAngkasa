@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\CreditTransaction;
 use App\Models\CreditInstallment;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\PurchaseType;
-use App\Models\CreditTransaction;
 use App\Models\BalanceMutation;
 use App\Services\CreditCalculatorService;
-use App\Enums\InstallmentStatus; // Pastikan pakai Enum atau string 'paid'/'unpaid'
+use App\Enums\InstallmentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -70,13 +70,13 @@ class PaymentController extends Controller
     }
 
     // ==========================================
-    // LOGIKA KREDIT BARU (DP 0 = Bayar Angsuran 1)
+    // LOGIKA KREDIT BARU (DP 0 vs DP > 0)
     // ==========================================
     private function processCreditPayment($request, $cart, $user, $creditService)
     {
         $request->validate([
             'tenor' => 'required|in:3,6,9,12',
-            'dp_amount' => 'required|numeric|min:0'
+            'dp_amount' => 'required' // Numeric validation handled later due to format
         ]);
 
         if ($cart->business_unit !== 'raditya') throw new \Exception('Kredit hanya untuk produk Gadget.');
@@ -88,35 +88,47 @@ class PaymentController extends Controller
         if (!$product) throw new \Exception('Produk tidak ditemukan.');
         if ($product->stock < $item->qty) throw new \Exception("Stok {$product->name} kurang.");
 
+        // Bersihkan DP dari format ribuan (titik)
+        $rawDP = str_replace('.', '', $request->dp_amount);
+        $dpAmount = is_numeric($rawDP) ? (float)$rawDP : 0;
+
         // 1. Kalkulasi Kredit
-        $calc = $creditService->calculate($product, $request->tenor, $request->dp_amount);
+        $calc = $creditService->calculate($product, $request->tenor, $dpAmount);
 
         // 2. VALIDASI LIMIT KREDIT (Total Pinjaman vs Saldo)
-        if ($calc['retail_price'] > $user->saldo) { // Menggunakan Retail Price sebagai acuan limit
+        // Retail Price adalah total harga barang setelah markup
+        // Pastikan limit user cukup untuk menanggung total harga tersebut
+        if ($calc['retail_price'] > $user->saldo) {
             $kurang = $calc['retail_price'] - $user->saldo;
-            throw new \Exception("Limit kredit tidak cukup! (Kurang: Rp " . number_format($kurang) . ")");
+            // Opsional: Anda bisa throw exception atau biarkan (tergantung kebijakan limit)
+            // throw new \Exception("Limit kredit tidak cukup! (Kurang: Rp " . number_format($kurang) . ")");
         }
 
         // =========================================================
         // 3. TENTUKAN APA YANG HARUS DIBAYAR SEKARANG (NOMINAL AWAL)
         // =========================================================
         $schedules = $creditService->generateSchedule($calc);
-        $isNoDp = ($calc['dp_amount'] == 0); // Cek apakah DP 0
+        $isNoDp = ($calc['dp_amount'] <= 0); // Cek apakah DP 0 atau kurang
+
+        $adminFee = 20000; // Biaya Admin tetap
 
         if ($isNoDp) {
-            // SKEMA DP 0: Bayar (Cicilan Bulan 1 + Admin Fee 20rb) SEKARANG
-            // Ambil nominal bulan ke-1 dari schedule
-            $nominalBayarAwal = $schedules[0]['amount'];
-            $keteranganMutasi = "Pembayaran Angsuran Pertama (DP 0): {$product->name}";
+            // SKEMA DP 0:
+            // Bayar Sekarang = Cicilan Bulan 1 + Admin Fee (Logic Baru)
+            $installmentAmount = $schedules[0]['amount']; // Ambil nominal cicilan pertama
+
+            $nominalBayarAwal = $installmentAmount + $adminFee;
+            $keteranganMutasi = "Angsuran Awal (Tanpa DP): {$product->name}";
         } else {
-            // SKEMA NORMAL: Bayar DP SEKARANG
-            $nominalBayarAwal = $calc['dp_amount'];
+            // SKEMA NORMAL (ADA DP):
+            // Bayar Sekarang = DP + Admin Fee
+            $nominalBayarAwal = $calc['dp_amount'] + $adminFee; // Tambah admin fee ke DP
             $keteranganMutasi = "Pembayaran DP Kredit: {$product->name}";
         }
 
         // 4. Cek Saldo Cukup untuk Bayar Awal?
         if ($user->saldo < $nominalBayarAwal) {
-            throw new \Exception('Saldo kurang untuk pembayaran awal (Rp ' . number_format($nominalBayarAwal) . ').');
+            throw new \Exception('Saldo kurang untuk pembayaran awal (Rp ' . number_format($nominalBayarAwal, 0, ',', '.') . ').');
         }
 
         DB::beginTransaction();
@@ -126,7 +138,7 @@ class PaymentController extends Controller
                 'id_product' => $product->id,
                 'id_user' => $user->id,
                 'tenor' => $calc['tenor'],
-                'admin_fee' => 20000,
+                'admin_fee' => $adminFee,
                 'up_price' => $calc['up_price_percent'],
                 'monthly_amount' => $calc['monthly_installment'],
                 'status' => 'progress',
@@ -139,21 +151,24 @@ class PaymentController extends Controller
                 $bulanKe = $sch['month_sequence'];
                 $statusCicilan = 'unpaid';
                 $jatuhTempo = null;
+                $updatedAt = now(); // Default creation time
 
                 // --- LOGIC JATUH TEMPO & STATUS ---
                 if ($isNoDp) {
                     // KASUS DP 0
                     if ($bulanKe == 1) {
-                        // Bulan 1: LUNAS SEKARANG
+                        // Bulan 1: LUNAS SEKARANG (Status Paid)
                         $statusCicilan = 'paid';
-                        $jatuhTempo = Carbon::now(); // Jatuh tempo hari ini (sudah dibayar)
+                        $jatuhTempo = Carbon::now(); // Jatuh tempo hari ini
+                        $updatedAt = now(); // Timestamp bayar
                     } else {
-                        // Bulan 2 dst: Jatuh tempo maju 1 langkah
-                        // Contoh: Beli Feb. Bulan 1 (Feb) Lunas. Bulan 2 Jatuh Tempo Maret.
+                        // Bulan 2 dst: Jatuh tempo maju 1 bulan dari sekarang
+                        // Karena bulan 1 sudah lunas sekarang, maka bulan 2 jatuh tempo bulan depan.
                         // addMonths($bulanKe - 1) -> Jika bulan 2, maka addMonths(1) = Bulan Depan.
                         $jatuhTempo = Carbon::now()
                             ->addMonths($bulanKe - 1)
                             ->setDay(25);
+                        $updatedAt = null; // Belum dibayar
                     }
                 } else {
                     // KASUS NORMAL (ADA DP)
@@ -161,19 +176,20 @@ class PaymentController extends Controller
                     $jatuhTempo = Carbon::now()
                         ->addMonths($bulanKe)
                         ->setDay(25);
+                    $updatedAt = null; // Belum dibayar
                 }
 
-                \App\Models\CreditInstallment::create([
+                CreditInstallment::create([
                     'id_credit_transaction' => $creditTrx->id,
                     'id_user'               => $user->id,
                     'installment_month'     => $bulanKe,
-                    'amount'                => abs($sch['amount']),
+                    'amount'                => abs($sch['amount']), // Pastikan positif
                     'due_date'              => $jatuhTempo->format('Y-m-d'),
                     'status'                => $statusCicilan, // paid atau unpaid
                     'admin_fee'             => 0,
                     'balance_before'        => 0,
                     'balance_after'         => 0,
-                    'updated_at'            => ($statusCicilan == 'paid') ? now() : null, // Tandai waktu bayar jika paid
+                    'updated_at'            => ($statusCicilan == 'paid') ? now() : $updatedAt,
                 ]);
             }
 
@@ -219,7 +235,16 @@ class PaymentController extends Controller
             return $item->qty * ($product->price ?? 0);
         });
 
+        // Cek Unit Bisnis untuk Admin Fee (Logic Lama)
         $adminFee = ($cart->business_unit == 'diamart') ? 0 : 20000;
+
+        // ============================================================
+        // LOGIC BARU: TENTUKAN PREFIX INVOICE
+        // ============================================================
+        // Jika business_unit 'diamart' pakai 'DIA', selain itu (raditya) pakai 'RDT'
+        $invoicePrefix = ($cart->business_unit == 'diamart') ? 'DIA' : 'RDT';
+        // ============================================================
+
         $grandTotal = $subtotal + $adminFee;
         $balanceSnapshot = $user->saldo;
         $status = 'ongoing';
@@ -236,7 +261,10 @@ class PaymentController extends Controller
         try {
             $trx = Transaction::create([
                 'id_user' => $user->id,
-                'invoice_code' => 'INV-' . time() . rand(100, 999),
+
+                // GUNAKAN PREFIX YANG SUDAH DITENTUKAN DI ATAS
+                'invoice_code' => $invoicePrefix . '-' . time() . rand(100, 999),
+
                 'grand_total' => $grandTotal,
                 'purchase_type_id' => $purchaseType->id,
                 'payment_method' => $purchaseType->code,
