@@ -7,11 +7,9 @@
         {{-- ================= LEFT : PROFILE CARD ================= --}}
         <div class="space-y-6">
             <div class="bg-white rounded-xl shadow p-6 text-center">
-                {{-- QR CODE CONTAINER --}}
+                {{-- QR CODE --}}
                 <div class="flex justify-center mb-4">
-                    <div id="qrcode" class="p-2 border rounded-lg bg-white">
-                        {{-- QR Code akan muncul di sini --}}
-                    </div>
+                    <div id="qrcode" class="p-2 border rounded-lg bg-white"></div>
                 </div>
 
                 <button onclick="downloadQR()"
@@ -39,13 +37,20 @@
             <div class="bg-white rounded-xl shadow p-6">
 
                 {{-- TAB NAVIGATION --}}
-                <div class="border-b mb-6 flex gap-6">
-                    <button class="tab-btn font-semibold text-teal-600 border-b-2 border-teal-600 pb-2 transition"
+                <div class="border-b mb-6 flex gap-6 overflow-x-auto">
+                    <button
+                        class="tab-btn font-semibold text-teal-600 border-b-2 border-teal-600 pb-2 transition whitespace-nowrap"
                         data-tab="profile">
                         Profile & Password
                     </button>
-                    <button class="tab-btn text-gray-500 pb-2 hover:text-teal-500 transition" data-tab="history">
-                        History Transaksi
+                    {{-- TAB BARU: KREDIT --}}
+                    <button class="tab-btn text-gray-500 pb-2 hover:text-teal-500 transition whitespace-nowrap"
+                        data-tab="credit">
+                        Riwayat Kredit & Cicilan
+                    </button>
+                    <button class="tab-btn text-gray-500 pb-2 hover:text-teal-500 transition whitespace-nowrap"
+                        data-tab="history">
+                        History Belanja
                     </button>
                 </div>
 
@@ -60,64 +65,87 @@
 
                 {{-- ================= TAB CONTENT : PROFILE ================= --}}
                 <div id="tab-profile" class="tab-content space-y-8">
-                    {{-- UPDATE PROFILE --}}
+
+                    {{-- SUCCESS MESSAGE --}}
+                    @if (session('success'))
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                        {{ session('success') }}
+                    </div>
+                    @endif
+
+                    {{-- ERROR MESSAGE --}}
+                    @if ($errors->any())
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        <ul class="list-disc list-inside text-sm">
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
+                    {{-- Form Update Profile & Password (Kode sama seperti sebelumnya) --}}
                     <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
                         @csrf
                         @method('PUT')
 
                         <div>
                             <label class="text-sm font-medium">Nama Lengkap</label>
-                            <input type="text" name="name" value="{{ old('name', $user->name) }}"
-                                class="w-full border rounded px-3 py-2">
+                            <input type="text" name="name"
+                                value="{{ old('name', $user->name) }}"
+                                class="w-full border rounded px-3 py-2 @error('name') border-red-500 @enderror">
                             @error('name')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Email</label>
-                            <input type="email" name="email" value="{{ old('email', $user->email) }}"
-                                class="w-full border rounded px-3 py-2">
+                            <input type="email" name="email"
+                                value="{{ old('email', $user->email) }}"
+                                class="w-full border rounded px-3 py-2 @error('email') border-red-500 @enderror">
                             @error('email')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">No. Telepon</label>
-                            <input type="text" name="no_telp" value="{{ old('no_telp', $user->no_telp) }}"
-                                class="w-full border rounded px-3 py-2">
+                            <input type="text" name="no_telp"
+                                value="{{ old('no_telp', $user->no_telp) }}"
+                                class="w-full border rounded px-3 py-2 @error('no_telp') border-red-500 @enderror">
                             @error('no_telp')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">NIK</label>
-                            <input type="text" name="nik" value="{{ old('nik', $user->nik) }}"
-                                class="w-full border rounded px-3 py-2">
+                            <input type="text" name="nik"
+                                value="{{ old('nik', $user->nik) }}"
+                                class="w-full border rounded px-3 py-2 @error('nik') border-red-500 @enderror">
                             @error('nik')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
                             <label class="text-sm font-medium">Alamat</label>
-                            <input type="text" name="address" value="{{ old('address', $user->address) }}"
-                                class="w-full border rounded px-3 py-2">
+                            <textarea name="address" rows="3"
+                                class="w-full border rounded px-3 py-2 @error('address') border-red-500 @enderror">{{ old('address', $user->address) }}</textarea>
                             @error('address')
-                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <button type="submit"
-                            class="bg-teal-600 text-white px-6 py-2 rounded">
+                            class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded">
                             Simpan Perubahan
                         </button>
                     </form>
+
                     <hr>
 
-                    {{-- UPDATE PASSWORD --}}
                     <form action="{{ route('profile.password') }}" method="POST" class="space-y-4">
                         @csrf
                         @method('PUT')
@@ -126,20 +154,12 @@
                             <div>
                                 <label class="text-sm font-medium text-gray-700">Password Lama</label>
                                 <input type="password" name="current_password"
-                                    class="w-full border rounded-lg px-3 py-2 text-sm @error('current_password') border-red-500 @enderror"
-                                    required>
-                                @error('current_password')
-                                <p class="text-red-600 text-[10px] mt-1">{{ $message }}</p>
-                                @enderror
+                                    class="w-full border rounded-lg px-3 py-2 text-sm" required>
                             </div>
                             <div>
                                 <label class="text-sm font-medium text-gray-700">Password Baru</label>
                                 <input type="password" name="password"
-                                    class="w-full border rounded-lg px-3 py-2 text-sm @error('password') border-red-500 @enderror"
-                                    required>
-                                @error('password')
-                                <p class="text-red-600 text-[10px] mt-1">{{ $message }}</p>
-                                @enderror
+                                    class="w-full border rounded-lg px-3 py-2 text-sm" required>
                             </div>
                             <div>
                                 <label class="text-sm font-medium text-gray-700">Konfirmasi Password</label>
@@ -148,245 +168,328 @@
                             </div>
                         </div>
                         <button type="submit"
-                            class="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg text-sm transition">
-                            Update Password
-                        </button>
+                            class="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg text-sm transition">Update
+                            Password</button>
                     </form>
                 </div>
 
-                {{-- ================= TAB CONTENT : HISTORY ================= --}}
+                {{-- ================= TAB CONTENT : CREDIT (BARU) ================= --}}
+                <div id="tab-credit" class="tab-content hidden space-y-6">
+                    @forelse ($credits as $credit)
+                    @php
+                    // Hitung Progress
+                    $totalInstallments = $credit->tenor;
+                    $paidInstallments = $credit->installments->where('status', 'paid')->count();
+                    $progressPercent =
+                    $totalInstallments > 0 ? ($paidInstallments / $totalInstallments) * 100 : 0;
+
+                    // Hitung Sisa Tagihan
+                    $remainingMonths = $totalInstallments - $paidInstallments;
+                    $remainingAmount = $remainingMonths * $credit->monthly_amount;
+                    @endphp
+
+                    <div class="border rounded-xl p-5 hover:shadow-md transition bg-white">
+                        {{-- Header Kartu --}}
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex gap-4">
+                                <div
+                                    class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                                    <i class="fa-solid fa-mobile-screen text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">
+                                        {{ $credit->product->name ?? 'Produk Dihapus' }}
+                                    </h4>
+                                    <p class="text-xs text-gray-500">
+                                        Diajukan: {{ $credit->created_at->format('d M Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                @if ($credit->status == 'paid_off' || $credit->status == 'paid')
+                                <span
+                                    class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">LUNAS</span>
+                                @else
+                                <span
+                                    class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">BERJALAN</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Progress Bar --}}
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold text-gray-600">Progres Pembayaran</span>
+                                <span class="font-bold text-teal-600">{{ round($progressPercent) }}%
+                                    ({{ $paidInstallments }}/{{ $totalInstallments }} Bulan)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-teal-600 h-2.5 rounded-full transition-all duration-500"
+                                    style="width: {{ $progressPercent }}%"></div>
+                            </div>
+                        </div>
+
+                        {{-- Info Grid --}}
+                        <div class="grid grid-cols-2 gap-4 mb-4 text-sm bg-gray-50 p-3 rounded-lg">
+                            <div>
+                                <p class="text-xs text-gray-500">Cicilan per Bulan</p>
+                                <p class="font-bold text-gray-700">Rp
+                                    {{ number_format($credit->monthly_amount, 0, ',', '.') }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Sisa Tagihan</p>
+                                <p class="font-bold text-red-600">Rp
+                                    {{ number_format($remainingAmount, 0, ',', '.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Accordion Detail Cicilan Bulanan --}}
+                        <details class="group">
+                            <summary
+                                class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-teal-600 hover:text-teal-800">
+                                <span>Lihat Rincian Pemotongan Bulanan</span>
+                                <span class="transition group-open:rotate-180">
+                                    <svg fill="none" height="24" shape-rendering="geometricPrecision"
+                                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="1.5" viewBox="0 0 24 24" width="24">
+                                        <path d="M6 9l6 6 6-6"></path>
+                                    </svg>
+                                </span>
+                            </summary>
+                            <div class="text-neutral-600 mt-3 group-open:animate-fadeIn">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-xs text-left">
+                                        <thead class="bg-gray-100 text-gray-600 font-bold">
+                                            <tr>
+                                                <th class="p-2 rounded-l-lg">Bulan Ke</th>
+                                                <th class="p-2">Jatuh Tempo</th>
+                                                <th class="p-2">Nominal</th>
+                                                <th class="p-2 rounded-r-lg text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            @foreach ($credit->installments as $ins)
+                                            <tr>
+                                                <td class="p-2">Bulan {{ $ins->installment_month }}</td>
+                                                <td class="p-2">
+                                                    {{ \Carbon\Carbon::parse($ins->due_date)->format('d M Y') }}
+                                                </td>
+                                                <td class="p-2">Rp
+                                                    {{ number_format($ins->amount, 0, ',', '.') }}
+                                                </td>
+                                                <td class="p-2 text-center">
+                                                    @if ($ins->status == 'paid')
+                                                    <span
+                                                        class="text-green-600 font-bold flex items-center justify-center gap-1">
+                                                        <i class="fa-solid fa-check-circle"></i> Lunas
+                                                    </span>
+                                                    @if ($ins->updated_at)
+                                                    <span
+                                                        class="text-[10px] text-gray-400 block">{{ $ins->updated_at->format('d/m/y') }}</span>
+                                                    @endif
+                                                    @else
+                                                    <span class="text-gray-400 font-semibold">Belum</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                    @empty
+                    <div class="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl">
+                        <i class="fa-solid fa-file-invoice text-4xl mb-3 text-gray-300"></i>
+                        <p>Anda belum memiliki riwayat pengajuan kredit.</p>
+                    </div>
+                    @endforelse
+                </div>
+
+                {{-- ================= TAB CONTENT : HISTORY BELANJA ================= --}}
                 <div id="tab-history" class="tab-content hidden">
-
-                    {{-- 1. FORM FILTER (Versi Tailwind) --}}
+                    {{-- Form Filter & Table History Belanja (Biarkan kode lama Anda disini) --}}
                     <form method="GET" action="{{ route('profile.index') }}" class="mb-6">
-                        {{-- PENTING: Input hidden ini agar saat filter disubmit, tab history otomatis aktif --}}
                         <input type="hidden" name="tab" value="history">
-
+                        {{-- ... isi form filter ... --}}
+                        {{-- COPY PASTE FORM FILTER DARI KODE SEBELUMNYA --}}
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                            {{-- Input Dari Tanggal --}}
                             <div class="md:col-span-4">
                                 <label class="block text-xs font-bold text-gray-500 mb-1">Dari Tanggal</label>
                                 <input type="date" name="from" value="{{ request('from') }}"
                                     class="w-full border-gray-300 rounded-lg shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
                             </div>
-
-                            {{-- Input Sampai Tanggal --}}
                             <div class="md:col-span-4">
                                 <label class="block text-xs font-bold text-gray-500 mb-1">Sampai Tanggal</label>
                                 <input type="date" name="to" value="{{ request('to') }}"
                                     class="w-full border-gray-300 rounded-lg shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
                             </div>
-
-                            {{-- Tombol Filter --}}
                             <div class="md:col-span-2">
                                 <button type="submit"
-                                    class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition shadow">
-                                    Filter
-                                </button>
+                                    class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition shadow">Filter</button>
                             </div>
-
-                            {{-- Tombol Reset --}}
                             <div class="md:col-span-2">
                                 <a href="{{ route('profile.index', ['tab' => 'history']) }}"
-                                    class="block text-center w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition">
-                                    Reset
-                                </a>
+                                    class="block text-center w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition">Reset</a>
                             </div>
                         </div>
                     </form>
 
-                    {{-- 2. TOTAL SUMMARY (Versi Tailwind) --}}
-                    {{-- Menggunakan $grandTotalSemua sesuai perbaikan controller --}}
+                    {{-- Summary & Tabel --}}
                     <div
                         class="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6 flex justify-between items-center shadow-sm">
                         <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-teal-100 rounded-full text-teal-600">
-                                {{-- Icon Calculator (FontAwesome) --}}
-                                <i class="fa-solid fa-calculator"></i>
-                            </div>
+                            <div class="p-2 bg-teal-100 rounded-full text-teal-600"><i
+                                    class="fa-solid fa-calculator"></i></div>
                             <div>
-                                <p class="text-xs text-teal-600 font-bold uppercase tracking-wide">Total Transaksi
-                                    (Filtered)</p>
-                                <p class="text-xs text-gray-500">Berdasarkan periode yang dipilih</p>
+                                <p class="text-xs text-teal-600 font-bold uppercase tracking-wide">Total Transaksi</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="block text-lg font-bold text-teal-800">
-                                Rp {{ number_format($grandTotalSemua ?? ($total ?? 0), 0, ',', '.') }}
-                            </span>
+                            <span class="block text-lg font-bold text-teal-800">Rp
+                                {{ number_format($grandTotalSemua ?? 0, 0, ',', '.') }}</span>
                         </div>
                     </div>
 
-                    {{-- 3. TABEL DATA --}}
                     <div class="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
                         <table class="w-full text-sm text-left border-collapse">
                             <thead class="bg-gray-50 text-gray-600 uppercase text-[11px] font-bold">
                                 <tr>
                                     <th class="p-3 border-b">Tanggal</th>
                                     <th class="p-3 border-b">Invoice</th>
-                                    <th class="p-3 border-b">Total Belanja</th>
+                                    <th class="p-3 border-b">Total</th>
                                     <th class="p-3 border-b text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @forelse ($transactions as $trx)
                                 <tr class="hover:bg-gray-50 transition">
-                                    {{-- TANGGAL --}}
                                     <td class="p-3 whitespace-nowrap text-gray-600">
                                         {{ $trx->created_at->format('d M Y H:i') }}
                                     </td>
-
-                                    {{-- INVOICE --}}
                                     <td class="p-3 font-mono text-xs text-teal-600">
-                                        {{ $trx->invoice ?? '#TRX-' . str_pad($trx->id, 5, '0', STR_PAD_LEFT) }}
+                                        {{ $trx->invoice_code ?? '#TRX-' . $trx->id }}
                                     </td>
-
-                                    {{-- NOMINAL --}}
-                                    <td class="p-3 font-bold text-gray-700">
-                                        Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
+                                    <td class="p-3 font-bold text-gray-700">Rp
+                                        {{ number_format($trx->grand_total, 0, ',', '.') }}
                                     </td>
-
-                                    {{-- STATUS --}}
                                     <td class="p-3 text-center">
-                                        @php
-                                        $status = $trx->status ?? 'success';
-                                        $colorClass = match ($status) {
-                                        'paid',
-                                        'success'
-                                        => 'bg-green-100 text-green-700 ring-1 ring-green-200',
-                                        'pending'
-                                        => 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200',
-                                        'failed',
-                                        'cancelled'
-                                        => 'bg-red-100 text-red-700 ring-1 ring-red-200',
-                                        default => 'bg-gray-100 text-gray-700 ring-1 ring-gray-200',
-                                        };
-                                        @endphp
                                         <span
-                                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase {{ $colorClass }}">
-                                            {{ $status }}
-                                        </span>
+                                            class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 ring-1 ring-green-200">Success</span>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="p-8 text-center text-gray-400">
-                                        <div class="flex flex-col items-center justify-center">
-                                            {{-- Icon Empty State --}}
-                                            <svg class="w-12 h-12 mb-3 text-gray-300" fill="none"
-                                                stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    stroke-width="1.5"
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                                </path>
-                                            </svg>
-                                            <span class="font-medium">Tidak ada transaksi ditemukan.</span>
-                                        </div>
-                                    </td>
+                                    <td colspan="4" class="p-8 text-center text-gray-400">Tidak ada riwayat
+                                        belanja.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-
-                    {{-- 4. PAGINATION --}}
                     @if ($transactions->hasPages())
-                    <div class="mt-4">
-                        {{ $transactions->appends(['tab' => 'history'])->withQueryString()->links() }}
-                    </div>
+                    <div class="mt-4">{{ $transactions->appends(['tab' => 'history'])->links() }}</div>
                     @endif
-
                 </div>
+
             </div>
         </div>
     </div>
 </main>
 
-{{-- SCRIPTS --}}
+{{-- SCRIPTS (QR & Tabs) --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // 1. Initialize QR Code
         const qrContainer = document.getElementById("qrcode");
         const nipValue = "{{ trim($user->nip) }}";
-
-        // Pastikan nipValue tidak kosong agar QR Code valid
         if (nipValue) {
-            const qrcode = new QRCode(qrContainer, {
+            new QRCode(qrContainer, {
                 text: nipValue,
                 width: 200,
-                height: 200,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
+                height: 200
             });
         }
 
-        // 2. Tab Logic & Auto Switch
+        // 2. Tab Logic
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
 
         function activateTab(target) {
-            // Reset tabs visual
             tabs.forEach(t => {
                 t.classList.remove('text-teal-600', 'border-teal-600', 'border-b-2');
                 t.classList.add('text-gray-500');
             });
-
-            // Activate specific tab visual
             const activeBtn = document.querySelector(`button[data-tab="${target}"]`);
             if (activeBtn) {
                 activeBtn.classList.add('text-teal-600', 'border-teal-600', 'border-b-2');
                 activeBtn.classList.remove('text-gray-500');
             }
-
-            // Show content
             contents.forEach(c => c.classList.add('hidden'));
-            const contentDiv = document.getElementById('tab-' + target);
-            if (contentDiv) contentDiv.classList.remove('hidden');
+            document.getElementById('tab-' + target).classList.remove('hidden');
         }
 
-        // Event Listener Click
         tabs.forEach(btn => {
-            btn.addEventListener('click', () => {
-                activateTab(btn.dataset.tab);
-            });
+            btn.addEventListener('click', () => activateTab(btn.dataset.tab));
         });
 
-        // 3. Auto Switch Tab Logic (Jika ada parameter filter/page di URL)
+        // Auto Switch based on URL param
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('tab')) {
             activateTab(urlParams.get('tab'));
-        } else if (urlParams.has('from') || urlParams.has('to') || urlParams.has('page')) {
-            // Fallback jika tidak ada param 'tab' tapi ada indikasi sedang filter/paging history
-            activateTab('history');
+        } else if (urlParams.has('from') || urlParams.has('to')) {
+            activateTab('history'); // Default ke history jika filter belanja
         }
-
     });
 
-    // 4. Download QR logic
-    function downloadQR(bgColor = '#ffffff') {
+    function downloadQR() {
+        // ... (Kode download QR sama) ...
         const qrCanvas = document.querySelector('#qrcode canvas');
         if (!qrCanvas) return alert("QR Code belum siap.");
-
         const canvas = document.createElement('canvas');
         const padding = 40;
         const size = qrCanvas.width + (padding * 2);
-
         canvas.width = size;
         canvas.height = size;
-
         const ctx = canvas.getContext('2d');
-        // Fill background
-        ctx.fillStyle = bgColor;
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size, size);
-        // Draw original QR onto new canvas
         ctx.drawImage(qrCanvas, padding, padding);
-
         const link = document.createElement('a');
         link.href = canvas.toDataURL('image/png');
         link.download = "QR-{{ $user->nip }}.png";
         link.click();
     }
 </script>
+
+<style>
+    /* Animasi sederhana untuk Accordion */
+    details>summary {
+        list-style: none;
+    }
+
+    details>summary::-webkit-details-marker {
+        display: none;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .group-open\:animate-fadeIn[open] {
+        animation: fadeIn 0.3s ease-out;
+    }
+</style>
 @endsection

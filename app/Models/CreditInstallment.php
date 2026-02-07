@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\InstallmentStatus;
+// use App\Enums\InstallmentStatus;
+
+// use App\Enums\InstallmentStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class CreditInstallment extends Model
@@ -11,8 +13,8 @@ class CreditInstallment extends Model
     protected $guarded = ['id'];
     protected $dates = ['paid_at'];
     protected $casts = [
-        // 'due_date' => 'date',
-        'status' => InstallmentStatus::class, // <--- Otomatis jadi Enum
+        // // 'due_date' => 'date',
+        // 'status' => InstallmentStatus::class, // <--- Otomatis jadi Enum
     ];
     protected $fillable = [
         'id_credit_transaction',

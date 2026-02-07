@@ -21,7 +21,8 @@ use App\Http\Controllers\{
     UserController,
     WelcomeController,
     AdminOrderController,
-    CreditTransactionController // Transaksi Kredit
+    CreditTransactionController, // Transaksi Kredit, // Transaksi Kredit
+    TransactionReportController
 };
 
 /*
@@ -86,7 +87,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/transaction/success', [TransactionController::class, 'success'])->name('transaction.success');
-    Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])->name('transactions.print_invoice');
+    Route::get('/transactions/{id}/print', [TransactionController::class, 'printInvoice'])
+        ->name('transactions.print_invoice');
 
     // --- FITUR KREDIT (USER SIDE) ---
     // 1. AJAX Simulasi (Hitung cicilan di halaman produk)
@@ -144,6 +146,7 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::post('/validate', 'validateQr')->name('validate');
         Route::post('/transaction', 'processTransaction')->name('transaction');
     });
+    Route::post('/raditya/simulation-schemes', [App\Http\Controllers\RadityaProductController::class, 'getSimulationSchemes'])->name('raditya.simulation_schemes');
 
     // --- MANAJEMEN PRODUK RADITYA ---
     Route::prefix('raditya')->name('raditya.')->group(function () {
@@ -151,6 +154,8 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::patch('images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])->name('images.primary');
     });
     Route::resource('raditya', RadityaProductController::class)->parameters(['raditya' => 'product']);
+    Route::get('/admin/raditya/export-excel', [RadityaProductController::class, 'exportExcel'])
+        ->name('raditya.export.excel');
 
     // --- MANAJEMEN PRODUK DIAMART ---
     Route::prefix('diamart')->name('diamart.')->group(function () {
@@ -159,4 +164,10 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::post('/bulk-action', [DiamartController::class, 'bulkAction'])->name('bulk-action');
     });
     Route::resource('diamart', DiamartProductController::class)->parameters(['diamart' => 'product']);
+
+    // --- LAPORAN TRANSAKSI ---
+    Route::get('/reports/monthly', [TransactionReportController::class, 'monthlyReport'])->name('reports.monthly');
+    Route::get('/reports/pdf/{user}/{bulan}/{tahun}', [TransactionReportController::class, 'downloadPdf'])->name('report.pdf');
+
+    Route::get('/admin/transactions/{id}/invoice', [TransactionController::class, 'printInvoice'])->name('admin.transactions.invoice');
 });

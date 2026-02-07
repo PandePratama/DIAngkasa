@@ -1,43 +1,83 @@
-<footer class="bg-teal-700 text-white py-8">
-    <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+<footer class="bg-gradient-to-r from-teal-700 to-cyan-700 text-white">
 
-        {{-- Tentang --}}
+    {{-- MAIN FOOTER --}}
+    <div class="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-12">
+
+        {{-- BRAND / ABOUT --}}
         <div>
-            <h3 class="text-lg font-semibold mb-4">Tentang DiRaditya</h3>
-            <p class="text-gray-200 text-sm">
-                DiRaditya Marketplace menyediakan berbagai produk gadget dan kebutuhan rumah tangga dengan harga terbaik
-                dan pelayanan cepat.
+            <h3 class="text-xl font-extrabold mb-4">DiRaditya</h3>
+            <p class="text-white/80 text-sm leading-relaxed max-w-sm">
+                DiRaditya Marketplace menyediakan berbagai produk gadget dan kebutuhan
+                harian karyawan dengan sistem kredit internal yang aman, cepat,
+                dan transparan.
             </p>
         </div>
 
-        {{-- Navigasi --}}
+        {{-- NAVIGATION --}}
         <div>
             <h3 class="text-lg font-semibold mb-4">Menu</h3>
-            <ul class="space-y-2 text-gray-200 text-sm">
-                <li><a href="#" class="hover:text-white">Home</a></li>
-                <li><a href="#" class="hover:text-white">Minimarket</a></li>
-                <li><a href="#" class="hover:text-white">Gadget</a></li>
-                <li><a href="#" class="hover:text-white">Kontak</a></li>
-            </ul>
-        </div>
-
-        {{-- Kontak / Sosial Media --}}
-        <div>
-            <h3 class="text-lg font-semibold mb-4">Kontak & Sosial Media</h3>
-            <ul class="space-y-2 text-gray-200 text-sm">
-                <li>Email: support@diraditya.com</li>
-                <li>Telepon: +62 851 1932 9510</li>
-                <li class="flex space-x-3 mt-2">
-                    <a href="#" class="hover:text-white"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#" class="hover:text-white"><i class="fa-brands fa-twitter"></i></a>
-                    <a href="#" class="hover:text-white"><i class="fa-brands fa-instagram"></i></a>
+            <ul class="space-y-3 text-sm text-white/80">
+                <li>
+                    <a href="{{ route('home') }}" class="hover:text-white transition">
+                        Home
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('minimarket.index') }}" class="hover:text-white transition">
+                        Diamart
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('gadget.index') }}" class="hover:text-white transition">
+                        Raditya
+                    </a>
+                </li>
+                <li>
+                    <a href="#kontak" class="hover:text-white transition">
+                        Kontak
+                    </a>
                 </li>
             </ul>
         </div>
 
+        {{-- CONTACT & SOCIAL --}}
+        <div>
+            <h3 class="text-lg font-semibold mb-4">Kontak</h3>
+
+            <ul class="space-y-3 text-sm text-white/80">
+                <li class="flex items-center gap-2">
+                    <i class="fa-solid fa-envelope"></i>
+                    support@diraditya.com
+                </li>
+                <li class="flex items-center gap-2">
+                    <i class="fa-solid fa-phone"></i>
+                    +62 851 1932 9510
+                </li>
+            </ul>
+
+            {{-- SOCIAL ICON --}}
+            <div class="flex gap-4 mt-6">
+                <a href="#"
+                    class="w-9 h-9 flex items-center justify-center rounded-full
+                           bg-white/10 hover:bg-white/20 transition">
+                    <i class="fa-brands fa-facebook-f"></i>
+                </a>
+                <a href="#"
+                    class="w-9 h-9 flex items-center justify-center rounded-full
+                           bg-white/10 hover:bg-white/20 transition">
+                    <i class="fa-brands fa-twitter"></i>
+                </a>
+                <a href="#"
+                    class="w-9 h-9 flex items-center justify-center rounded-full
+                           bg-white/10 hover:bg-white/20 transition">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+
     </div>
 
-    <div class="mt-8 text-center text-gray-300 text-sm">
-        &copy; {{ date('Y') }} DiRaditya. Semua hak cipta dilindungi.
-    </div>
+    {{-- DIVIDER --}}
+    <div class="border-t border-white/20"></div>
+
 </footer>
