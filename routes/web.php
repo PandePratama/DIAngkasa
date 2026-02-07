@@ -154,6 +154,8 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::patch('images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])->name('images.primary');
     });
     Route::resource('raditya', RadityaProductController::class)->parameters(['raditya' => 'product']);
+    Route::get('/admin/raditya/export-excel', [RadityaProductController::class, 'exportExcel'])
+        ->name('raditya.export.excel');
 
     // --- MANAJEMEN PRODUK DIAMART ---
     Route::prefix('diamart')->name('diamart.')->group(function () {
@@ -166,4 +168,6 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
     // --- LAPORAN TRANSAKSI ---
     Route::get('/reports/monthly', [TransactionReportController::class, 'monthlyReport'])->name('reports.monthly');
     Route::get('/reports/pdf/{user}/{bulan}/{tahun}', [TransactionReportController::class, 'downloadPdf'])->name('report.pdf');
+
+    Route::get('/admin/transactions/{id}/invoice', [TransactionController::class, 'printInvoice'])->name('admin.transactions.invoice');
 });
