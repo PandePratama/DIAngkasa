@@ -43,7 +43,6 @@
                             data-tab="profile">
                             Profile & Password
                         </button>
-                        {{-- TAB BARU: KREDIT --}}
                         <button class="tab-btn text-gray-500 pb-2 hover:text-teal-500 transition whitespace-nowrap"
                             data-tab="credit">
                             Riwayat Kredit & Cicilan
@@ -57,15 +56,25 @@
                     {{-- NOTIFICATION --}}
                     @if (session('success'))
                         <div
-                            class="mb-4 rounded-lg bg-green-100 border border-green-300 text-green-800 px-4 py-3 text-sm flex justify-between items-center">
+                            class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex justify-between items-center">
                             <span>{{ session('success') }}</span>
-                            <button onclick="this.parentElement.remove()" class="font-bold text-green-700">×</button>
+                            <button onclick="this.parentElement.remove()" class="font-bold">×</button>
+                        </div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                            <ul class="list-disc list-inside text-sm">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
                         </div>
                     @endif
 
                     {{-- ================= TAB CONTENT : PROFILE ================= --}}
                     <div id="tab-profile" class="tab-content space-y-8">
-                        {{-- Form Update Profile & Password (Kode sama seperti sebelumnya) --}}
+                        {{-- Form Update Profile --}}
                         <form action="{{ route('profile.update') }}" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
@@ -84,12 +93,26 @@
                                 <input type="text" name="no_telp" value="{{ old('no_telp', $user->no_telp) }}"
                                     class="w-full border rounded px-3 py-2">
                             </div>
-                            <button type="submit" class="bg-teal-600 text-white px-6 py-2 rounded">Simpan
-                                Perubahan</button>
+                            {{-- Jika ada field NIK dan Address --}}
+                            <div>
+                                <label class="text-sm font-medium">NIK</label>
+                                <input type="text" name="nik" value="{{ old('nik', $user->nik) }}"
+                                    class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium">Alamat</label>
+                                <textarea name="address" rows="3" class="w-full border rounded px-3 py-2">{{ old('address', $user->address) }}</textarea>
+                            </div>
+
+                            <button type="submit"
+                                class="bg-teal-600 text-white px-6 py-2 rounded hover:bg-teal-700 transition">
+                                Simpan Perubahan
+                            </button>
                         </form>
 
                         <hr>
 
+                        {{-- Form Ganti Password --}}
                         <form action="{{ route('profile.password') }}" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
@@ -112,8 +135,9 @@
                                 </div>
                             </div>
                             <button type="submit"
-                                class="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg text-sm transition">Update
-                                Password</button>
+                                class="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg text-sm transition">
+                                Update Password
+                            </button>
                         </form>
                     </div>
 
@@ -131,12 +155,7 @@
                                 $remainingMonths = $totalInstallments - $paidInstallments;
                                 $remainingAmount = $remainingMonths * $credit->monthly_amount;
 
-                                // =================================================================
-                                // REVISI LOGIC TOTAL BAYAR AWAL
-                                // =================================================================
-                                // Jika DP > 0  -> User bayar: DP + Admin
-                                // Jika DP == 0 -> User bayar: Cicilan Bulan 1 + Admin (Karena bulan 1 langsung lunas)
-
+                                // Hitung Total Bayar Awal (DP Logic)
                                 if ($credit->dp_amount > 0) {
                                     $totalInitialPay = $credit->dp_amount + $credit->admin_fee;
                                 } else {
@@ -144,25 +163,22 @@
                                 }
                             @endphp
 
-                            {{-- KARTU KREDIT (ALL-IN-ONE) --}}
                             <div
                                 class="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-300 bg-white relative overflow-hidden">
 
-                                {{-- Dekorasi Latar Belakang (Opsional, agar manis) --}}
+                                {{-- Dekorasi --}}
                                 <div
                                     class="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-bl-full -mr-4 -mt-4 opacity-50 pointer-events-none">
                                 </div>
 
-                                {{-- 1. HEADER: Nama Barang & Status --}}
+                                {{-- 1. HEADER --}}
                                 <div
                                     class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 relative z-10">
                                     <div class="flex gap-4 items-center">
-                                        {{-- Icon Gadget --}}
                                         <div
                                             class="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 shrink-0">
                                             <i class="fa-solid fa-mobile-screen text-2xl"></i>
                                         </div>
-                                        {{-- Info Utama --}}
                                         <div>
                                             <h4 class="font-bold text-gray-800 text-lg leading-tight">
                                                 {{ $credit->product->name ?? 'Produk Dihapus' }}</h4>
@@ -175,8 +191,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    {{-- Badge Status --}}
                                     @if ($credit->status == 'paid_off' || $credit->status == 'paid')
                                         <span
                                             class="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-bold border border-green-200 shadow-sm flex items-center gap-1">
@@ -206,15 +220,14 @@
                                 {{-- 3. GRID UTAMA (PORSI INFO) --}}
                                 <div
                                     class="grid grid-cols-2 md:grid-cols-5 gap-y-6 gap-x-4 bg-gray-50 rounded-xl p-5 border border-gray-100 mb-5 relative z-10">
-
-                                    {{-- Blok 1: Cicilan --}}
+                                    {{-- Cicilan --}}
                                     <div class="border-r border-gray-200 pr-2 border-r-none-mobile">
-                                        <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Cicilan
-                                            / Bulan</p>
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">
+                                            Cicilan / Bulan</p>
                                         <p class="font-bold text-gray-800 text-base">Rp
                                             {{ number_format($credit->monthly_amount, 0, ',', '.') }}</p>
                                     </div>
-                                    {{-- Blok 2: Uang Muka --}}
+                                    {{-- Uang Muka --}}
                                     <div
                                         class="border-r border-gray-200 pr-2 border-r-none-mobile md:px-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200">
                                         <p class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Uang
@@ -227,8 +240,7 @@
                                             @endif
                                         </p>
                                     </div>
-
-                                    {{-- Blok 3: Admin Fee --}}
+                                    {{-- Admin Fee --}}
                                     <div
                                         class="md:border-r border-gray-200 pl-0 md:pl-2 md:pr-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200">
                                         <p class="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">Biaya
@@ -236,9 +248,7 @@
                                         <p class="font-medium text-gray-600 text-sm">Rp
                                             {{ number_format($credit->admin_fee, 0, ',', '.') }}</p>
                                     </div>
-
-                                    {{-- Blok 4: TOTAL BAYAR AWAL (BARU) --}}
-                                    {{-- Di mobile dia akan col-span-2 (melebar penuh) agar menonjol --}}
+                                    {{-- Total Bayar Awal --}}
                                     <div
                                         class="col-span-2 md:col-span-1 pl-0 md:pl-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 bg-teal-50 md:bg-transparent -mx-5 md:mx-0 px-5 md:px-0 py-2 md:py-0 rounded-b-xl md:rounded-none mt-2 md:mt-0">
                                         <p
@@ -249,7 +259,7 @@
                                             Rp {{ number_format($totalInitialPay, 0, ',', '.') }}
                                         </p>
                                     </div>
-                                    {{-- Blok 5: Sisa Tagihan --}}
+                                    {{-- Sisa Tagihan --}}
                                     <div class="md:border-r border-gray-200 px-0 md:px-2">
                                         <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Sisa
                                             Tagihan</p>
@@ -261,6 +271,7 @@
                                         @endif
                                     </div>
                                 </div>
+
                                 {{-- 4. ACCORDION DETAIL --}}
                                 <details class="group relative z-10">
                                     <summary
@@ -287,12 +298,8 @@
                                                 <tbody class="divide-y divide-gray-100 bg-white">
                                                     @foreach ($credit->installments as $ins)
                                                         @php
-                                                            // LOGIC VISUALISASI NOMINAL
-                                                            // Default: Ambil dari database (murni cicilan)
+                                                            // Logic Visual Nominal (Termasuk Admin jika DP 0 & Bulan 1)
                                                             $nominalShow = $ins->amount;
-
-                                                            // KECUALI: Jika DP 0 DAN ini adalah Cicilan Pertama
-                                                            // Maka tampilkan (Cicilan + Admin) agar user tidak bingung kemana larinya admin fee
                                                             if (
                                                                 $credit->dp_amount == 0 &&
                                                                 $ins->installment_month == 1
@@ -300,18 +307,14 @@
                                                                 $nominalShow += $credit->admin_fee;
                                                             }
                                                         @endphp
-
                                                         <tr class="hover:bg-gray-50 transition">
                                                             <td class="p-3 font-medium text-gray-700">
-                                                                Ke-{{ $ins->installment_month }}
-                                                            </td>
+                                                                Ke-{{ $ins->installment_month }}</td>
                                                             <td class="p-3 text-gray-500">
                                                                 {{ \Carbon\Carbon::parse($ins->due_date)->format('d M Y') }}
                                                             </td>
                                                             <td class="p-3 font-mono text-gray-600">
                                                                 Rp {{ number_format($nominalShow, 0, ',', '.') }}
-
-                                                                {{-- Opsional: Beri penanda kecil --}}
                                                                 @if ($credit->dp_amount == 0 && $ins->installment_month == 1)
                                                                     <span
                                                                         class="text-[9px] text-gray-400 block leading-tight">(Termasuk
@@ -360,11 +363,9 @@
 
                     {{-- ================= TAB CONTENT : HISTORY BELANJA ================= --}}
                     <div id="tab-history" class="tab-content hidden">
-                        {{-- Form Filter & Table History Belanja (Biarkan kode lama Anda disini) --}}
+                        {{-- Form Filter --}}
                         <form method="GET" action="{{ route('profile.index') }}" class="mb-6">
                             <input type="hidden" name="tab" value="history">
-                            {{-- ... isi form filter ... --}}
-                            {{-- COPY PASTE FORM FILTER DARI KODE SEBELUMNYA --}}
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                                 <div class="md:col-span-4">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">Dari Tanggal</label>
@@ -387,7 +388,7 @@
                             </div>
                         </form>
 
-                        {{-- Summary & Tabel --}}
+                        {{-- Summary --}}
                         <div
                             class="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6 flex justify-between items-center shadow-sm">
                             <div class="flex items-center space-x-3">
@@ -403,6 +404,7 @@
                             </div>
                         </div>
 
+                        {{-- Tabel History --}}
                         <div class="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
                             <table class="w-full text-sm text-left border-collapse">
                                 <thead class="bg-gray-50 text-gray-600 uppercase text-[11px] font-bold">
@@ -416,47 +418,28 @@
                                 <tbody class="divide-y divide-gray-100">
                                     @forelse ($transactions as $trx)
                                         <tr class="hover:bg-gray-50 transition">
-                                            {{-- TANGGAL --}}
                                             <td class="p-3 whitespace-nowrap text-gray-600">
-                                                {{ $trx->created_at->format('d M Y H:i') }}
-                                            </td>
-
-                                            {{-- INVOICE --}}
+                                                {{ $trx->created_at->format('d M Y H:i') }}</td>
                                             <td class="p-3 font-mono text-xs text-teal-600">
-                                                {{ $trx->invoice_code ?? '#TRX-' . $trx->id }}
-                                            </td>
-
-                                            {{-- TOTAL --}}
-                                            <td class="p-3 font-bold text-gray-700">
-                                                Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
-                                            </td>
-
-                                            {{-- STATUS --}}
+                                                {{ $trx->invoice_code ?? '#TRX-' . $trx->id }}</td>
+                                            <td class="p-3 font-bold text-gray-700">Rp
+                                                {{ number_format($trx->grand_total, 0, ',', '.') }}</td>
                                             <td class="p-3 text-center">
                                                 @php
-                                                    // 1. Ambil Payment Method
                                                     $methodRaw = $trx->payment_method;
-
-                                                    // 2. FALLBACK: Jika kosong (data lama), coba ambil dari relasi purchaseType
                                                     if (empty($methodRaw) && $trx->purchaseType) {
                                                         $methodRaw = $trx->purchaseType->code;
                                                     }
-
-                                                    // 3. Normalisasi huruf kecil
                                                     $method = strtolower($methodRaw ?? '');
                                                     $payStatus = strtolower($trx->payment_status ?? 'unpaid');
                                                 @endphp
 
-                                                {{-- LOGIC TAMPILAN --}}
-
                                                 @if ($method == 'balance')
-                                                    {{-- POTONG SALDO --}}
                                                     <span
                                                         class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 border border-green-200 inline-flex items-center gap-1">
                                                         <i class="fa-solid fa-check-circle"></i> Lunas (Saldo)
                                                     </span>
                                                 @elseif ($method == 'cash')
-                                                    {{-- CASH --}}
                                                     @if ($payStatus == 'paid')
                                                         <span
                                                             class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 border border-green-200 inline-flex items-center gap-1">
@@ -469,13 +452,11 @@
                                                         </span>
                                                     @endif
                                                 @elseif ($method == 'credit')
-                                                    {{-- KREDIT --}}
                                                     <span
                                                         class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
                                                         <i class="fa-solid fa-clock-rotate-left"></i> Cicilan
                                                     </span>
                                                 @else
-                                                    {{-- LAINNYA / UNKNOWN --}}
                                                     <span
                                                         class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-100 text-gray-600 border border-gray-200">
                                                         {{ $method ?: '-' }}
@@ -500,13 +481,12 @@
                             <div class="mt-4">{{ $transactions->appends(['tab' => 'history'])->links() }}</div>
                         @endif
                     </div>
-
                 </div>
             </div>
         </div>
     </main>
 
-    {{-- SCRIPTS (QR & Tabs) --}}
+    {{-- SCRIPTS --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -548,12 +528,11 @@
             if (urlParams.has('tab')) {
                 activateTab(urlParams.get('tab'));
             } else if (urlParams.has('from') || urlParams.has('to')) {
-                activateTab('history'); // Default ke history jika filter belanja
+                activateTab('history');
             }
         });
 
         function downloadQR() {
-            // ... (Kode download QR sama) ...
             const qrCanvas = document.querySelector('#qrcode canvas');
             if (!qrCanvas) return alert("QR Code belum siap.");
             const canvas = document.createElement('canvas');
@@ -579,7 +558,6 @@
             }
         }
 
-        /* Animasi sederhana untuk Accordion */
         details>summary {
             list-style: none;
         }
