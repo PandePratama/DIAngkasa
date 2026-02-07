@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\RadityaProductsExport;
 use App\Models\Brands;
 use App\Models\Category;
 use App\Models\ProductImage;
@@ -10,6 +11,7 @@ use App\Services\CreditCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RadityaProductController extends Controller
 {
@@ -254,5 +256,13 @@ class RadityaProductController extends Controller
             'status' => 'success',
             'schemes' => $schemes
         ]);
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(
+            new RadityaProductsExport,
+            'produk-raditya.xlsx'
+        );
     }
 }
