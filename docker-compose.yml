@@ -31,21 +31,6 @@ services:
       - laravel
 
   # MySQL (WAJIB UNTUK PHPMYADMIN)
-  mysql:
-    image: mysql:8
-    container_name: laravel_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: laravel
-      MYSQL_USER: laravel
-      MYSQL_PASSWORD: laravel
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - laravel
 
   # phpMyAdmin
   phpmyadmin:
@@ -58,8 +43,6 @@ services:
       PMA_PASSWORD: Raditya90@
     ports:
       - "8080:80"
-    depends_on:
-      - mysql
     networks:
       - laravel
 
@@ -78,4 +61,3 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
