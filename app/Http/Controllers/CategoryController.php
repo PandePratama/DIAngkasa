@@ -83,4 +83,18 @@ class CategoryController extends Controller
             ->route('categories.index', ['group' => $group])
             ->with('success', 'Kategori dihapus');
     }
+
+    public function bulkAction(Request $request)
+    {
+        // 1. Ubah menjadi category_ids agar sesuai dengan name="" di Blade
+        $request->validate([
+            'category_ids' => 'required|array',
+        ]);
+
+        // 2. Ubah juga pemanggilan request-nya di sini
+        Category::whereIn('id', $request->category_ids)->delete();
+
+        // 3. (Opsional) Ubah pesannya dari 'Produk' menjadi 'Kategori'
+        return redirect()->back()->with('success', 'Kategori terpilih berhasil dihapus.');
+    }
 }

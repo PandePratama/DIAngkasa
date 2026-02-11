@@ -28,8 +28,9 @@ class DiamartProductController extends Controller
     }
     public function store(Request $request)
     {
-        // 1. Validasi Input (SKU DIHAPUS)
+        // 1. Validasi Input
         $validated = $request->validate([
+            'sku'         => 'required|unique:product_diamart,sku', // <-- Koma dihapus
             'name'        => 'required|max:255',
             'desc'        => 'nullable|string',
             'id_category' => 'required|exists:categories,id',
@@ -40,21 +41,13 @@ class DiamartProductController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request) {
-
-            // 2. CREATE PRODUCT TANPA SKU DULU
             $product = ProductDiamart::create([
+                'sku'         => $validated['sku'], // <-- Diperbaiki menjadi 'sku'
                 'name'        => $validated['name'],
                 'desc'        => $validated['desc'] ?? null,
                 'id_category' => $validated['id_category'],
                 'stock'       => $validated['stock'],
                 'price'       => $validated['price'],
-            ]);
-
-            // 3. GENERATE SKU DARI ID (AMAN & UNIK)
-            $sku = 'DMRT-' . str_pad($product->id, 4, '0', STR_PAD_LEFT);
-
-            $product->update([
-                'sku' => $sku
             ]);
 
             // 4. SIMPAN GAMBAR
@@ -73,7 +66,6 @@ class DiamartProductController extends Controller
             ->route('diamart.index')
             ->with('success', 'Produk Sembako berhasil ditambahkan');
     }
-
 
     // --- EDIT (Menampilkan Form Edit) ---
     public function edit($id)

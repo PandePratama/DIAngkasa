@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Brands;
 use Illuminate\Http\Request;
 
@@ -68,5 +69,16 @@ class BrandController extends Controller
         return redirect()
             ->route('brands.index')
             ->with('success', 'Brand deleted successfully');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'brand_ids' => 'required|array',
+        ]);
+
+        Brands::whereIn('id', $request->brand_ids)->delete();
+
+        return redirect()->back()->with('success', 'Brand terpilih berhasil dihapus.');
     }
 }

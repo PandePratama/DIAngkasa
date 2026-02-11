@@ -24,10 +24,11 @@
                 @csrf
 
                 {{-- SKU --}}
+                {{-- SKU --}}
                 <div class="form-group">
                     <label>SKU Produk</label>
-                    <input type="text" class="form-control" value="Auto Generate" readonly>
-
+                    <input type="text" name="sku" value="{{ old('sku') }}" class="form-control"
+                        placeholder="Masukkan SKU Produk" required>
                 </div>
 
                 {{-- Nama Produk --}}

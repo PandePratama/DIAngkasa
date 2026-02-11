@@ -32,11 +32,17 @@ class RadityaProductController extends Controller
      */
     public function create()
     {
-        $categories = Category::orderBy('category_name')->get();
+        // FILTER DI SINI:
+        // Hanya ambil kategori yang group-nya 'diamart'
+        $categories = Category::where('group', 'raditya')
+            ->orderBy('category_name')
+            ->get();
         $brands = Brands::orderBy('brand_name')->get();
 
         return view('admin.raditya.create', compact('categories', 'brands'));
     }
+
+
 
     /**
      * Menyimpan produk baru ke database
@@ -103,12 +109,15 @@ class RadityaProductController extends Controller
     /**
      * Menampilkan form edit
      */
+
     public function edit($id)
     {
-        $product = ProductRaditya::with('images')->findOrFail($id);
-        $categories = Category::orderBy('category_name')->get();
-        $brands = Brands::orderBy('brand_name')->get();
+        // Cari produk berdasarkan ID di tabel product_diamart
+        $product = ProductRaditya::with(['images'])->findOrFail($id);
 
+        // Ambil data kategori untuk dropdown
+        $categories = Category::where('group', 'diamart')->orderBy('category_name')->get();
+        $brands = Brands::orderBy('brand_name')->get();
         return view('admin.raditya.edit', compact('product', 'categories', 'brands'));
     }
 
