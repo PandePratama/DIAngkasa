@@ -213,10 +213,10 @@
                         </button>
                     </div>
                 </div>
-
+                {{--
                 <div class="text-end mb-4">
                     <a href="#" class="forgot-link">Forgot password?</a>
-                </div>
+                </div> --}}
 
                 <button type="submit" class="btn btn-login w-100">
                     Sign In

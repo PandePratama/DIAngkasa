@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'DiRaditya')</title>
 
-    {{-- Tailwind --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    {{-- Vite Assets (CSS & JS) --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     {{-- Alpine --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -24,8 +24,11 @@
     {{-- NAVBAR --}}
     <x-navbar />
 
+    {{-- SPACER (Agar konten tidak tertutup navbar fixed) --}}
+    <div class="h-20"></div>
+
     {{-- CONTENT --}}
-    <main class="pt-20 flex-grow">
+    <main class="flex-grow">
         @yield('content')
     </main>
 

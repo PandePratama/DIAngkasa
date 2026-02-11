@@ -25,6 +25,10 @@ class RadityaController extends Controller
             ->whereHas('category', function ($q) {
                 $q->where('group', 'raditya');
             })
+            ->when($request->search, function ($q) use ($request) {
+                return $q->where('name', 'LIKE', '%' . $request->search . '%')
+                    ->orWhere('desc', 'LIKE', '%' . $request->search . '%');
+            })
             ->when($request->category, function ($q) use ($request) {
                 return $q->where('id_category', $request->category);
             })
