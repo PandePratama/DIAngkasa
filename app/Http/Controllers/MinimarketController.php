@@ -19,6 +19,10 @@ class MinimarketController extends Controller
 
         // 2. Ambil Produk Diamart
         $products = ProductDiamart::with(['primaryImage', 'category'])
+            ->when($request->search, function ($query) use ($request) {
+                return $query->where('name', 'LIKE', '%' . $request->search . '%')
+                    ->orWhere('desc', 'LIKE', '%' . $request->search . '%');
+            })
             ->when($request->category, function ($query) use ($request) {
                 return $query->where('id_category', $request->category);
             })
