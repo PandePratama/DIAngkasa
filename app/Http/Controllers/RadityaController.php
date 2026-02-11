@@ -11,7 +11,8 @@ class RadityaController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil kategori RADITYA
+        // 1. FILTER KATEGORI KHUSUS RADITYA
+        // Hanya ambil kategori dengan group 'raditya'
         $categories = Category::where('group', 'raditya')
             ->orderBy('category_name')
             ->get();
@@ -25,10 +26,10 @@ class RadityaController extends Controller
                 $q->where('group', 'raditya');
             })
             ->when($request->category, function ($q) use ($request) {
-                $q->where('id_category', $request->category);
+                return $q->where('id_category', $request->category);
             })
             ->when($request->brand, function ($q) use ($request) {
-                $q->where('id_brand', $request->brand);
+                return $q->where('id_brand', $request->brand);
             })
             ->latest()
             ->paginate(15)
@@ -70,5 +71,17 @@ class RadityaController extends Controller
 
         // 3. Kirim ke View
         return view('gadget.show', compact('product', 'cartLock', 'relatedProducts'));
+    }
+
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+        ]);
+
+        ProductRaditya::whereIn('id', $request->product_ids)->delete();
+
+        return redirect()->back()->with('success', 'Produk terpilih berhasil diproses.');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UnitKerja;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException; // <-- Tambahkan import ini
 
 class UnitKerjaController extends Controller
 {
@@ -57,7 +58,7 @@ class UnitKerjaController extends Controller
     {
         // Proteksi: tidak bisa hapus jika masih dipakai user
         if ($unitKerja->users()->count() > 0) {
-            return back()->with('failed', 'Unit kerja masih digunakan oleh user');
+            return back()->with('failed', 'Unit kerja tidak dapat dihapus karena masih digunakan oleh user.');
         }
 
         $unitKerja->delete();
@@ -65,5 +66,28 @@ class UnitKerjaController extends Controller
         return redirect()
             ->route('unit-kerja.index')
             ->with('success', 'Unit kerja berhasil dihapus');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'unit_kerja_ids' => 'required|array',
+        ]);
+
+        try {
+            // Coba lakukan penghapusan massal
+            UnitKerja::whereIn('id', $request->unit_kerja_ids)->delete();
+
+            return redirect()->back()->with('success', 'Unit Kerja terpilih berhasil dihapus.');
+        } catch (QueryException $e) {
+            // Tangkap error MySQL kode 23000 (Integrity constraint violation / nyangkut di relasi)
+            if ($e->getCode() == '23000') {
+                return redirect()->back()
+                    ->with('failed', 'Gagal menghapus: Salah satu atau beberapa Unit Kerja yang Anda pilih tidak dapat dihapus karena masih terhubung dengan data User.');
+            }
+
+            // Tangkap jika ada error database lainnya
+            return redirect()->back()->with('failed', 'Terjadi kesalahan sistem saat mencoba menghapus data.');
+        }
     }
 }

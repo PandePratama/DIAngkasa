@@ -12,45 +12,158 @@
         </div>
 
         <div class="card-body">
-            <div class="table-responsive">
 
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th width="50">#</th>
-                            <th>Name</th>
-                            <th width="150">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($brands as $brand)
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            {{-- FORM PEMBUNGKUS BULK DELETE --}}
+            <form id="bulkActionForm" action="{{ route('brands.bulk-action') }}" method="POST">
+                @csrf
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead class="thead-light">
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $brand->brand_name }}</td>
-                                <td>
-                                    <a href="{{ route('brands.edit', $brand->id) }}" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('brands.destroy', $brand->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf @method('DELETE')
-                                        <button onclick="return confirm('Delete this brand?')"
-                                            class="btn btn-danger btn-sm">
+                                {{-- Checkbox Master --}}
+                                <th width="10">
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th width="50">#</th>
+                                <th>Name</th>
+                                <th width="150">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($brands as $brand)
+                                <tr>
+                                    {{-- Checkbox Item --}}
+                                    <td>
+                                        <input type="checkbox" name="brand_ids[]" value="{{ $brand->id }}"
+                                            class="select-item">
+                                    </td>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $brand->brand_name }}</td>
+                                    <td>
+                                        <a href="{{ route('brands.edit', $brand->id) }}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        {{-- Tombol Delete Satuan (Panggil JS, BUKAN Form) --}}
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                            onclick="deleteSingle({{ $brand->id }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">
-                                    No brands found
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        No brands found
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Tombol Bulk Delete (Muncul di luar tabel jika checkbox dipilih) --}}
+                <button type="button" id="bulk-delete-btn" onclick="confirmBulkDelete()"
+                    class="btn btn-danger mt-3 d-none">
+                    <i class="fas fa-trash"></i> Hapus Terpilih
+                </button>
+            </form>
+
+            {{-- FORM RAHASIA UNTUK DELETE SATUAN --}}
+            <form id="delete-form-single" method="POST" style="display: none;">
+                @csrf
+                @method('DELETE')
+            </form>
+
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.select-item');
+            const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+            // 1. Fungsi Toggle Tombol Bulk Delete
+            function toggleBulkButton() {
+                const checkedCount = document.querySelectorAll('.select-item:checked').length;
+                if (checkedCount > 0) {
+                    bulkDeleteBtn.classList.remove('d-none');
+                    bulkDeleteBtn.innerHTML = `<i class="fas fa-trash"></i> Hapus (${checkedCount}) Terpilih`;
+                } else {
+                    bulkDeleteBtn.classList.add('d-none');
+                }
+            }
+
+            // 2. Event Listener Select All
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                    toggleBulkButton();
+                });
+            }
+
+            // 3. Event Listener Checkbox Item
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    selectAll.checked = [...checkboxes].every(c => c.checked);
+                    toggleBulkButton();
+                });
+            });
+        });
+
+        // 4. Fungsi Konfirmasi SweetAlert untuk Bulk Delete
+        function confirmBulkDelete() {
+            Swal.fire({
+                title: 'Hapus Brand Terpilih?',
+                text: "Semua produk yang memakai brand ini mungkin akan kehilangan referensi brand-nya!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('bulkActionForm').submit();
+                }
+            });
+        }
+
+        // 5. Fungsi Delete Satuan
+        function deleteSingle(brandId) {
+            Swal.fire({
+                title: 'Yakin hapus brand ini?',
+                text: "Data tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let form = document.getElementById('delete-form-single');
+
+                    // Sesuaikan route destroy untuk brands
+                    let url = "{{ route('brands.destroy', ':id') }}";
+                    url = url.replace(':id', brandId);
+
+                    form.action = url;
+                    form.submit();
+                }
+            });
+        }
+    </script>
+@endpush

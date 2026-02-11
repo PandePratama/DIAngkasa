@@ -125,6 +125,9 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::get('/history', 'history')->name('history'); // History Log
     });
 
+    Route::post('/categories/bulk-action', [CategoryController::class, 'bulkAction'])->name('categories.bulk-action');
+    Route::post('/brands/bulk-action', [BrandController::class, 'bulkAction'])->name('brands.bulk-action');
+    Route::post('/unit-kerja/bulk-action', [UnitKerjaController::class, 'bulkAction'])->name('unit-kerja.bulk-action');
     // --- 2. TANGGUNGAN TENOR (KREDIT) ---
     // Menu: "Tanggungan Tenor"
     // PERBAIKAN: Menggunakan prefix 'credits' agar nama route beda dengan transaksi umum
@@ -146,12 +149,13 @@ Route::middleware(['auth', 'check.role:super_admin,admin'])->prefix('admin')->gr
         Route::post('/validate', 'validateQr')->name('validate');
         Route::post('/transaction', 'processTransaction')->name('transaction');
     });
-    Route::post('/raditya/simulation-schemes', [App\Http\Controllers\RadityaProductController::class, 'getSimulationSchemes'])->name('raditya.simulation_schemes');
+    Route::post('/raditya/simulation-schemes', [App\Http\Controllers\RadityaProductController::class, 'getSimulationSchemes'])->name('raditya.simulation_schemes')->withoutMiddleware('auth');
 
     // --- MANAJEMEN PRODUK RADITYA ---
     Route::prefix('raditya')->name('raditya.')->group(function () {
         Route::delete('images/{image}', [RadityaProductController::class, 'destroyImage'])->name('images.destroy');
         Route::patch('images/{image}/primary', [RadityaProductController::class, 'setPrimaryImage'])->name('images.primary');
+        Route::post('/bulk-action', [RadityaController::class, 'bulkAction'])->name('bulk-action');
     });
     Route::resource('raditya', RadityaProductController::class)->parameters(['raditya' => 'product']);
     Route::get('/admin/raditya/export-excel', [RadityaProductController::class, 'exportExcel'])

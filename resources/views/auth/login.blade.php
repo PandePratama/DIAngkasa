@@ -10,41 +10,47 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background: linear-gradient(135deg, #0f766e, #06b6d4);
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
-        .login-wrapper {
+        .login-container {
             width: 100%;
-            max-width: 420px;
-            padding: 16px;
+            max-width: 440px;
         }
 
         .login-card {
-            backdrop-filter: blur(12px);
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, .2);
-            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 48px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
         }
 
         .brand-area {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 18px;
-            padding: 28px 20px 16px;
+            gap: 16px;
+            margin-bottom: 32px;
         }
 
         .brand-logo {
@@ -52,128 +58,176 @@
             object-fit: contain;
         }
 
-        .login-body {
-            padding: 28px;
-        }
-
         .login-title {
+            font-size: 26px;
             font-weight: 700;
+            color: #111827;
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 36px;
         }
 
         .form-label {
-            font-weight: 600;
             font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
         }
 
         .form-control {
-            border-radius: 14px;
-            padding: 12px 16px;
-            border: 1px solid #e5e7eb;
+            height: 52px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+            padding: 0 16px;
+            font-size: 15px;
+            color: #111827;
+            transition: all 0.3s ease;
         }
 
         .form-control:focus {
-            border-color: #06b6d4;
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            outline: none;
         }
 
-        .input-group .btn {
-            border-radius: 0 14px 14px 0;
-            border-color: #e5e7eb;
+        .form-control::placeholder {
+            color: #9ca3af;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            padding: 8px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: #10b981;
         }
 
         .forgot-link {
-            font-size: 13px;
+            font-size: 14px;
+            color: #10b981;
             text-decoration: none;
-            color: #6b7280;
+            font-weight: 500;
+            transition: color 0.2s;
         }
 
         .forgot-link:hover {
-            color: #0f766e;
-            text-decoration: underline;
+            color: #059669;
         }
 
         .btn-login {
-            margin-top: 8px;
-            border-radius: 999px;
-            padding: 12px;
+            height: 52px;
+            border-radius: 12px;
+            font-size: 16px;
             font-weight: 600;
-            background: linear-gradient(135deg, #0f766e, #06b6d4);
+            background: linear-gradient(135deg, #10b981, #06b6d4);
             border: none;
-            transition: all .3s ease;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .btn-login:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 20px rgba(6, 182, 212, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
         }
 
         .alert {
             border-radius: 12px;
+            border: none;
+            background: #fee2e2;
+            color: #991b1b;
             font-size: 14px;
+            font-weight: 500;
+            padding: 12px 16px;
+        }
+
+        .alert i {
+            font-size: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 36px 28px;
+            }
+
+            .brand-logo {
+                height: 48px;
+            }
+
+            .login-title {
+                font-size: 24px;
+                margin-bottom: 28px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="login-wrapper">
+    <div class="login-container">
         <div class="login-card">
 
             <!-- LOGO -->
             <div class="brand-area">
-                <img src="{{ asset('sbadmin/img/Raditya logo R.webp') }}" class="brand-logo">
-                <img src="{{ asset('sbadmin/img/Logo Dia_Green.webp') }}" class="brand-logo">
+                <img src="{{ asset('sbadmin/img/Raditya logo R.webp') }}" class="brand-logo" alt="Raditya Logo">
+                <img src="{{ asset('sbadmin/img/Logo Dia_Green.webp') }}" class="brand-logo" alt="DiRaditya Logo">
             </div>
 
-            <div class="login-body">
-                <h4 class="login-title">Welcome Back</h4>
+            <h4 class="login-title">Welcome Back</h4>
 
-                <form action="{{ route('login') }}" method="POST">
-                    @csrf
+            <form action="{{ route('login') }}" method="POST">
+                @csrf
 
-                    <div class="mb-3">
-                        <label class="form-label">NIP atau Email</label>
-                        <input type="text"
-                            name="login"
-                            class="form-control"
-                            placeholder="NIP atau Email"
-                            required>
+                <div class="mb-3">
+                    <label class="form-label">NIP atau Email</label>
+                    <input type="text" name="login" class="form-control" placeholder="Masukkan NIP atau Email"
+                        required autocomplete="username">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password" id="password" class="form-control"
+                            placeholder="Masukkan Password" required autocomplete="current-password"
+                            style="padding-right: 48px;">
+                        <button type="button" class="password-toggle" onclick="togglePassword()"
+                            aria-label="Toggle password visibility">
+                            <i class="bi bi-eye" id="eyeIcon"></i>
+                        </button>
                     </div>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <div class="input-group">
-                            <input type="password"
-                                name="password"
-                                id="password"
-                                class="form-control"
-                                placeholder="••••••••"
-                                required>
-                            <button class="btn btn-outline-secondary"
-                                type="button"
-                                onclick="togglePassword()">
-                                <i class="bi bi-eye" id="eyeIcon"></i>
-                            </button>
-                        </div>
+                <div class="text-end mb-4">
+                    <a href="#" class="forgot-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-login w-100">
+                    Sign In
+                </button>
+
+                @if (session('failed'))
+                    <div class="alert mt-3" role="alert">
+                        <i class="bi bi-exclamation-circle me-2"></i>{{ session('failed') }}
                     </div>
-
-                    <div class="text-end mb-3">
-                        <a href="#" class="forgot-link">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-login text-white w-100">
-                        Sign In
-                    </button>
-
-                    @if(session('failed'))
-                    <div class="alert alert-danger text-center mt-3">
-                        {{ session('failed') }}
-                    </div>
-                    @endif
-                </form>
-            </div>
+                @endif
+            </form>
         </div>
     </div>
 
@@ -191,6 +245,11 @@
                 password.type = 'password';
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
+        }
+
+        // Prevent form resubmission on page refresh
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
         }
     </script>
 

@@ -10,25 +10,25 @@ class DiamartController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Ambil Kategori (Column: category_name)
-        // Hanya ambil kategori yang punya produk diamart (opsional, biar rapi)
-        $categories = Category::whereHas('productsDiamart')
+        // 1. FILTER KATEGORI KHUSUS DIAMART
+        // Kunci mutlak hanya memanggil group 'diamart'
+        $categories = Category::where('group', 'diamart')
             ->orderBy('category_name')
             ->get();
 
         // 2. Ambil Produk Diamart
         $products = ProductDiamart::with(['primaryImage', 'category'])
-            ->where('is_active', true) // Jika kolom is_active sudah dibuat
+            // ->where('is_active', true) // Hapus komentar jika fitur ini sudah dipakai
             ->when($request->category, function ($q) use ($request) {
                 return $q->where('id_category', $request->category);
             })
             ->latest()
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString(); // Tambahkan ini agar saat pindah page, filter tidak hilang
 
         // Arahkan ke view di folder 'diamart' (bukan admin)
         return view('diamart.index', compact('products', 'categories'));
     }
-
     public function show($id)
     {
         $product = ProductDiamart::with(['images', 'category'])
