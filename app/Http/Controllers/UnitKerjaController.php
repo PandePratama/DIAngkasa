@@ -8,9 +8,18 @@ use Illuminate\Database\QueryException; // <-- Tambahkan import ini
 
 class UnitKerjaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $unitKerja = UnitKerja::latest()->get();
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+
+        $unitKerja = UnitKerja::when($search, function ($query) use ($search) {
+            $query->where('unit_name', 'like', "%{$search}%");
+        })
+            ->latest()
+            ->paginate($perPage)
+            ->appends($request->query());
+
         return view('admin.unit-kerja.index', compact('unitKerja'));
     }
 

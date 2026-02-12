@@ -86,12 +86,12 @@
                             <div>
                                 <label class="text-sm font-medium">Email</label>
                                 <input type="email" name="email" value="{{ old('email', $user->email) }}"
-                                    class="w-full border rounded px-3 py-2">
+                                    class="w-full border rounded px-3 py-2" placeholder="masukkan email">
                             </div>
                             <div>
                                 <label class="text-sm font-medium">No. Telepon</label>
                                 <input type="text" name="no_telp" value="{{ old('no_telp', $user->no_telp) }}"
-                                    class="w-full border rounded px-3 py-2">
+                                    class="w-full border rounded px-3 py-2" placeholder="08111...">
                             </div>
                             {{-- Jika ada field NIK dan Address --}}
                             <div>

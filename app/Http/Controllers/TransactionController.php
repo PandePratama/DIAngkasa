@@ -25,6 +25,12 @@ class TransactionController extends Controller
             ];
         }
 
+        // Setup Pagination & Search
+        $perPage = $request->input('per_page', 10);
+        $cashSearch = $request->input('cash_search');
+        $creditSearch = $request->input('credit_search');
+        $mutationSearch = $request->input('mutation_search');
+
         // ==========================================
         // 2. TAB 1: DATA TRANSAKSI TUNAI (CASH)
         // ==========================================
@@ -34,11 +40,23 @@ class TransactionController extends Controller
             $cashQuery->whereBetween('created_at', $dateRange);
         }
 
+        // Search untuk transaksi tunai
+        if ($cashSearch) {
+            $cashQuery->where(function ($q) use ($cashSearch) {
+                $q->where('invoice_code', 'like', "%{$cashSearch}%")
+                    ->orWhere('id', 'like', "%{$cashSearch}%")
+                    ->orWhereHas('user', function ($q) use ($cashSearch) {
+                        $q->where('name', 'like', "%{$cashSearch}%")
+                            ->orWhere('nip', 'like', "%{$cashSearch}%");
+                    });
+            });
+        }
+
         // Hitung Total Omset (Khusus Tunai/Saldo)
         $grandTotalSemua = $cashQuery->sum('grand_total');
 
         // Pagination Transaksi Biasa (Page name: cash_page)
-        $transactions = $cashQuery->paginate(10, ['*'], 'cash_page');
+        $transactions = $cashQuery->paginate($perPage, ['*'], 'cash_page')->appends($request->query());
 
 
         // ==========================================
@@ -54,7 +72,21 @@ class TransactionController extends Controller
             $ongoingQuery->whereBetween('created_at', $dateRange);
         }
 
-        $creditsOngoing = $ongoingQuery->paginate(10, ['*'], 'ongoing_page');
+        // Search untuk kredit ongoing
+        if ($creditSearch) {
+            $ongoingQuery->where(function ($q) use ($creditSearch) {
+                $q->where('id', 'like', "%{$creditSearch}%")
+                    ->orWhereHas('user', function ($q) use ($creditSearch) {
+                        $q->where('name', 'like', "%{$creditSearch}%")
+                            ->orWhere('nip', 'like', "%{$creditSearch}%");
+                    })
+                    ->orWhereHas('product', function ($q) use ($creditSearch) {
+                        $q->where('name', 'like', "%{$creditSearch}%");
+                    });
+            });
+        }
+
+        $creditsOngoing = $ongoingQuery->paginate($perPage, ['*'], 'ongoing_page')->appends($request->query());
 
 
         // B. Kredit Sudah Lunas (Completed)
@@ -66,7 +98,21 @@ class TransactionController extends Controller
             $completedQuery->whereBetween('updated_at', $dateRange); // Gunakan updated_at untuk tgl pelunasan
         }
 
-        $creditsCompleted = $completedQuery->paginate(10, ['*'], 'completed_page');
+        // Search untuk kredit completed
+        if ($creditSearch) {
+            $completedQuery->where(function ($q) use ($creditSearch) {
+                $q->where('id', 'like', "%{$creditSearch}%")
+                    ->orWhereHas('user', function ($q) use ($creditSearch) {
+                        $q->where('name', 'like', "%{$creditSearch}%")
+                            ->orWhere('nip', 'like', "%{$creditSearch}%");
+                    })
+                    ->orWhereHas('product', function ($q) use ($creditSearch) {
+                        $q->where('name', 'like', "%{$creditSearch}%");
+                    });
+            });
+        }
+
+        $creditsCompleted = $completedQuery->paginate($perPage, ['*'], 'completed_page')->appends($request->query());
 
 
         // ==========================================
@@ -85,8 +131,20 @@ class TransactionController extends Controller
             $mutationQuery->whereBetween('created_at', $dateRange);
         }
 
+        // Search untuk mutasi
+        if ($mutationSearch) {
+            $mutationQuery->where(function ($q) use ($mutationSearch) {
+                $q->where('description', 'like', "%{$mutationSearch}%")
+                    ->orWhere('reference_id', 'like', "%{$mutationSearch}%")
+                    ->orWhereHas('user', function ($q) use ($mutationSearch) {
+                        $q->where('name', 'like', "%{$mutationSearch}%")
+                            ->orWhere('nip', 'like', "%{$mutationSearch}%");
+                    });
+            });
+        }
+
         // Pagination Mutasi (Page name: mutations_page)
-        $mutations = $mutationQuery->paginate(15, ['*'], 'mutations_page');
+        $mutations = $mutationQuery->paginate($perPage, ['*'], 'mutations_page')->appends($request->query());
 
 
         // ==========================================
