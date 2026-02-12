@@ -64,6 +64,18 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label>Role</label>
+                    <select name="role" class="form-control" required>
+                        <option value="">-- Pilih Role --</option>
+                        <option value="super_admin" {{ old('role', $user->role) == 'super_admin' ? 'selected' : '' }}>Super
+                            Admin</option>
+                        <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="staff" {{ old('role', $user->role) == 'staff' ? 'selected' : '' }}>Staff</option>
+                        <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>User</option>
+                    </select>
+                </div>
+
                 {{-- ==================== TAMBAHAN: INPUT SALDO ==================== --}}
                 <div class="form-group">
                     <label class="font-weight-bold text-primary">Limit Anggaran / Saldo</label>
