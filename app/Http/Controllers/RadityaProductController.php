@@ -18,11 +18,28 @@ class RadityaProductController extends Controller
     /**
      * Menampilkan daftar produk Gadget/Furniture
      */
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+
         $products = ProductRaditya::with(['category', 'brand', 'primaryImage'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('desc', 'like', "%{$search}%")
+                        ->orWhereHas('category', function ($q) use ($search) {
+                            $q->where('category_name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('brand', function ($q) use ($search) {
+                            $q->where('brand_name', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->latest()
-            ->get();
+            ->paginate($perPage)
+            ->appends($request->query());
 
         return view('admin.raditya.index', compact('products'));
     }

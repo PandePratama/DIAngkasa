@@ -10,9 +10,26 @@ use Illuminate\Support\Facades\DB;
 
 class DiamartProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = ProductDiamart::with(['category', 'primaryImage'])->latest()->get();
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+
+        $products = ProductDiamart::with(['category', 'primaryImage'])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('desc', 'like', "%{$search}%")
+                        ->orWhereHas('category', function ($q) use ($search) {
+                            $q->where('category_name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->appends($request->query());
+
         return view('admin.diamart.index', compact('products'));
     }
 

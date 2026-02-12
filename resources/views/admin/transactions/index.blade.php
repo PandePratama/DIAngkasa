@@ -17,9 +17,26 @@
                 <label class="small text-muted">Sampai Tanggal</label>
                 <input type="date" name="to" class="form-control" value="{{ request('to') }}">
             </div>
+            <div class="col-md-2">
+                <label class="small text-muted">Entries</label>
+                <select name="per_page" class="form-control">
+                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                    <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                </select>
+            </div>
             <div class="col-md-2 d-flex align-items-end">
                 <button class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> Filter</button>
             </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <a href="{{ route('transactions.index') }}" class="btn btn-secondary w-100">
+                    <i class="fas fa-redo me-1"></i> Reset
+                </a>
+            </div>
+            <input type="hidden" name="cash_search" value="{{ request('cash_search') }}">
+            <input type="hidden" name="credit_search" value="{{ request('credit_search') }}">
+            <input type="hidden" name="mutation_search" value="{{ request('mutation_search') }}">
         </form>
 
         {{-- ALERT RINGKASAN --}}
@@ -56,6 +73,32 @@
             {{-- TAB 1: TRANSAKSI TUNAI (CASH) --}}
             {{-- ==================================================== --}}
             <div class="tab-pane fade show active" id="cash" role="tabpanel">
+                {{-- Search Box --}}
+                <div class="row mb-3">
+                    <div class="col-md-8 offset-md-4">
+                        <form method="GET" class="form-inline float-right">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="cash_search" class="form-control"
+                                    placeholder="Cari ID, Invoice, Nama User, NIP..." value="{{ request('cash_search') }}"
+                                    style="min-width: 300px;">
+                                <input type="hidden" name="from" value="{{ request('from') }}">
+                                <input type="hidden" name="to" value="{{ request('to') }}">
+                                <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-success" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    @if (request('cash_search'))
+                                        <a href="{{ route('transactions.index', ['from' => request('from'), 'to' => request('to'), 'per_page' => request('per_page', 10)]) }}"
+                                            class="btn btn-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
                 <div class="card shadow border-0">
                     <div class="card-body table-responsive p-0">
                         <table class="table table-hover table-striped mb-0">
@@ -97,7 +140,20 @@
                         </table>
                     </div>
                     <div class="card-footer bg-white">
-                        {{ $transactions->appends(request()->query())->links() }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    Showing {{ $transactions->firstItem() ?? 0 }} to {{ $transactions->lastItem() ?? 0 }}
+                                    of {{ $transactions->total() }} entries
+                                    @if (request('cash_search'))
+                                        (filtered: "{{ request('cash_search') }}")
+                                    @endif
+                                </small>
+                            </div>
+                            <div>
+                                {{ $transactions->appends(request()->query())->links() }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,6 +162,33 @@
             {{-- TAB 2: DATA KREDIT (DENGAN SUB-TAB STATUS) --}}
             {{-- ==================================================== --}}
             <div class="tab-pane fade" id="credit" role="tabpanel">
+
+                {{-- Search Box untuk Credit --}}
+                <div class="row mb-3">
+                    <div class="col-md-8 offset-md-4">
+                        <form method="GET" class="form-inline float-right">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="credit_search" class="form-control"
+                                    placeholder="Cari ID, Nama User, NIP, Produk..."
+                                    value="{{ request('credit_search') }}" style="min-width: 300px;">
+                                <input type="hidden" name="from" value="{{ request('from') }}">
+                                <input type="hidden" name="to" value="{{ request('to') }}">
+                                <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    @if (request('credit_search'))
+                                        <a href="{{ route('transactions.index', ['from' => request('from'), 'to' => request('to'), 'per_page' => request('per_page', 10)]) }}"
+                                            class="btn btn-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 {{-- SUB NAVIGASI (Pills) --}}
                 <ul class="nav nav-pills mb-3" id="creditStatusTab" role="tablist">
@@ -189,7 +272,21 @@
                                 </table>
                             </div>
                             <div class="card-footer bg-white">
-                                {{ $creditsOngoing->appends(['ongoing_page' => request('ongoing_page')])->links() }}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">
+                                            Showing {{ $creditsOngoing->firstItem() ?? 0 }} to
+                                            {{ $creditsOngoing->lastItem() ?? 0 }} of {{ $creditsOngoing->total() }}
+                                            entries
+                                            @if (request('credit_search'))
+                                                (filtered: "{{ request('credit_search') }}")
+                                            @endif
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {{ $creditsOngoing->appends(request()->query())->links() }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -241,7 +338,21 @@
                                 </table>
                             </div>
                             <div class="card-footer bg-white">
-                                {{ $creditsCompleted->appends(['completed_page' => request('completed_page')])->links() }}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">
+                                            Showing {{ $creditsCompleted->firstItem() ?? 0 }} to
+                                            {{ $creditsCompleted->lastItem() ?? 0 }} of {{ $creditsCompleted->total() }}
+                                            entries
+                                            @if (request('credit_search'))
+                                                (filtered: "{{ request('credit_search') }}")
+                                            @endif
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {{ $creditsCompleted->appends(request()->query())->links() }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,6 +366,33 @@
                 <div class="alert alert-warning py-2 small">
                     <i class="fas fa-info-circle me-1"></i>
                     Tab ini menampilkan uang keluar dari saldo user (Autodebet, DP, dll).
+                </div>
+
+                {{-- Search Box untuk Mutation --}}
+                <div class="row mb-3">
+                    <div class="col-md-8 offset-md-4">
+                        <form method="GET" class="form-inline float-right">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="mutation_search" class="form-control"
+                                    placeholder="Cari deskripsi, reference, user..."
+                                    value="{{ request('mutation_search') }}" style="min-width: 300px;">
+                                <input type="hidden" name="from" value="{{ request('from') }}">
+                                <input type="hidden" name="to" value="{{ request('to') }}">
+                                <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-danger" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    @if (request('mutation_search'))
+                                        <a href="{{ route('transactions.index', ['from' => request('from'), 'to' => request('to'), 'per_page' => request('per_page', 10)]) }}"
+                                            class="btn btn-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="card shadow border-0">
@@ -301,7 +439,20 @@
                         </table>
                     </div>
                     <div class="card-footer bg-white">
-                        {{ $mutations->appends(['mutations_page' => request('mutations_page')])->links() }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    Showing {{ $mutations->firstItem() ?? 0 }} to {{ $mutations->lastItem() ?? 0 }} of
+                                    {{ $mutations->total() }} entries
+                                    @if (request('mutation_search'))
+                                        (filtered: "{{ request('mutation_search') }}")
+                                    @endif
+                                </small>
+                            </div>
+                            <div>
+                                {{ $mutations->appends(request()->query())->links() }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

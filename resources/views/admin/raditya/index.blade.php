@@ -1,11 +1,11 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Manajemen Produk Gadget')
+@section('title', 'Manajemen Produk Raditya')
 
 @section('content')
     <div class="container-fluid">
 
-        <h1 class="h3 mb-2 text-gray-800">Daftar Produk Gadget (Raditya)</h1>
+        <h1 class="h3 mb-2 text-gray-800">Daftar Produk Raditya</h1>
         <p class="mb-4">Kelola data barang elektronik, gadget, dan furniture di sini.</p>
 
         <div class="card shadow mb-4">
@@ -31,6 +31,44 @@
                         </button>
                     </div>
                 @endif
+
+                {{-- Search and Per Page Controls --}}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form action="{{ route('raditya.index') }}" method="GET" class="form-inline">
+                            <label class="mr-2">Show</label>
+                            <select name="per_page" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                                <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                            </select>
+                            <label>entries</label>
+                            <input type="hidden" name="search" value="{{ request('search') }}">
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form action="{{ route('raditya.index') }}" method="GET" class="form-inline float-right">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="search" class="form-control"
+                                    placeholder="Cari nama, SKU, kategori, brand..." value="{{ request('search') }}"
+                                    aria-label="Search" style="min-width: 250px;">
+                                <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    @if (request('search'))
+                                        <a href="{{ route('raditya.index', ['per_page' => request('per_page', 10)]) }}"
+                                            class="btn btn-secondary">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 {{-- FORM PEMBUNGKUS BULK DELETE --}}
                 <form id="bulkActionForm" action="{{ route('raditya.bulk-action') }}" method="POST">
@@ -63,7 +101,7 @@
                                             <input type="checkbox" name="product_ids[]" value="{{ $product->id }}"
                                                 class="select-item">
                                         </td>
-                                        <td>{{ $loop->iteration }}</td>
+                                        <td>{{ $products->firstItem() + $loop->index }}</td>
                                         <td>
                                             @if ($product->primaryImage)
                                                 <img src="{{ asset('storage/' . $product->primaryImage->image_path) }}"
@@ -113,6 +151,20 @@
                     @csrf
                     @method('DELETE')
                 </form>
+
+                {{-- Pagination --}}
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        Showing {{ $products->firstItem() ?? 0 }} to {{ $products->lastItem() ?? 0 }} of
+                        {{ $products->total() }} entries
+                        @if (request('search'))
+                            <span class="text-muted">(filtered from search: "{{ request('search') }}")</span>
+                        @endif
+                    </div>
+                    <div>
+                        {{ $products->appends(['per_page' => request('per_page', 10), 'search' => request('search')])->links() }}
+                    </div>
+                </div>
 
             </div>
         </div>
