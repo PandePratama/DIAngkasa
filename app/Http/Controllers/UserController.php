@@ -6,13 +6,31 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\UnitKerja;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash; // Tambahkan ini untuk hashing password
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('unitKerja')->latest()->get();
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+
+        $users = User::with('unitKerja')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('nip', 'like', "%{$search}%")
+                        ->orWhereHas('unitKerja', function ($q) use ($search) {
+                            $q->where('unit_name', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->appends($request->query());
+
         return view('admin.users.index', compact('users'));
     }
 
