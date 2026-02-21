@@ -26,18 +26,18 @@
                     <div class="relative">
                         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         <input type="text"
-                               name="search"
-                               value="{{ request('search') }}"
-                               placeholder="Cari produk..."
-                               class="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-all">
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Cari produk..."
+                            class="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-all">
                     </div>
                 </div>
 
                 {{-- CATEGORY --}}
                 <div class="relative w-full md:w-auto">
                     <select name="category"
-                            onchange="this.form.submit()"
-                            class="w-full appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer">
+                        onchange="this.form.submit()"
+                        class="w-full appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer">
                         <option value="">📁 Semua Kategori</option>
                         @foreach ($categories as $category)
                         <option value="{{ $category->id }}"
@@ -52,8 +52,8 @@
                 {{-- BRAND --}}
                 <div class="relative w-full md:w-auto">
                     <select name="brand"
-                            onchange="this.form.submit()"
-                            class="w-full appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer">
+                        onchange="this.form.submit()"
+                        class="w-full appearance-none pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer">
                         <option value="">🏷️ Semua Brand</option>
                         @foreach ($brands as $brand)
                         <option value="{{ $brand->id }}"
@@ -73,7 +73,7 @@
 
                 @if (request()->hasAny(['search','category','brand']))
                 <a href="{{ route('gadget.index') }}"
-                   class="w-full md:w-auto px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 transition-all font-medium inline-flex items-center justify-center">
+                    class="w-full md:w-auto px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 transition-all font-medium inline-flex items-center justify-center">
                     <i class="fa-solid fa-rotate-right mr-2"></i>Reset
                 </a>
                 @endif
