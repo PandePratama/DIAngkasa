@@ -92,7 +92,7 @@
 
                 {{-- IMAGE --}}
                 <img src="{{ $product->primaryImage
-        ? asset('storage/' . $product->primaryImage->image_path)
+        ? $product->primaryImage->image_path
         : asset('images/placeholder.png') }}"
                     class="mx-auto h-20 md:h-28 object-contain mb-2">
 

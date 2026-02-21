@@ -60,7 +60,7 @@
 
                             <div class="bg-white rounded-xl shadow p-4 flex gap-4">
                                 {{-- IMAGE --}}
-                                <img src="{{ $imagePath }}" class="w-20 h-20 object-contain rounded-lg bg-gray-50">
+                                <img src="{{ $product->primaryImage->image_url ?? asset('images/placeholder.png') }}" class="w-20 h-20 object-contain rounded-lg bg-gray-50">
 
                                 {{-- INFO --}}
                                 <div class="flex-1">

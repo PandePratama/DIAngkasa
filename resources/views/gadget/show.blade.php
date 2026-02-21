@@ -44,9 +44,7 @@
 
             {{-- IMAGE --}}
             <div class="bg-white rounded-2xl shadow p-4 flex items-center justify-center">
-                <img src="{{ $product->primaryImage
-                    ? asset('storage/' . $product->primaryImage->image_path)
-                    : asset('images/placeholder.png') }}"
+                <img src="{{ $product->primaryImage ? $product->primaryImage->image_path : asset('images/placeholder.png') }}"
                     class="h-64 md:h-96 object-contain" alt="{{ $product->name }}">
             </div>
 

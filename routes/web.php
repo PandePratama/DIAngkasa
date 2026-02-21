@@ -30,6 +30,7 @@ use App\Http\Controllers\{
 | Public Routes (Bisa Diakses Tanpa Login)
 |--------------------------------------------------------------------------
 */
+// dd(config('filesystems.disks.r2.bucket'));
 
 Route::get('/', [WelcomeController::class, 'home'])->name('home');
 

@@ -57,7 +57,7 @@
                                         {{-- Gambar Produk --}}
                                         <div
                                             class="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100 overflow-hidden">
-                                            <img src="{{ $image }}" alt="{{ $product->name }}"
+                                            <img src="{{ $product->primaryImage->image_url ?? asset('images/placeholder.png') }}" alt="{{ $product->name }}"
                                                 class="w-full h-full object-contain">
                                         </div>
 

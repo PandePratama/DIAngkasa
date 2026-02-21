@@ -11,6 +11,7 @@ use App\Services\CreditCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RadityaProductController extends Controller
@@ -59,8 +60,6 @@ class RadityaProductController extends Controller
         return view('admin.raditya.create', compact('categories', 'brands'));
     }
 
-
-
     /**
      * Menyimpan produk baru ke database
      */
@@ -74,14 +73,9 @@ class RadityaProductController extends Controller
             'id_category'   => 'required|exists:categories,id',
             'id_brand'      => 'required|exists:brands,id',
             'stock'         => 'required|integer|min:0',
-
-            // --- TAMBAHAN BARU: Validasi HPP ---
             'hpp'           => 'required|numeric|min:0',
-            // -----------------------------------
-
             'price'         => 'required|numeric|min:0',
             'warranty_info' => 'nullable|string', // Input dari form
-            // 'images'        => 'required|array|min:1',
             'images.*'      => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -94,25 +88,29 @@ class RadityaProductController extends Controller
                 'id_category' => $validated['id_category'],
                 'id_brand'    => $validated['id_brand'],
                 'stock'       => $validated['stock'],
-
-                // --- TAMBAHAN BARU: Simpan HPP ---
                 'hpp'         => $validated['hpp'],
-                // ---------------------------------
-
                 'price'       => $validated['price'],
-
-                // Mapping manual: warranty_info (form) -> warranty (db)
                 'warranty'    => $validated['warranty_info'] ?? null,
             ]);
 
+            // Upload Image ke S3 dan simpan URL di database
             if ($request->hasFile('images')) {
-                // 3. Simpan Gambar
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('products/raditya', 'public');
+
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+
+                    $path = Storage::disk('s3')->putFileAs(
+                        'products/raditya',
+                        $image,
+                        $filename,
+                        'public'
+                    );
+
+                    $url = Storage::disk('s3')->url($path);
 
                     ProductImage::create([
                         'id_product_diraditya' => $product->id,
-                        'image_path'           => $path,
+                        'image_path'           => $url,
                     ]);
                 }
             }
@@ -175,11 +173,21 @@ class RadityaProductController extends Controller
             // 2. Tambah Gambar Baru (jika ada)
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('products/raditya', 'public');
+
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+
+                    $path = Storage::disk('s3')->putFileAs(
+                        'products/raditya',
+                        $image,
+                        $filename,
+                        'public'
+                    );
+
+                    $url = Storage::disk('s3')->url($path);
 
                     ProductImage::create([
                         'id_product_diraditya' => $product->id,
-                        'image_path'           => $path,
+                        'image_path'           => $url,
                     ]);
                 }
             }
@@ -200,7 +208,12 @@ class RadityaProductController extends Controller
         DB::transaction(function () use ($product) {
             // Hapus file gambar dari storage
             foreach ($product->images as $image) {
-                Storage::disk('public')->delete($image->image_path);
+
+                $parsedPath = parse_url($image->image_path, PHP_URL_PATH);
+                $cleanPath = ltrim($parsedPath, '/');
+
+                Storage::disk('s3')->delete($cleanPath);
+                
                 $image->delete();
             }
             // Hapus produk
@@ -224,7 +237,10 @@ class RadityaProductController extends Controller
         }
 
         DB::transaction(function () use ($image) {
-            Storage::disk('public')->delete($image->image_path);
+            $parsedPath = parse_url($image->image_path, PHP_URL_PATH);
+            $cleanPath = ltrim($parsedPath, '/');
+
+            Storage::disk('s3')->delete($cleanPath);
             $image->delete();
         });
 

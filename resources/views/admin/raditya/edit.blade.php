@@ -180,7 +180,8 @@
                             &times;
                         </button>
 
-                        <img src="{{ asset('storage/' . $image->image_path) }}" class="card-img-top"
+                        <img src="{{ $image->image_path }}"
+                            class="card-img-top"
                             style="height:160px;object-fit:cover">
 
                         <div class="card-body text-center p-2">
